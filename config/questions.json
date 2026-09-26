@@ -1,0 +1,602 @@
+[
+  {
+    "id": "q1",
+    "question": "If all developers use computers, and Sarah is a developer, which is true?",
+    "options": {
+      "A": "Sarah uses a computer",
+      "B": "Sarah is a computer",
+      "C": "Everyone uses computers",
+      "D": "Computers use Sarah"
+    }
+  },
+  {
+    "id": "q2",
+    "question": "Complete the sequence: 2, 6, 12, 20, 30, ___?",
+    "options": {
+      "A": "10",
+      "B": "42",
+      "C": "15",
+      "D": "30"
+    }
+  },
+  {
+    "id": "q3",
+    "question": "A project is behind schedule. Adding more people makes it slower. This is because:",
+    "options": {
+      "A": "People are lazy",
+      "B": "Communication overhead increases",
+      "C": "Computers get tired",
+      "D": "Office space runs out"
+    }
+  },
+  {
+    "id": "q4",
+    "question": "If 'SHIFT' is coded as 'Tijgu,' what is 'TECH' coded as? (Hint: +1 letter)",
+    "options": {
+      "A": "UFDI",
+      "B": "UGEJ",
+      "C": "VGEJ",
+      "D": "SGDI"
+    }
+  },
+  {
+    "id": "q5",
+    "question": "A bat and a ball cost ₦1,100. The bat costs ₦1,000 more than the ball. How much is the ball?",
+    "options": {
+      "A": "₦10",
+      "B": "₦100",
+      "C": "₦50",
+      "D": "₦15"
+    }
+  },
+  {
+    "id": "q6",
+    "question": "Which word does not belong?",
+    "options": {
+      "A": "AI",
+      "B": "Cloud",
+      "C": "Blockchain",
+      "D": "Paper"
+    }
+  },
+  {
+    "id": "q7",
+    "question": "'If P then Q. Q is false.' What can we say about P?",
+    "options": {
+      "A": "P is false",
+      "B": "P is true",
+      "C": "P is none of the above",
+      "D": "Q and P are the same"
+    }
+  },
+  {
+    "id": "q8",
+    "question": "Rearrange 'R-A-G-O-I-L-T-H-M' to form a math/tech word.",
+    "options": {
+      "A": "MAROTHM",
+      "B": "ALRITHIOM",
+      "C": "ALGORITHM",
+      "D": "MTHNORGAL"
+    }
+  },
+  {
+    "id": "q9",
+    "question": "If 5 machines take 5 minutes to make 5 gadgets, how long do 100 machines take to make 100 gadgets?",
+    "options": {
+      "A": "3 minutes",
+      "B": "5 minutes",
+      "C": "10 minutes",
+      "D": "1 hr"
+    }
+  },
+  {
+    "id": "q10",
+    "question": "Solve for X: 2x + 10 = 30.",
+    "options": {
+      "A": "10",
+      "B": "5",
+      "C": "20",
+      "D": "2"
+    }
+  },
+  {
+    "id": "q11",
+    "question": "If you are running a race and you pass the person in second place, what place are you in?",
+    "options": {
+      "A": "First",
+      "B": "Second",
+      "C": "Last",
+      "D": "None of the above"
+    }
+  },
+  {
+    "id": "q12",
+    "question": "Find the odd one out: Python, Java, Microsoft, C++.",
+    "options": {
+      "A": "Microsoft",
+      "B": "Java",
+      "C": "Python",
+      "D": "C++"
+    }
+  },
+  {
+    "id": "q13",
+    "question": "True or False: Every problem has a single, perfect solution in technology.",
+    "options": {
+      "A": "True",
+      "B": "False",
+      "C": "Sometimes",
+      "D": "Only in AI"
+    }
+  },
+  {
+    "id": "q14",
+    "question": "Which is heavier: (A) A Gigabyte of data or (B) a Megabyte of data?",
+    "options": {
+      "A": "Gigabyte",
+      "B": "Megabyte",
+      "C": "Kilobyte",
+      "D": "Byte"
+    }
+  },
+  {
+    "id": "q15",
+    "question": "If a clock strikes 6 at 6 o'clock, how long does it take to strike 12? (Assume intervals)",
+    "options": {
+      "A": "5hrs",
+      "B": "4hrs",
+      "C": "6hrs",
+      "D": "11 intervals of time"
+    }
+  },
+  {
+    "id": "q16",
+    "question": "In a team of 5, everyone shakes hands once. How many handshakes total?",
+    "options": {
+      "A": "5",
+      "B": "10",
+      "C": "15",
+      "D": "No handshake"
+    }
+  },
+  {
+    "id": "q17",
+    "question": "If North becomes South-East, what does West become?",
+    "options": {
+      "A": "North-West",
+      "B": "North-East",
+      "C": "South-West",
+      "D": "South"
+    }
+  },
+  {
+    "id": "q18",
+    "question": "A folder contains 3 files. Each file is 10MB. How much space is used?",
+    "options": {
+      "A": "10MB",
+      "B": "30MB",
+      "C": "300MB",
+      "D": "3MB"
+    }
+  },
+  {
+    "id": "q19",
+    "question": "Which is faster?",
+    "options": {
+      "A": "4G",
+      "B": "5G",
+      "C": "3G",
+      "D": "Edge"
+    }
+  },
+  {
+    "id": "q20",
+    "question": "If 'Input + Process = Output,' what happens if the Input is wrong?",
+    "options": {
+      "A": "Output is perfect",
+      "B": "Garbage out (Wrong output)",
+      "C": "Computer crashes",
+      "D": "Nothing happens"
+    }
+  },
+  {
+    "id": "q21",
+    "question": "What does 'URL' stand for?",
+    "options": {
+      "A": "Universal Resource Link",
+      "B": "Uniform Resource Locator",
+      "C": "United Resource Locator",
+      "D": "Uniform Record Link"
+    }
+  },
+  {
+    "id": "q22",
+    "question": "Which of these is a 'Cloud' service provider?",
+    "options": {
+      "A": "Toyota",
+      "B": "AWS",
+      "C": "Samsung",
+      "D": "McDonalds"
+    }
+  },
+  {
+    "id": "q23",
+    "question": "What is the main purpose of an Antivirus?",
+    "options": {
+      "A": "Speed up internet",
+      "B": "Protect against malware",
+      "C": "Clean keyboard",
+      "D": "Write code"
+    }
+  },
+  {
+    "id": "q24",
+    "question": "'Phishing' is a term used in which domain?",
+    "options": {
+      "A": "Marine Biology",
+      "B": "Cybersecurity",
+      "C": "Database Management",
+      "D": "UI Design"
+    }
+  },
+  {
+    "id": "q25",
+    "question": "What does AI stand for?",
+    "options": {
+      "A": "Artificial Intelligence",
+      "B": "Automated Internet",
+      "C": "Advanced Interface",
+      "D": "Apple Inc"
+    }
+  },
+  {
+    "id": "q26",
+    "question": "Which of these is a web browser?",
+    "options": {
+      "A": "Windows",
+      "B": "Chrome",
+      "C": "Google",
+      "D": "MacOS"
+    }
+  },
+  {
+    "id": "q27",
+    "question": "In 'Frontend Development,' what are you building?",
+    "options": {
+      "A": "Databases",
+      "B": "User Interfaces",
+      "C": "Server hardware",
+      "D": "Network cables"
+    }
+  },
+  {
+    "id": "q28",
+    "question": "What is a 'Bug' in tech?",
+    "options": {
+      "A": "An insect",
+      "B": "An error in code",
+      "C": "A new feature",
+      "D": "A type of mouse"
+    }
+  },
+  {
+    "id": "q29",
+    "question": "Which technology uses a 'Ledger'?",
+    "options": {
+      "A": "Blockchain",
+      "B": "Photoshop",
+      "C": "Word",
+      "D": "HTML"
+    }
+  },
+  {
+    "id": "q30",
+    "question": "What does 'www' stand for?",
+    "options": {
+      "A": "World Wide Web",
+      "B": "Web World Wide",
+      "C": "World Web Wrestling",
+      "D": "Wide Web World"
+    }
+  },
+  {
+    "id": "q31",
+    "question": "What is the 'Brain' of a computer called?",
+    "options": {
+      "A": "RAM",
+      "B": "CPU",
+      "C": "Hard Drive",
+      "D": "Monitor"
+    }
+  },
+  {
+    "id": "q32",
+    "question": "Which of these is NOT a social media platform?",
+    "options": {
+      "A": "X (Twitter)",
+      "B": "LinkedIn",
+      "C": "Python",
+      "D": "Instagram"
+    }
+  },
+  {
+    "id": "q33",
+    "question": "Is 'Data Science' about...",
+    "options": {
+      "A": "Predicting the future with data",
+      "B": "Fixing hardware",
+      "C": "Typing fast",
+      "D": "Building monitors"
+    }
+  },
+  {
+    "id": "q34",
+    "question": "What is a 'Server'?",
+    "options": {
+      "A": "A waiter in a restaurant",
+      "B": "A computer providing data to others",
+      "C": "A keyboard type",
+      "D": "A mouse pad"
+    }
+  },
+  {
+    "id": "q35",
+    "question": "What is the 'Internet of Things' (IoT)?",
+    "options": {
+      "A": "Smart connected devices",
+      "B": "A website for buying things",
+      "C": "A type of internet cable",
+      "D": "A search engine"
+    }
+  },
+  {
+    "id": "q36",
+    "question": "You encounter a coding error that you can't solve for 3 hours. Do you:",
+    "options": {
+      "A": "Quit",
+      "B": "Ask a peer/Google",
+      "C": "Restart the computer",
+      "D": "Cry"
+    }
+  },
+  {
+    "id": "q37",
+    "question": "How many hours a week are you willing to commit to this scholarship?",
+    "options": {
+      "A": "0-2 hours",
+      "B": "5-10 hours",
+      "C": "20+ hours (Whatever it takes)",
+      "D": "None"
+    }
+  },
+  {
+    "id": "q38",
+    "question": "TechShift requires attendance on April 18th. If you have a party that day, what do you do?",
+    "options": {
+      "A": "Go to the party",
+      "B": "Attend TechShift",
+      "C": "Skip both",
+      "D": "Sleep"
+    }
+  },
+  {
+    "id": "q39",
+    "question": "When a mentor gives you critical feedback, do you:",
+    "options": {
+      "A": "Get angry",
+      "B": "Improve and apply it",
+      "C": "Ignore it",
+      "D": "Argue"
+    }
+  },
+  {
+    "id": "q40",
+    "question": "You are given a complex task with no instructions. What is your first step?",
+    "options": {
+      "A": "Quit",
+      "B": "Break it down and research",
+      "C": "Wait for someone to do it",
+      "D": "Complain"
+    }
+  },
+  {
+    "id": "q41",
+    "question": "True or False: Technology is a 'get rich quick' scheme.",
+    "options": {
+      "A": "True",
+      "B": "False",
+      "C": "Sometimes",
+      "D": "Always"
+    }
+  },
+  {
+    "id": "q42",
+    "question": "What is more important in tech?",
+    "options": {
+      "A": "Speed",
+      "B": "Accuracy & Logic",
+      "C": "Typing speed",
+      "D": "Memorization"
+    }
+  },
+  {
+    "id": "q43",
+    "question": "If a global certification exam is hard, do you:",
+    "options": {
+      "A": "Complain",
+      "B": "Study harder",
+      "C": "Find an easier course",
+      "D": "Cheat"
+    }
+  },
+  {
+    "id": "q44",
+    "question": "How do you handle a team member who isn't working?",
+    "options": {
+      "A": "Yell at them",
+      "B": "Communicate and find out why",
+      "C": "Ignore them",
+      "D": "Do their work silently"
+    }
+  },
+  {
+    "id": "q45",
+    "question": "Why do you want this scholarship?",
+    "options": {
+      "A": "Money",
+      "B": "Impact & Career Growth",
+      "C": "Boredom",
+      "D": "For fun"
+    }
+  },
+  {
+    "id": "q46",
+    "question": "Can you work on a project for 3 months without seeing a 'paycheck' yet?",
+    "options": {
+      "A": "Yes, for the experience/portfolio",
+      "B": "No, I need money immediately",
+      "C": "Maybe",
+      "D": "I don't know"
+    }
+  },
+  {
+    "id": "q47",
+    "question": "How often do you check your email for professional updates?",
+    "options": {
+      "A": "Never",
+      "B": "Once a month",
+      "C": "Daily / Regularly",
+      "D": "Only when expecting a password reset"
+    }
+  },
+  {
+    "id": "q48",
+    "question": "What is your reaction to constant change in tech tools?",
+    "options": {
+      "A": "I hate learning new things",
+      "B": "I adapt and learn quickly",
+      "C": "I ignore them",
+      "D": "I complain to management"
+    }
+  },
+  {
+    "id": "q49",
+    "question": "Do you prefer working:",
+    "options": {
+      "A": "Alone",
+      "B": "In a team",
+      "C": "Both, adaptable to the situation",
+      "D": "I don't like working"
+    }
+  },
+  {
+    "id": "q50",
+    "question": "What is your definition of 'Success' in TechShift?",
+    "options": {
+      "A": "Just getting a certificate",
+      "B": "Gaining mastery, a career, and impacting society",
+      "C": "Getting free food at the event",
+      "D": "Showing off on social media"
+    }
+  },
+  {
+    "id": "q51",
+    "question": "A company’s website is down. Who is the first person they call?",
+    "options": {
+      "A": "Data Scientist",
+      "B": "Software Dev / Cloud Engineer",
+      "C": "UI Designer",
+      "D": "Marketer"
+    }
+  },
+  {
+    "id": "q52",
+    "question": "You see a 'Suspicious Link' in your inbox. Do you click it?",
+    "options": {
+      "A": "Yes, I am curious",
+      "B": "No, I report or delete it",
+      "C": "I forward it to friends",
+      "D": "I reply to the email"
+    }
+  },
+  {
+    "id": "q53",
+    "question": "If you want to build a 'Mobile App,' which domain do you study?",
+    "options": {
+      "A": "Data Analysis",
+      "B": "Frontend/Mobile Development",
+      "C": "Cybersecurity",
+      "D": "Cloud Computing"
+    }
+  },
+  {
+    "id": "q54",
+    "question": "You have 1,000 customer records to organize. Which tool is better:",
+    "options": {
+      "A": "Excel / Database",
+      "B": "Notepad",
+      "C": "Calculator",
+      "D": "Paint"
+    }
+  },
+  {
+    "id": "q55",
+    "question": "A bank wants to secure its money from hackers. Which scholarship domain fits best?",
+    "options": {
+      "A": "UI/UX Design",
+      "B": "Cybersecurity",
+      "C": "Digital Marketing",
+      "D": "Python Beginners"
+    }
+  },
+  {
+    "id": "q56",
+    "question": "An AI tells you 'Nigeria will have snow tomorrow.' Do you:",
+    "options": {
+      "A": "Believe it completely",
+      "B": "Check the data source and verify",
+      "C": "Start buying winter coats",
+      "D": "Post it on social media"
+    }
+  },
+  {
+    "id": "q57",
+    "question": "You are building a website for a cake shop. Should the 'Buy' button be visible or hidden?",
+    "options": {
+      "A": "Highly Visible (Good UX)",
+      "B": "Hidden (Hard to find)",
+      "C": "Only at the bottom",
+      "D": "No button needed"
+    }
+  },
+  {
+    "id": "q58",
+    "question": "Your computer is slow. What is the first thing you check?",
+    "options": {
+      "A": "Buy a new one",
+      "B": "Check Task Manager / Running Processes",
+      "C": "Unplug the monitor",
+      "D": "Change the keyboard"
+    }
+  },
+  {
+    "id": "q59",
+    "question": "If you want to work for a global company from Nigeria, what is the most important skill?",
+    "options": {
+      "A": "Fast typing",
+      "B": "Communication & Core Tech Skills",
+      "C": "Having a nice webcam",
+      "D": "Knowing the CEO"
+    }
+  },
+  {
+    "id": "q60",
+    "question": "What is the final goal of TechShift?",
+    "options": {
+      "A": "To give out certificates",
+      "B": "To create creators and industry leaders",
+      "C": "To host a party",
+      "D": "To sell laptops"
+    }
+  }
+]
