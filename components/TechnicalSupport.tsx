@@ -1,205 +1,157 @@
 "use client";
 
 import { useState } from "react";
-import { LifeBuoy, Loader2, X } from "lucide-react";
-import { apiFetch } from "@/lib/client/api";
-import { BRAND } from "@/config/branding";
+import { toast } from "sonner";
+import { AlertCircle, X } from "lucide-react";
 
-// ─── TECHNICAL SUPPORT ────────────────────────────────────────────────────────
-// A genuinely good idea, and worth keeping: the most common thing that goes
-// wrong in a live exam is the candidate's own setup, and an invigilator queue of
-// people who cannot finish is a bad afternoon for everyone.
-//
-// What it was doing wrong:
-//   • It posted `email` and `ticketId` from props that the pages filled in from
-//     `localStorage`, so the identity attached to a support report was whatever
-//     the browser claimed. The route now reads the signed session instead, and
-//     this component sends no identity at all.
-//   • The failure toast told the candidate to email `support@1techacdemy.com` —
-//     a real address, hardcoded in the UI, wrong domain from the route's real
-//     address, and unreachable in any deployment that isn't theirs. Now BRAND.
-//   • Raw `fetch` with no credentials, and the response read as `data.success`
-//     even on a 500.
-//   • #0000FF on white, again.
-//
-// The note in the panel is the important part and it is kept verbatim in spirit:
-// reporting a problem does not flag the account. See the old IntegrityObserver
-// comment for how that used to be false.
+interface TechnicalSupportProps {
+  email: string | null;
+  ticketId: string | null;
+}
 
-const ISSUES = [
-  { value: "back_button", label: "I pressed the browser back button" },
-  { value: "tab_switch", label: "I lost focus or switched tabs by accident" },
-  { value: "window_resize", label: "The window resized or moved" },
-  { value: "browser_crash", label: "The browser or device crashed" },
-  { value: "network", label: "I lost my network connection" },
-  { value: "device_locked", label: "My phone locked or went to sleep" },
-  { value: "other", label: "Something else" },
-];
-
-export default function TechnicalSupport() {
-  const [open, setOpen] = useState(false);
+export default function TechnicalSupport({
+  email,
+  ticketId,
+}: TechnicalSupportProps) {
+  const [isOpen, setIsOpen] = useState(false);
   const [issue, setIssue] = useState("");
   const [description, setDescription] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
 
-  const submit = async () => {
-    if (!issue || submitting) return;
+  const issues = [
+    { value: "back_button", label: "Accidentally pressed back button" },
+    { value: "tab_switch", label: "Accidentally switched tabs" },
+    { value: "window_resize", label: "Window resized automatically" },
+    { value: "browser_crash", label: "Browser/App crashed" },
+    { value: "network", label: "Network disconnection" },
+    { value: "other", label: "Other issue" },
+  ];
+
+  const handleSubmit = async () => {
+    if (!issue) {
+      toast.error("Please select an issue type");
+      return;
+    }
+
     setSubmitting(true);
-    setError(null);
-    setMessage(null);
-
-    const result = await apiFetch<{ emailed: boolean }>(
-      "/api/assessment/report-issue",
-      {
+    try {
+      const res = await fetch("/api/assessment/report-issue", {
         method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          email,
+          ticketId,
           issue,
           description,
-          url: window.location.pathname,
+          url: window.location.href,
+          timestamp: new Date().toISOString(),
         }),
-      },
-    );
+      });
 
-    if (result.ok) {
-      setMessage(result.data.emailed ? "Reported — we'll be in touch." : "Recorded.");
-      setIssue("");
-      setDescription("");
-      // Leave the panel open on success so the confirmation is actually read.
-      window.setTimeout(() => setOpen(false), 2500);
-    } else {
-      setError(result.message);
+      const data = await res.json();
+
+      if (data.success) {
+        toast.success("✅ Issue reported. Our support team will review.", {
+          duration: 5000,
+        });
+        setIsOpen(false);
+        setIssue("");
+        setDescription("");
+      } else {
+        toast.error(
+          "Failed to submit. Please email support@1techacdemy.com with your issue and ticket ID.",
+        );
+      }
+    } catch (error) {
+      toast.error("Network error. Please try again.");
+    } finally {
+      setSubmitting(false);
     }
-    setSubmitting(false);
   };
 
   return (
     <>
+      {/* Floating button */}
       <button
-        onClick={() => setOpen(true)}
-        aria-label="Report a technical problem"
-        className="fixed bottom-4 right-4 z-40 grid h-12 w-12 place-items-center rounded-full border border-ink/15 bg-white text-ink shadow-lg transition-colors hover:border-ink/40"
+        onClick={() => setIsOpen(true)}
+        className="fixed bottom-4 right-4 bg-[#0000FF] text-white p-3 rounded-full shadow-lg hover:bg-[#0000CC] transition-all z-50"
+        title="Report technical issue"
       >
-        <LifeBuoy className="h-5 w-5" aria-hidden />
+        🆘
       </button>
 
-      {open && (
-        <div
-          className="fixed inset-0 z-50 grid place-items-center bg-ink/60 p-4"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="support-title"
-        >
-          <div className="w-full max-w-md rounded-3xl bg-white p-7 shadow-2xl">
-            <div className="flex items-start justify-between gap-4">
-              <h2 id="support-title" className="text-lg font-bold">
-                Something gone wrong?
-              </h2>
+      {/* Modal */}
+      {isOpen && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-100 p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full shadow-2xl">
+            <div className="p-6 border-b flex justify-between items-center">
+              <h3 className="text-xl font-black text-[#0000FF]">
+                Report Technical Issue
+              </h3>
               <button
-                onClick={() => setOpen(false)}
-                aria-label="Close"
-                className="rounded-full p-1 text-ink-soft hover:bg-ink/5"
+                onClick={() => setIsOpen(false)}
+                className="p-2 hover:bg-gray-100 rounded-full"
               >
-                <X className="h-5 w-5" aria-hidden />
+                <X className="h-5 w-5" />
               </button>
             </div>
 
-            <p className="mt-3 rounded-2xl bg-paper p-4 text-sm leading-relaxed text-ink-soft">
-              Telling us about a problem{" "}
-              <strong className="text-ink">will not flag your account</strong>. An
-              admissions reviewer looks at these, and your paper keeps its place on
-              the clock.
-            </p>
+            <div className="p-6 space-y-4">
+              <div className="bg-blue-50 p-3 rounded-lg flex items-start gap-2">
+                <AlertCircle className="h-5 w-5 text-[#0000FF] shrink-0 mt-0.5" />
+                <p className="text-xs text-[#0000FF]">
+                  Reporting an issue will not automatically flag your account.
+                  Our team will review and help resolve your problem.
+                </p>
+              </div>
 
-            <div className="mt-5 space-y-4">
               <div>
-                <label
-                  htmlFor="support-issue"
-                  className="text-[11px] font-bold uppercase tracking-[0.18em] text-ink-soft"
-                >
-                  What happened
+                <label className="text-xs font-bold text-gray-500 uppercase">
+                  Issue Type *
                 </label>
                 <select
-                  id="support-issue"
                   value={issue}
-                  onChange={(event) => setIssue(event.target.value)}
-                  className="mt-1.5 w-full rounded-xl border border-ink/15 bg-white p-3 text-sm outline-none focus:border-ink/40"
+                  onChange={(e) => setIssue(e.target.value)}
+                  className="w-full mt-1 p-3 border-2 rounded-xl focus:border-[#0000FF] outline-none"
                 >
-                  <option value="">Choose one…</option>
-                  {ISSUES.map((item) => (
-                    <option key={item.value} value={item.value}>
-                      {item.label}
+                  <option value="">Select an issue...</option>
+                  {issues.map((i) => (
+                    <option key={i.value} value={i.value}>
+                      {i.label}
                     </option>
                   ))}
                 </select>
               </div>
 
               <div>
-                <label
-                  htmlFor="support-detail"
-                  className="text-[11px] font-bold uppercase tracking-[0.18em] text-ink-soft"
-                >
-                  Anything else <span className="font-normal">(optional)</span>
+                <label className="text-xs font-bold text-gray-500 uppercase">
+                  Description (Optional)
                 </label>
                 <textarea
-                  id="support-detail"
                   value={description}
-                  onChange={(event) => setDescription(event.target.value)}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="Tell us more about what happened..."
                   rows={3}
-                  maxLength={2000}
-                  placeholder="What you were doing when it happened."
-                  className="mt-1.5 w-full resize-none rounded-xl border border-ink/15 bg-white p-3 text-sm outline-none focus:border-ink/40"
+                  className="w-full mt-1 p-3 border-2 rounded-xl focus:border-[#0000FF] outline-none resize-none"
                 />
               </div>
+
+              <div className="flex gap-3 pt-4">
+                <button
+                  onClick={() => setIsOpen(false)}
+                  className="flex-1 py-3 border-2 rounded-xl font-bold hover:bg-gray-50 transition-all"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSubmit}
+                  disabled={!issue || submitting}
+                  className="flex-1 py-3 bg-[#0000FF] text-white rounded-xl font-bold hover:bg-[#0000CC] transition-all disabled:opacity-50"
+                >
+                  {submitting ? "Submitting..." : "Report Issue"}
+                </button>
+              </div>
             </div>
-
-            {message && (
-              <p className="mt-4 rounded-xl bg-amber/15 p-3 text-sm font-semibold">
-                {message}
-              </p>
-            )}
-            {error && (
-              <p
-                role="alert"
-                className="mt-4 rounded-xl border border-red-300 bg-red-50 p-3 text-sm font-semibold text-red-900"
-              >
-                {error}
-              </p>
-            )}
-
-            <div className="mt-6 flex gap-3">
-              <button
-                onClick={() => setOpen(false)}
-                className="flex-1 rounded-full border border-ink/20 px-4 py-2.5 text-sm font-semibold"
-              >
-                Close
-              </button>
-              <button
-                onClick={submit}
-                disabled={!issue || submitting}
-                className="flex-1 rounded-full bg-ink px-4 py-2.5 text-sm font-bold text-paper disabled:opacity-50"
-              >
-                {submitting ? (
-                  <span className="flex items-center justify-center gap-2">
-                    <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
-                    Sending
-                  </span>
-                ) : (
-                  "Send report"
-                )}
-              </button>
-            </div>
-
-            <p className="mt-4 text-center text-xs text-ink-soft">
-              Or email{" "}
-              <a
-                href={`mailto:${BRAND.contactEmail}`}
-                className="font-semibold underline underline-offset-2"
-              >
-                {BRAND.contactEmail}
-              </a>
-            </p>
           </div>
         </div>
       )}

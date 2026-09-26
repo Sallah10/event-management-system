@@ -1,411 +1,266 @@
 "use client";
 
-import { Suspense, useCallback, useEffect, useState } from "react";
-import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useState, useEffect } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
-  Loader2,
-  LogOut,
-  RefreshCw,
-  ScanLine,
-  UserCheck,
   Users,
+  CheckCircle2,
+  Zap,
+  Search,
+  Loader2,
+  RefreshCcw,
 } from "lucide-react";
-import { apiFetch, type ApiResult } from "@/lib/client/api";
-import { BRAND } from "@/config/branding";
-import { cn } from "@/lib/utils";
-
-// ─── STAFF DASHBOARD ──────────────────────────────────────────────────────────
-// Rebuilt. The two things worth reading about are the ones that were removed.
-//
-// 1. IT SENT A SECRET TO THE BROWSER.
-//        headers: { "x-api-key": process.env.NEXT_PUBLIC_INTERNAL_API_KEY }
-//        headers: { "x-api-key": process.env.NEXT_PUBLIC_ADMIN_SECRET! }
-//    `NEXT_PUBLIC_*` is inlined into the client bundle at build time. Both values
-//    were therefore published to anyone who loaded the page and read the JS —
-//    and the routes behind them also accepted them, so this was not a cosmetic
-//    header. Authentication here is the staff session cookie, which is httpOnly
-//    and signed. Nothing secret goes in a browser bundle any more.
-//
-// 2. THE AI AUDIT BUTTON WAS ON THE WRONG SCREEN, UNDER THE WRONG ROLE.
-//    It POSTed to /api/admin/ai-audit, which requires `admissions` — so for the
-//    `staff` role that signed in here it could only ever return 403. It also
-//    wrote the OpenAI batch id to localStorage, which on a shared event laptop
-//    means the next person at that desk inherits a half-finished batch job and
-//    no idea what it cost. Grading and AI review are admissions actions; the
-//    button now lives with them.
-//
-// The hardcoded `3500` and `(910)` are gone too. Both were literals in this
-// file while the server read VENUE_CAPACITY and QUALIFIED_POOL_SIZE, so
-// retuning either one left the staff dashboard quoting last year's numbers to
-// the person running the door.
-
-interface Stats {
-  summary: {
-    total: number;
-    checkedIn: number;
-    attendanceRate: number;
-    venueCapacity: number;
-    venueRemaining: number;
-  };
-  pool: { size: number; finished: number; insidePool: number; remaining: number };
-  scholarships: {
-    total: number;
-    perCourse: number;
-    awarded: number;
-    shortlisted: number;
-  };
-  queue: { finishedObjective: number; awaitingGrading: number; flagged: number };
-  pipeline: { key: string; label: string; blurb: string; count: number }[];
-  courses: {
-    slug: string;
-    displayName: string;
-    taken: number;
-    capacity: number;
-    remaining: number;
-    fillRate: number;
-  }[];
-  recent: {
-    id: string;
-    name: string;
-    email: string;
-    barcodeId: string;
-    status: string;
-    updatedAt: string;
-  }[];
-}
+import { toast } from "sonner";
 
 export default function StaffDashboard() {
-  // The `denied` param is only ever a redirect reason in the query string, and
-  // useSearchParams during prerender is a build error without a Suspense boundary
-  // — so the real component is split out below and this wrapper provides one.
-  // The previous version read window.location in an effect and held the result in
-  // state, which was a render pass whose only job was to copy a value that was
-  // already in the URL.
-  return (
-    <Suspense fallback={<DashboardSkeleton />}>
-      <StaffDashboardInner />
-    </Suspense>
-  );
-}
-
-function DashboardSkeleton() {
-  return (
-    <div className="flex min-h-dvh items-center justify-center bg-paper">
-        <Loader2 className="h-6 w-6 animate-spin text-ink-soft" aria-label="Loading" />
-    </div>
-  );
-}
-
-function StaffDashboardInner() {
-  const [stats, setStats] = useState<Stats | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [stats, setStats] = useState({ total: 0, checkedIn: 0, qualified: 0 });
+  const [recent, setRecent] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [lastSync, setLastSync] = useState<Date | null>(null);
-  const denied = useSearchParams().get("denied");
-  const router = useRouter();
+  const [search, setSearch] = useState("");
+  const [isAuditing, setIsAuditing] = useState(false);
 
-  // Fetch, with no state changes of its own.
-  //
-  // Splitting "get the numbers" from "put them on screen" is what lets the mount
-  // effect below set state inside a promise callback, which is both what the React
-  // lint rule wants (setState belongs in a subscription callback, not in the body
-  // of an effect) and what makes the response cancellable. The previous version
-  // called this same function straight from the effect, which meant a response
-  // arriving after the operator had navigated away still called setState on a
-  // component that no longer existed.
-  const fetchStats = useCallback(() => apiFetch<Stats>("/api/admin/stats"), []);
-
-  /** Apply a fetch result to state. Shared by the effect and the refresh button. */
-  const applyStats = useCallback(
-    (result: ApiResult<Stats>) => {
-      if (result.ok) {
-        setStats(result.data);
-        setError(null);
-        setLastSync(new Date());
-        return;
-      }
-      // A 401 here means the session expired mid-shift, which happens: the cookie
-      // has a maxAge. Sending them to sign in again is right; a silent empty
-      // dashboard at a busy door is not.
-      if (result.status === 401) {
-        router.replace("/admin/login");
-        return;
-      }
-      setError(result.message);
-    },
-    [router],
-  );
-
-  const load = useCallback(async () => {
-    // No `setLoading(true)` here. The mount call already starts with `loading`
-    // true, and setting it on the way into an effect is the extra render pass the
-    // lint rule is right to object to. The refresh button sets it in its own
-    // handler, where a state change is what the user just asked for.
-    applyStats(await fetchStats());
-    setLoading(false);
-  }, [applyStats, fetchStats]);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    const run = () => {
-      void fetchStats().then((result) => {
-        if (cancelled) return;
-        applyStats(result);
-        setLoading(false);
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/admin/stats", {
+        headers: {
+          // Use the same key you defined in your .env
+          "x-api-key": process.env.NEXT_PUBLIC_INTERNAL_API_KEY || "",
+        },
       });
-    };
 
-    run();
-    // Auto-refresh while the desk is in use. 30s is a compromise: the stats
-    // query is two aggregates, and a door operator refreshing by hand every
-    // thirty seconds is the behaviour we are replacing.
-    const timer = setInterval(run, 30_000);
+      if (res.status === 401) {
+        toast.error("Dashboard Access Denied: Invalid API Key");
+        return;
+      }
 
-    return () => {
-      cancelled = true;
-      clearInterval(timer);
-    };
-  }, [applyStats, fetchStats]);
+      const data = await res.json();
+      if (data.success) {
+        setStats(data.summary);
+        setRecent(data.recent);
+      }
+    } catch (err) {
+      toast.error("Failed to connect to Command Center");
+    } finally {
+      setLoading(false);
+    }
+  };
+  useEffect(() => {
+    fetchData();
+  }, []);
 
-  const signOut = async () => {
-    await apiFetch("/api/admin/auth", { method: "DELETE" });
-    router.replace("/admin/login");
+  // const runAudit = async () => {
+  //   setIsAuditing(true);
+  //   const res = await fetch("/api/admin/ai-audit", { method: "POST" });
+  //   const data = await res.json();
+  //   setIsAuditing(false);
+  //   toast.success(`AI Processed ${data.count} candidates`);
+  //   fetchData();
+  // };
+
+  const runAudit = async () => {
+    toast("Run AI Vetting?", {
+      description: "This will submit 910 essays to OpenAI Batch API (~$0.18).",
+      action: {
+        label: "Confirm",
+        onClick: async () => {
+          setIsAuditing(true);
+          try {
+            const res = await fetch("/api/admin/ai-audit", {
+              method: "POST",
+              headers: {
+                "x-api-key": process.env.NEXT_PUBLIC_ADMIN_SECRET!,
+              },
+            });
+            const data = await res.json();
+
+            if (!data.success) {
+              toast.error(data.error || "Batch submission failed.");
+              return;
+            }
+
+            // Save batch_id to localStorage so you can collect results later
+            localStorage.setItem("ai_batch_id", data.batch_id);
+
+            toast.success(
+              `Batch submitted! ${data.candidate_count} candidates queued. Est. cost: ${data.cost_estimate}`,
+              { duration: 8000 },
+            );
+          } catch (e) {
+            toast.error("Audit failed. Check API logs.");
+          } finally {
+            setIsAuditing(false);
+          }
+        },
+      },
+    });
+  };
+
+  // Separate function to collect results once batch is done
+  const collectResults = async () => {
+    const batchId = localStorage.getItem("ai_batch_id");
+    if (!batchId) {
+      toast.error("No batch job found. Run the audit first.");
+      return;
+    }
+
+    setIsAuditing(true);
+    try {
+      const res = await fetch(`/api/admin/ai-audit?batch_id=${batchId}`, {
+        headers: { "x-api-key": process.env.NEXT_PUBLIC_ADMIN_SECRET! },
+      });
+      const data = await res.json();
+
+      if (data.status !== "completed") {
+        toast.info(
+          `Batch still processing (${data.status}). Check back later.`,
+        );
+        return;
+      }
+
+      // Clear batch_id once collected
+      localStorage.removeItem("ai_batch_id");
+      toast.success(`Done! ${data.graded} candidates graded.`);
+      fetchData();
+    } catch (e) {
+      toast.error("Failed to collect results.");
+    } finally {
+      setIsAuditing(false);
+    }
   };
 
   return (
-    <div className="min-h-dvh bg-paper text-ink">
-      <header className="border-b border-ink/10 bg-white">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-5 py-4">
-          <div>
-            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-ink-soft">
-              {BRAND.shortName} · staff
-            </p>
-            <h1 className="text-xl font-bold">Attendance desk</h1>
-          </div>
-          <div className="flex items-center gap-2">
-            <Link
-              href="/checkin"
-              className="flex items-center gap-2 rounded-full bg-amber px-4 py-2 text-sm font-bold"
-            >
-              <ScanLine className="h-4 w-4" aria-hidden /> Check-in desk
-            </Link>
-            <Link
-              href="/admin/manual-checkin"
-              className="rounded-full border border-ink/15 px-4 py-2 text-sm font-semibold"
-            >
-              Manual desk
-            </Link>
+    <div className="min-h-screen bg-[#F8FAFC] p-8">
+      <div className="max-w-7xl mx-auto space-y-8">
+        <div className="flex flex-col md:flex-row gap-4 md:gap-0 justify-between items-center">
+          <h1 className="text-4xl font-black text-[#0000FF] italic tracking-tighter">
+            EVENT COMMAND
+          </h1>
+          <div className="flex gap-3">
             <button
-              onClick={() => {
-                // Set the spinner here, in the handler, rather than at the top of
-                // `load()`. The click is the user asking for a refresh, so a state
-                // change belongs to it; the mount call has nothing to show.
-                setLoading(true);
-                void load();
-              }}
-              aria-label="Refresh"
-              className="grid h-9 w-9 place-items-center rounded-full border border-ink/15"
+              onClick={fetchData}
+              className="p-3 bg-white rounded-xl shadow-sm hover:rotate-180 transition-all duration-500 cursor-pointer"
             >
-              <RefreshCw
-                className={cn("h-4 w-4", loading && "animate-spin")}
-                aria-hidden
-              />
+              <RefreshCcw size={20} className="text-blue-600" />
             </button>
             <button
-              onClick={signOut}
-              className="flex items-center gap-1.5 rounded-full border border-ink/15 px-3 py-2 text-xs font-semibold"
+              onClick={runAudit}
+              disabled={isAuditing}
+              className="bg-[#0000FF] text-[#FFBB00] text-sm px-3 py-3 rounded-xl font-black flex items-center gap-2 disabled:opacity-50 hover:bg-blue-800 transition-all cursor-pointer"
             >
-              <LogOut className="h-3.5 w-3.5" aria-hidden /> Sign out
+              {isAuditing ? (
+                <Loader2 className="animate-spin" />
+              ) : (
+                <Zap size={18} fill="#FFBB00" />
+              )}
+              AI AUDIT BATCH
+            </button>
+            <button
+              onClick={collectResults}
+              disabled={isAuditing}
+              className="text-sm bg-[#FFBB00] text-white px-3 py-3 rounded-xl font-black flex items-center gap-2 disabled:opacity-50 hover:bg-yellow-600 transition-all cursor-pointer"
+            >
+              Collect Results
             </button>
           </div>
-        </div>
-      </header>
-
-      <main className="mx-auto max-w-6xl space-y-8 px-5 py-8">
-        {denied && (
-          <p className="rounded-2xl border border-amber-deep/40 bg-amber/10 p-4 text-sm font-semibold">
-            You are signed in as{" "}
-            {denied === "admissions" ? "an admissions officer" : "event staff"}, so
-            that area is not available to you. Admissions decisions live in{" "}
-            <Link href="/admissions" className="underline underline-offset-4">
-              the admissions portal
-            </Link>
-            .
-          </p>
-        )}
-
-        {error && (
-          <p
-            role="alert"
-            className="rounded-2xl border border-red-300 bg-red-50 p-4 text-sm font-semibold text-red-900"
+          <a
+            href="/checkin"
+            className="bg-white text-gray-500 px-6 py-3 rounded-xl font-black shadow-sm hover:shadow-md hover:text-gray-950 transition-all"
           >
-            {error} Figures below may be out of date.
-          </p>
-        )}
+            CheckIn
+          </a>
+          <a
+            href="/admin/manual-checkin"
+            className="bg-yellow-100 text-[#0000FF] px-6 py-3 rounded-xl font-black shadow-sm hover:shadow-md hover:bg-yellow-300 transition-all"
+          >
+            Manual CheckIn
+          </a>
+        </div>
 
-        {/* ─── HEADLINE ────────────────────────────────────────────────────── */}
-        <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <Metric
-            label="Registered"
-            value={stats?.summary.total ?? 0}
-            icon={<Users className="h-4 w-4" aria-hidden />}
+        {/* Stats Section */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <MetricCard title="REGISTRANTS" value={stats.total} />
+          <MetricCard
+            title="CHECKED IN"
+            value={`${stats.checkedIn} / 3500`}
+            highlight={stats.checkedIn >= 3500}
           />
-          <Metric
-            label="Checked in"
-            value={stats ? `${stats.summary.checkedIn.toLocaleString()} / ${stats.summary.venueCapacity.toLocaleString()}` : "—"}
-            sub={stats ? `${stats.summary.attendanceRate}% of registrations` : undefined}
-            icon={<UserCheck className="h-4 w-4" aria-hidden />}
-            alert={Boolean(stats && stats.summary.venueRemaining === 0)}
-          />
-          <Metric
-            label="In the pool"
-            value={stats?.pool.insidePool ?? 0}
-            sub={stats ? `of ${stats.pool.size} places` : undefined}
-          />
-          <Metric
-            label="Seats held"
-            value={
-              stats ? stats.scholarships.awarded + stats.scholarships.shortlisted : 0
-            }
-            sub={stats ? `of ${stats.scholarships.total} scholarships` : undefined}
-          />
-        </section>
+          <MetricCard title="QUALIFIED (910)" value={stats.qualified} />
+        </div>
 
-        {/* ─── PIPELINE ────────────────────────────────────────────────────── */}
-        <section className="rounded-3xl border border-ink/10 bg-white p-6">
-          <h2 className="text-[11px] font-bold uppercase tracking-[0.2em] text-ink-soft">
-            Where everyone is
-          </h2>
-          <div className="mt-4 grid gap-2.5 sm:grid-cols-2 lg:grid-cols-4">
-            {(stats?.pipeline ?? []).map((stage) => (
-              <div key={stage.key} className="rounded-2xl bg-paper p-4">
-                <p className="text-2xl font-bold tabular-nums">{stage.count}</p>
-                <p className="mt-1 text-sm font-semibold">{stage.label}</p>
-                <p className="mt-0.5 text-[11px] leading-snug text-ink-soft">
-                  {stage.blurb}
-                </p>
-              </div>
-            ))}
+        {/* Search & List */}
+        <Card className="border-none shadow-2xl rounded-[30px] overflow-hidden">
+          <div className="p-6 bg-white border-b flex justify-between items-center">
+            <div className="relative w-full max-w-md">
+              <Search
+                className="absolute left-4 top-3.5 text-gray-400"
+                size={18}
+              />
+              <input
+                placeholder="Search attendee name or email..."
+                className="w-full pl-12 pr-4 py-3 bg-gray-50 rounded-2xl outline-none focus:ring-2 ring-blue-100 transition-all"
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </div>
           </div>
-        </section>
-
-        {/* ─── COURSES ─────────────────────────────────────────────────────── */}
-        <section className="rounded-3xl border border-ink/10 bg-white p-6">
-          <div className="flex flex-wrap items-baseline justify-between gap-2">
-            <h2 className="text-[11px] font-bold uppercase tracking-[0.2em] text-ink-soft">
-              Seats by track
-            </h2>
-            <p className="text-xs text-ink-soft">
-              Counts include essays awaiting grading
-            </p>
-          </div>
-          <div className="mt-4 space-y-3">
-            {(stats?.courses ?? []).map((course) => (
-              <div key={course.slug} className="flex items-center gap-4">
-                <span className="w-56 shrink-0 truncate text-sm font-semibold">
-                  {course.displayName}
-                </span>
-                <div className="h-2 flex-1 overflow-hidden rounded-full bg-ink/8">
-                  <div
-                    className={cn(
-                      "h-full rounded-full",
-                      course.remaining === 0 ? "bg-ink/40" : "bg-amber",
-                    )}
-                    style={{ width: `${Math.min(100, course.fillRate)}%` }}
-                  />
-                </div>
-                <span className="w-24 shrink-0 text-right text-xs tabular-nums text-ink-soft">
-                  {course.taken}/{course.capacity}
-                </span>
-              </div>
-            ))}
-            {!stats && <p className="text-sm text-ink-soft">Loading tracks…</p>}
-          </div>
-        </section>
-
-        {/* ─── RECENT ──────────────────────────────────────────────────────── */}
-        <section className="rounded-3xl border border-ink/10 bg-white p-6">
-          <h2 className="text-[11px] font-bold uppercase tracking-[0.2em] text-ink-soft">
-            Last 25 checked in
-          </h2>
-          <div className="mt-4 overflow-x-auto">
-            <table className="w-full text-left text-sm">
-              <thead className="text-[10px] uppercase tracking-widest text-ink-soft">
-                <tr>
-                  <th className="pb-3 pr-4 font-bold">Name</th>
-                  <th className="pb-3 pr-4 font-bold">Ticket</th>
-                  <th className="pb-3 pr-4 font-bold">Status</th>
-                  <th className="pb-3 font-bold">Time</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-ink/8">
-                {(stats?.recent ?? []).map((row) => (
-                  <tr key={row.id}>
-                    <td className="py-3 pr-4">
-                      <p className="font-semibold">{row.name}</p>
-                      <p className="text-xs text-ink-soft">{row.email}</p>
-                    </td>
-                    <td className="py-3 pr-4 font-mono text-xs">{row.barcodeId}</td>
-                    <td className="py-3 pr-4">
-                      <span className="rounded-full bg-paper px-2.5 py-1 text-[11px] font-semibold">
-                        {row.status}
-                      </span>
-                    </td>
-                    <td className="py-3 text-xs tabular-nums text-ink-soft">
-                      {new Date(row.updatedAt).toLocaleTimeString()}
-                    </td>
-                  </tr>
-                ))}
-                {stats && stats.recent.length === 0 && (
+          <CardContent className="p-0">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left">
+                <thead className="bg-gray-50 text-[10px] font-black text-gray-400 uppercase tracking-widest">
                   <tr>
-                    <td colSpan={4} className="py-6 text-center text-ink-soft">
-                      Nobody has checked in yet.
-                    </td>
+                    <th className="p-6">Attendee</th>
+                    <th className="p-6">Barcode Id</th>
+                    <th className="p-6 text-right">Activity</th>
                   </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </section>
-
-        {lastSync && (
-          <p className="text-right text-[11px] text-ink-soft">
-            Updated {lastSync.toLocaleTimeString()} · refreshes every 30s
-          </p>
-        )}
-      </main>
+                </thead>
+                <tbody className="divide-y divide-gray-50">
+                  {recent
+                    .filter((r) =>
+                      r.name.toLowerCase().includes(search.toLowerCase()),
+                    )
+                    .map((r, i) => (
+                      <tr
+                        key={i}
+                        className="hover:bg-blue-50/30 transition-colors"
+                      >
+                        <td className="p-6">
+                          <p className="font-bold text-gray-900">{r.name}</p>
+                          <p className="text-xs text-gray-500">{r.email}</p>
+                        </td>
+                        <td className="p-6">
+                          <span className="bg-blue-50 text-[#0000FF] px-3 py-1 rounded-full text-[10px] font-black uppercase">
+                            {/* {r.selectedCourseSlug || "N/A"} */}
+                            {r.barcodeId || "N/A"}
+                          </span>
+                        </td>
+                        <td className="p-6 text-right font-mono text-xs text-gray-400">
+                          {new Date(r.updatedAt).toLocaleTimeString()}
+                        </td>
+                      </tr>
+                    ))}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }
 
-function Metric({
-  label,
-  value,
-  sub,
-  icon,
-  alert,
-}: {
-  label: string;
-  value: string | number;
-  sub?: string;
-  icon?: React.ReactNode;
-  alert?: boolean;
-}) {
+function MetricCard({ title, value, highlight }: any) {
   return (
-    <div
-      className={cn(
-        "rounded-3xl border p-5",
-        alert ? "border-red-300 bg-red-50" : "border-ink/10 bg-white",
-      )}
+    <Card
+      className={`border-none shadow-lg rounded-[25px] ${highlight ? "bg-red-600 text-white" : "bg-white"}`}
     >
-      <p className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.18em] text-ink-soft">
-        {icon}
-        {label}
-      </p>
-      <p className="mt-2 text-3xl font-bold tabular-nums">{value}</p>
-      {sub && <p className="mt-1 text-[11px] text-ink-soft">{sub}</p>}
-    </div>
+      <CardContent className="p-8">
+        <p
+          className={`text-xs font-black tracking-[0.2em] mb-2 ${highlight ? "text-white/60" : "text-gray-400"}`}
+        >
+          {title}
+        </p>
+        <p className="text-4xl font-black tracking-tighter italic">{value}</p>
+      </CardContent>
+    </Card>
   );
 }

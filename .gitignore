@@ -32,13 +32,6 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
-# …but the template has to be committed, or the error messages that tell people to
-# copy it point at a file that does not exist in the repository.
-!.env.example
-
-# Personal write-up of this project. Useful to keep, not useful to anyone else,
-# and it goes stale the moment the code moves.
-PROJECT_EXPLAINER.md
 
 # vercel
 .vercel

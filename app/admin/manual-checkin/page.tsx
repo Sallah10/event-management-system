@@ -3,26 +3,9 @@
 import { useState, useEffect, useCallback } from "react";
 import { Search, CheckCircle, AlertTriangle, Loader2 } from "lucide-react";
 
-/**
- * One row from /api/admin/manual-search.
- *
- * Declared rather than `any`: the search route selects exactly these seven
- * columns, and the desk renders all of them. A row that arrives missing
- * `barcodeId` should not be typed as a row that has one.
- */
-interface SearchHit {
-  id: string;
-  name: string;
-  email: string;
-  barcodeId: string;
-  checkedIn: boolean;
-  status: string;
-  selectedCourseSlug: string | null;
-}
-
 export default function ManualCheckinPage() {
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState<SearchHit[]>([]);
+  const [results, setResults] = useState<any[]>([]);
   const [searching, setSearching] = useState(false);
   const [checkedIn, setCheckedIn] = useState<string | null>(null);
   const [error, setError] = useState("");
@@ -54,23 +37,13 @@ export default function ManualCheckinPage() {
       setHasSearched(true);
 
       if (data.success) {
-        // Anything that came back from the network is untrusted until it has been
-        // shaped. It used to land in `any[]`, so a rename of a column upstream
-        // would render `undefined` into the table and nobody would find out until
-        // a volunteer at the desk was looking at a blank name.
-        const hits: SearchHit[] = Array.isArray(data.results)
-          ? data.results.filter(
-              (hit: unknown): hit is SearchHit =>
-                !!hit && typeof (hit as SearchHit).id === "string",
-            )
-          : [];
-        setResults(hits);
+        setResults(data.results);
         setError("");
       } else {
         setError(data.message || "Search failed.");
         setResults([]);
       }
-    } catch {
+    } catch (e) {
       setError("Connection error. Try again.");
       setResults([]);
     }
@@ -184,7 +157,7 @@ export default function ManualCheckinPage() {
             query.length >= 2 &&
             !error && (
               <p className="text-center text-gray-400 font-medium py-8">
-                No results found for &ldquo;{query}&rdquo;
+                No results found for "{query}"
               </p>
             )}
 

@@ -1,100 +1,69 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { ArrowRight, FileSearch, GraduationCap, ShieldCheck, Zap } from "lucide-react";
+import { GraduationCap, ShieldCheck, ArrowRight, Zap } from "lucide-react";
 import Link from "next/link";
-import { BRAND } from "@/config/branding";
-
-// ─── ENTRY POINT ──────────────────────────────────────────────────────────────
-// Two cards, and the palette was hardcoded: `bg-[#0000FF]`, `bg-[#FFBB00]`,
-// `text-[#0000FF]`, `bg-[#E6E6FF]`. Those five values are not the product's
-// colours — app/globals.css defines ink/paper/amber for everything else — so the
-// first screen a visitor saw was the one screen that did not look like the rest
-// of it, and none of it could be themed per deployment.
-//
-// It also had two doors where the system has three. `/admissions` has its own
-// login and its own PII permissions, and the only way in was to type the URL —
-// which is not discoverable, and reads as a hidden back door into the system that
-// can see every essay. Three doors, all labelled, is both more honest and easier
-// to review.
-
-const DOORS = [
-  {
-    href: "/assessment/login",
-    kicker: "Candidates",
-    title: "Assessment",
-    blurb: "Sit the assessment and track your result.",
-    cta: "Enter portal",
-    Icon: Zap,
-  },
-  {
-    href: "/admin/login",
-    kicker: "Event staff",
-    title: "Check-in",
-    blurb: "Scan tickets and record attendance.",
-    cta: "Staff login",
-    Icon: ShieldCheck,
-  },
-  {
-    href: "/admissions/login",
-    kicker: "Admissions panel",
-    title: "Admissions",
-    blurb: "Read essays, grade papers, allocate seats.",
-    cta: "Panel login",
-    Icon: FileSearch,
-  },
-] as const;
 
 export default function EntryPortal() {
   return (
-    <main className="relative flex min-h-dvh items-center justify-center overflow-hidden bg-ink p-4">
-      <div
-        className="absolute -left-[10%] -top-[10%] h-[40%] w-[40%] animate-pulse rounded-full bg-amber opacity-20 blur-[150px]"
-        aria-hidden
-      />
+    <div className="min-h-screen bg-[#0000FF] flex items-center justify-center p-4 overflow-hidden relative">
+      {/* Background Decorative Elements */}
+      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-[#FFBB00] rounded-full blur-[150px] opacity-20 animate-pulse"></div>
 
-      <div className="z-10 grid w-full max-w-5xl grid-cols-1 gap-8 md:grid-cols-3">
-        {DOORS.map(({ href, kicker, title, blurb, cta, Icon }) => (
-          <motion.div
-            key={href}
-            whileHover={{ y: -8 }}
-            className="group relative flex flex-col justify-between overflow-hidden rounded-[2.5rem] border border-paper/15 bg-paper/5 p-8 backdrop-blur-xl"
+      <div className="max-w-5xl w-full grid grid-cols-1 md:grid-cols-2 gap-8 z-10">
+        {/* STUDENT SIDE */}
+        <motion.div
+          whileHover={{ y: -10 }}
+          className="bg-white rounded-[40px] p-10 flex flex-col justify-between shadow-2xl relative overflow-hidden group"
+        >
+          <div className="absolute top-0 right-0 p-6 opacity-5 group-hover:opacity-10 transition-opacity">
+            <GraduationCap size={180} />
+          </div>
+          <div>
+            <div className="bg-[#0000FF] w-16 h-16 rounded-2xl flex items-center justify-center mb-8 shadow-lg">
+              <Zap className="text-[#FFBB00]" size={32} fill="#FFBB00" />
+            </div>
+            <h2 className="text-4xl font-black text-[#0000FF] tracking-tighter leading-none italic mb-4">
+              STUDENT <br />
+              ASSESSMENT
+            </h2>
+            <p className="text-gray-500 font-bold leading-relaxed max-w-62.5">
+              Access the 2026 TechShift scholarship examination portal.
+            </p>
+          </div>
+          <Link
+            href="/assessment/login"
+            className="mt-12 bg-[#FFBB00] text-[#0000FF] py-5 rounded-2xl font-black text-xl flex items-center justify-center gap-3 hover:scale-[1.02] transition-all shadow-[0_10px_20px_rgba(255,187,0,0.3)]"
           >
-            <div
-              className="pointer-events-none absolute right-0 top-0 p-5 text-paper opacity-5 transition-opacity group-hover:opacity-10"
-              aria-hidden
-            >
-              <GraduationCap size={150} />
-            </div>
+            ENTER PORTAL <ArrowRight strokeWidth={4} />
+          </Link>
+        </motion.div>
 
-            <div>
-              <div className="mb-7 flex h-16 w-16 items-center justify-center rounded-2xl bg-paper/10">
-                <Icon className="text-amber" size={30} aria-hidden />
-              </div>
-              <p className="mb-2 text-[10px] font-black uppercase tracking-[0.25em] text-paper/50">
-                {kicker}
-              </p>
-              <h2 className="mb-3 text-3xl font-black uppercase leading-none tracking-tight text-paper">
-                {title}
-              </h2>
-              <p className="text-sm font-medium leading-relaxed text-paper/60">
-                {blurb}
-              </p>
+        {/* STAFF SIDE */}
+        <motion.div
+          whileHover={{ y: -10 }}
+          className="bg-[#E6E6FF]/10 backdrop-blur-xl border-2 border-white/20 rounded-[40px] p-10 flex flex-col justify-between group"
+        >
+          <div>
+            <div className="bg-white/10 w-16 h-16 rounded-2xl flex items-center justify-center mb-8">
+              <ShieldCheck className="text-white" size={32} />
             </div>
-
-            <Link
-              href={href}
-              className="mt-10 flex items-center justify-center gap-3 rounded-2xl bg-amber py-4 text-sm font-black uppercase text-ink transition-transform hover:scale-[1.02]"
-            >
-              {cta} <ArrowRight strokeWidth={3} aria-hidden />
-            </Link>
-          </motion.div>
-        ))}
+            <h2 className="text-4xl font-black text-white tracking-tighter leading-none italic mb-4">
+              STAFF <br />
+              COMMAND
+            </h2>
+            <p className="text-blue-100/60 font-bold leading-relaxed max-w-62.5">
+              Secure login for event management and check-in staff.
+            </p>
+          </div>
+          <Link
+            href="/admin/login"
+            className="mt-12 border-2 border-white text-white py-5 rounded-2xl font-black text-xl flex items-center justify-center gap-3 hover:bg-white hover:text-[#0000FF] transition-all"
+          >
+            STAFF LOGIN <ShieldCheck strokeWidth={3} />
+          </Link>
+        </motion.div>
       </div>
-
-      <p className="absolute bottom-4 text-center text-[10px] uppercase tracking-[0.2em] text-paper/40">
-        {BRAND.organisation}
-      </p>
-    </main>
+    </div>
   );
 }

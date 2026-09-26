@@ -1,115 +1,53 @@
 import { NextResponse } from "next/server";
-import { Op } from "sequelize";
 import { Registrant } from "@/lib/models/Registrant";
-import { ensureDatabase } from "@/lib/db";
-import { requireStaff } from "@/lib/staff-guard";
-import { SEAT_HOLDING_STATUSES, TOTAL_SLOTS } from "@/config/rules";
-import { log } from "@/lib/logger";
 
-export const dynamic = "force-dynamic";
+export async function GET(request: Request) {
+  // Auth check
+  const authHeader = request.headers.get("authorization");
+  const token = authHeader?.split(" ")[1];
 
-// ─── WINNERS EXPORT ───────────────────────────────────────────────────────────
-// The feed the scholarship is fulfilled from. Every row in here becomes a seat,
-// an enrolment, and a decision somebody has to stand behind, so the query has to
-// be exactly the set of people who actually won.
-//
-// WHAT WAS WRONG
-//     status: ["completed", "awarded", "shortlisted"]
-//
-// "completed" — in the old model that meant "theory submitted". The theory
-// submit route also wrote status: "awarded" the moment an essay was handed in,
-// so this filter was an attempt to catch the overlap, and it did the opposite:
-// it exported everyone who had submitted an essay, graded or not, flagged or not,
-// short of the top of the list. With the new status model "completed" is
-// unambiguous, and including it here would export the entire ungraded pool as
-// scholarship winners. The filter is now the two statuses that mean "holds a
-// seat", and nothing else.
-//
-// Two more things that mattered:
-//   • `isFlagged: false` was doing double duty as a data-quality filter, which
-//     reads as "we don't award scholarships to anyone under review" — a policy
-//     nobody agreed to. Flagged candidates are now EXPORTED with a flag
-//     alongside, so a human decides. Silently dropping them is how a candidate
-//     finds out from a third party.
-//   • The comparison was `token !== process.env.INTERNAL_SYNC_TOKEN`. With the
-//     variable unset, `token !== undefined` is true for any string, so it failed
-//     closed — but it meant a deployed instance with no INTERNAL_SYNC_TOKEN
-//     simply could not be exported, with no explanation. It is a staff
-//     capability now, tied to the decision log rather than a shared secret.
-
-const COLUMNS = [
-  "barcodeId",
-  "name",
-  "email",
-  "phone",
-  "selectedCourseSlug",
-  "objectiveScore",
-  "objectiveRank",
-  "theoryScore",
-  "objectiveFinishedAt",
-  "theoryGradedAt",
-  "status",
-  "isFlagged",
-  "aiSuspected",
-  "decidedAt",
-  "decidedBy",
-];
-
-export async function GET() {
-  const { error } = await requireStaff("admissions");
-  if (error) return error;
+  if (!token || token !== process.env.INTERNAL_SYNC_TOKEN) {
+    return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+  }
 
   try {
-    await ensureDatabase();
-
-    const winners = (await Registrant.findAll({
-      where: { status: { [Op.in]: [...SEAT_HOLDING_STATUSES] } },
+    const winners = await Registrant.findAll({
+      where: {
+        status: ["completed", "awarded", "shortlisted"],
+        isFlagged: false, // FIX: exclude AI-suspected candidates
+      },
       order: [
-        // Scholarship merit, then objective, then who got there first.
-        ["theoryScore", "DESC"],
-        ["objectiveScore", "DESC"],
-        ["objectiveFinishedAt", "ASC"],
+        ["theoryScore", "DESC"], // primary ranking — AI graded theory
+        ["objectiveScore", "DESC"], // secondary — objective exam
+        ["objectiveFinishedAt", "ASC"], // tiebreaker — fastest finisher
       ],
-      attributes: COLUMNS,
+      attributes: [
+        "name",
+        "email",
+        "phone",
+        "selectedCourseSlug",
+        "objectiveScore",
+        "theoryScore", // FIX: was missing
+        "objectiveFinishedAt",
+        "isFlagged",
+        "status",
+      ],
       raw: true,
-    })) as unknown as Record<string, unknown>[];
-
-    const confirmed = winners.filter((w) => w.status === "awarded").length;
-    const pending = winners.filter((w) => w.status === "shortlisted").length;
-    const underReview = winners.filter((w) => w.isFlagged === true).length;
-
-    // Exporting a full register of names, emails, phone numbers and grades is
-    // exactly the event a log aggregator should record.
-    log.info("admin.winners_export", {
-      total: winners.length,
-      confirmed,
-      pending,
-      underReview,
     });
+
+    console.log(`📤 Exporting ${winners.length} winners to LMS`);
 
     return NextResponse.json({
       success: true,
-      error: null,
-      data: {
-        count: winners.length,
-        confirmed,
-        pending,
-        underReview,
-        // Said out loud, because an export that quietly includes people under
-        // integrity review is a decision the operator should have made knowing.
-        advisory:
-          underReview > 0
-            ? `${underReview} winner(s) are under integrity review. Resolve those before fulfilling.`
-            : null,
-        totalSeats: TOTAL_SLOTS,
-        generatedAt: new Date().toISOString(),
-        winners,
-      },
+      count: winners.length,
+      winners,
     });
-  } catch {
+  } catch (error: any) {
+    console.error("WINNERS EXPORT ERROR:", error.name, error.message);
+    // FIX: never expose error.message to client
     return NextResponse.json(
-      { success: false, error: "UNAVAILABLE", message: "Export unavailable. Check the logs." },
-      { status: 503 },
+      { success: false, error: "Export failed. Check server logs." },
+      { status: 500 },
     );
   }
 }

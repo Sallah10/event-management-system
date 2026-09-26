@@ -1,214 +1,233 @@
 import { NextResponse } from "next/server";
 import { Registrant } from "@/lib/models/Registrant";
-import { ensureDatabase } from "@/lib/db";
+import sequelize from "@/lib/db";
 import { redis, checkinKey, capacityKey } from "@/lib/redis";
-import { requireStaff } from "@/lib/staff-guard";
-import { logMetrics } from "@/lib/logger";
-import { VENUE_CAPACITY } from "@/config/rules";
-import { normaliseTicket } from "@/lib/tickets";
+import { Op } from "sequelize";
 
-export const dynamic = "force-dynamic";
-
-// ─── CHECK-IN ─────────────────────────────────────────────────────────────────
-// Four real problems fixed here:
-//
-// 1. IT HAD NO AUTHENTICATION AT ALL.
-//    The proxy gated the /checkin *page*, but this route lives under /api, and
-//    the proxy's staff check tested `path.startsWith("/admin")`. So anyone could
-//    POST a barcode and check a real person into the venue — and the response
-//    handed back their full name, which made the endpoint a name-enumeration
-//    oracle for the whole attendee list.
-//
-// 2. THE FUZZY MATCHER WAS A LIKE INJECTION.
-//    Strategies 2, 4 and 5 built `Op.iLike` patterns out of the scanned string.
-//    Two of them only stripped hyphens, so `%` and `_` survived into the SQL.
-//    Scanning "TS26-%%%" (8 chars, passes the length guard) produced
-//    `ILIKE '%TS26%%%'`, which matches the first TS26 registrant in the table.
-//    One scan, one arbitrary check-in. Now: exact match on a normalised ticket,
-//    or nothing.
-//
-// 3. A DATABASE TRANSACTION WAS OPENED BEFORE ANY VALIDATION.
-//    `sequelize.transaction()` ran first thing, then up to 5 sequential SELECTs
-//    inside it, then a rollback on every early return — against a pool capped at
-//    5 connections, with 3,500 people queuing at a door. The transaction bought
-//    us nothing: the only write is a single conditional UPDATE, which is already
-//    atomic. It's gone.
-//
-// 4. THE DOOR COULD BE OVERSOLD.
-//    The old capacity check read the counter and then, several awaits later,
-//    incremented it:
-//
-//        const counted = Number(await redis.get(capacityKey()));
-//        if (counted >= VENUE_CAPACITY) return 409;
-//        ... findOne, update, logging, three more round-trips ...
-//        const now = Number(await redis.incr(capacityKey()));
-//
-//    Every one of those awaits is a scheduling point. N scanners all read 3,499,
-//    all pass, all increment, and the venue is over capacity by however many
-//    were in flight. It is now a single atomic INCR *before* the write, with a
-//    compensating DECR if the turn-out. Claiming the slot first is what makes it
-//    a gate rather than a race; the counter is still advisory for reporting,
-//    which is why /api/admin/stats reports attendance from Postgres.
+const CAPACITY_LIMIT = 3500;
 
 export async function POST(request: Request) {
-  const route = "checkin";
+  const t = await sequelize.transaction();
 
   try {
-    // ─── 1. AUTH ─────────────────────────────────────────────────────────────
-    // Read from the cookie jar via next/headers, not `request.cookies` — this
-    // handler takes a plain `Request`, and NextRequest.cookies only exists on
-    // NextRequest. The original `request.cookies.get(...)` would have thrown a
-    // TypeError on every call, which the catch turned into a 500.
-    const { session: staff, error } = await requireStaff("staff");
-    if (error) return error;
+    const body = await request.json();
+    const { barcodeId } = body;
+    const cleanId = barcodeId?.trim().toUpperCase();
 
-    // ─── 2. PARSE + NORMALISE ────────────────────────────────────────────────
-    let body: { barcodeId?: unknown };
-    try {
-      body = await request.json();
-    } catch {
+    console.log(
+      `RAW SCAN: "${barcodeId}" → CLEANED: "${cleanId}" (length: ${cleanId.length})`,
+    );
+
+    if (!cleanId) {
+      await t.rollback();
       return NextResponse.json(
-        { success: false, error: "BAD_REQUEST", message: "Invalid JSON body." },
+        { success: false, message: "No Barcode Provided" },
         { status: 400 },
       );
     }
 
-    const ticket = normaliseTicket(body.barcodeId);
-    if (!ticket.ok) {
+    // Only validate minimum length - be flexible with format
+    if (!cleanId || cleanId.length < 8) {
+      await t.rollback();
       return NextResponse.json(
-        { success: false, error: "BAD_REQUEST", message: ticket.reason },
+        { success: false, message: "Invalid barcode format" },
         { status: 400 },
       );
     }
 
-    await ensureDatabase();
-
-    // ─── 3. FAST PATH — already checked in (cached) ─────────────────────────
-    if (await redis.get(checkinKey(ticket.value))) {
-      logMetrics.checkin(ticket.value, "duplicate_cached");
+    // REDIS: Check if already checked in
+    const cachedCheckin = await redis.get(checkinKey(cleanId));
+    if (cachedCheckin) {
+      await t.rollback();
       return NextResponse.json(
-        {
-          success: false,
-          error: "ALREADY_CHECKED_IN",
-          message: "ALREADY CHECKED IN",
-          details: "This ticket was already scanned at the venue.",
-        },
-        { status: 409 },
+        { success: false, message: "Already checked in (verified)" },
+        { status: 400 },
       );
     }
 
-    // ─── 4. CLAIM A VENUE SLOT (atomic) ─────────────────────────────────────
-    // INCR first, then check. A read-then-write gate has a window the size of
-    // every await between the two halves; INCR has none.
-    const claimed = Number((await redis.incr(capacityKey())) ?? 0);
-    if (claimed > VENUE_CAPACITY) {
-      // Give the slot straight back. Best-effort: if this process dies here the
-      // counter sits one high, which is why stats never treat it as truth.
-      await redis.decr(capacityKey());
-      logMetrics.capacity(claimed - 1, VENUE_CAPACITY);
+    // REDIS: Check capacity
+    const currentCount = (await redis.get(capacityKey())) || 0;
+    if (Number(currentCount) >= CAPACITY_LIMIT) {
+      await t.rollback();
       return NextResponse.json(
-        {
-          success: false,
-          error: "VENUE_FULL",
-          message: "VENUE FULL",
-          details: `Capacity of ${VENUE_CAPACITY} reached. Direct the candidate to the overflow desk.`,
-        },
-        { status: 409 },
+        { success: false, message: "VENUE FULL: Capacity of 3500 reached" },
+        { status: 400 },
       );
     }
 
-    const releaseSlot = async () => {
-      await redis.decr(capacityKey());
-    };
+    // Find student
+    let student = null;
 
-    // ─── 5. RESOLVE THE TICKET ───────────────────────────────────────────────
-    // Normalised, exact-matched candidates only. See normaliseTicket() for why
-    // the old five-strategy ILIKE search was removed rather than patched.
-    const student = await Registrant.findOne({
-      where: { barcodeId: ticket.value },
-      attributes: ["id", "name", "barcodeId", "checkedIn", "selectedCourseSlug"],
+    // Strategy 1: Exact match (original)
+    student = await Registrant.findOne({
+      where: { barcodeId: cleanId },
+      attributes: ["id", "name", "checkedIn", "selectedCourseSlug"],
+      transaction: t,
     });
 
+    // Strategy 2: Try without hyphen (if QR has hyphen but DB doesn't)
+    if (!student && cleanId.includes("-")) {
+      const noHyphen = cleanId.replace(/-/g, "");
+      console.log(`🔍 Trying without hyphen: ${noHyphen}`);
+      student = await Registrant.findOne({
+        where: {
+          barcodeId: {
+            [Op.iLike]: `%${noHyphen}%`, // Case-insensitive partial match
+          },
+        },
+        attributes: ["id", "name", "checkedIn", "selectedCourseSlug"],
+        transaction: t,
+      });
+
+      if (student) {
+        console.log(
+          `✅ Fuzzy match 1: QR="${cleanId}" → DB="${student.barcodeId}"`,
+        );
+      }
+    }
+
+    // Strategy 3: Try with hyphen (if QR has no hyphen but DB does)
+    if (!student && !cleanId.includes("-") && cleanId.startsWith("TS26")) {
+      const withHyphen = `TS26-${cleanId.substring(4)}`;
+      console.log(`🔍 Trying with hyphen: ${withHyphen}`);
+      student = await Registrant.findOne({
+        where: { barcodeId: withHyphen },
+        attributes: ["id", "name", "checkedIn", "selectedCourseSlug"],
+        transaction: t,
+      });
+
+      if (student) {
+        console.log(
+          `✅ Fuzzy match 2: QR="${cleanId}" → DB="${student.barcodeId}"`,
+        );
+      }
+    }
+
+    // Strategy 4: Remove all non-alphanumeric and try
     if (!student) {
-      await releaseSlot();
-      logMetrics.checkin(ticket.value, "not_found");
+      const alphanumeric = cleanId.replace(/[^A-Z0-9]/gi, "");
+      console.log(`🔍 Trying alphanumeric only: ${alphanumeric}`);
+      student = await Registrant.findOne({
+        where: {
+          barcodeId: {
+            [Op.iLike]: `%${alphanumeric}%`,
+          },
+        },
+        attributes: ["id", "name", "checkedIn", "selectedCourseSlug"],
+        transaction: t,
+      });
+
+      if (student) {
+        console.log(
+          `✅ Fuzzy match 3: QR="${cleanId}" → DB="${student.barcodeId}"`,
+        );
+      }
+    }
+
+    // Strategy 5: Partial match on the suffix (handles missing characters)
+    if (!student && cleanId.startsWith("TS26")) {
+      const suffix = cleanId.substring(5); // Everything after "TS26-" or "TS26"
+      const cleanSuffix = suffix.replace("-", "");
+
+      if (cleanSuffix.length >= 6) {
+        // Only try if suffix is long enough to be unique
+        console.log(`🔍 Trying partial suffix match: ${cleanSuffix}`);
+        student = await Registrant.findOne({
+          where: {
+            barcodeId: {
+              [Op.iLike]: `%${cleanSuffix}%`,
+            },
+          },
+          attributes: ["id", "name", "checkedIn", "selectedCourseSlug"],
+          transaction: t,
+        });
+
+        if (student) {
+          console.log(
+            `✅ Partial match: QR="${cleanId}" → DB="${student.barcodeId}"`,
+          );
+        }
+      }
+    }
+
+    // If still no student found after all strategies
+    if (!student) {
+      await t.rollback();
+      console.log(
+        `❌ QR scan failed: Ticket ${cleanId} not found after all strategies`,
+      );
       return NextResponse.json(
         {
           success: false,
-          error: "TICKET_NOT_FOUND",
-          message: "TICKET NOT FOUND",
-          details: "This code is not registered. Send the candidate to the manual desk.",
+          // message: "TICKET NOT FOUND",
+          message: "TICKET_NOT_FOUND",
+          details:
+            "This QR code is not registered. Please check in manually at the registration desk.",
+          code: "TICKET_NOT_FOUND",
+          timestamp: new Date().toISOString(),
         },
         { status: 404 },
       );
     }
 
     if (student.checkedIn) {
-      await releaseSlot();
-      // Cache under the CANONICAL ticket, not the scanned string — the old code
-      // cached under the scan, so a second scan in a different format missed the
-      // cache and hit the database every time.
-      await redis.set(checkinKey(student.barcodeId), true, { ex: 86_400 });
-      logMetrics.checkin(student.barcodeId, "duplicate");
+      await redis.set(checkinKey(cleanId), true, { ex: 3600 });
+      await t.rollback();
       return NextResponse.json(
         {
           success: false,
-          error: "ALREADY_CHECKED_IN",
           message: "ALREADY CHECKED IN",
-          details: `${student.name} was already checked in earlier today.`,
+          details: `${student.name} was checked in earlier.`,
+          name: student.name,
+          code: "ALREADY_CHECKED_IN",
         },
-        { status: 409 },
+        { status: 400 },
       );
     }
 
-    // ─── 6. ATOMIC CLAIM ─────────────────────────────────────────────────────
-    // Single conditional UPDATE. `checkedIn: false` in the WHERE clause means two
-    // scanners firing at the same instant cannot both win — the loser gets
-    // updatedCount 0. No transaction, no SELECT-then-UPDATE race.
-    const [claimedRows] = await Registrant.update(
+    // Atomic update
+    const [updatedCount] = await Registrant.update(
       { checkedIn: true, status: "attended" },
-      { where: { id: student.id, checkedIn: false } },
+      {
+        where: { id: student.id, checkedIn: false },
+        transaction: t,
+      },
     );
 
-    if (claimedRows === 0) {
-      await releaseSlot();
-      await redis.set(checkinKey(student.barcodeId), true, { ex: 86_400 });
-      logMetrics.checkin(student.barcodeId, "lost_race");
+    if (updatedCount === 0) {
+      await t.rollback();
       return NextResponse.json(
-        {
-          success: false,
-          error: "ALREADY_CHECKED_IN",
-          message: "ALREADY CHECKED IN",
-          details: `${student.name} was checked in a moment ago.`,
-        },
-        { status: 409 },
+        { success: false, message: `Already checked in: ${student.name}` },
+        { status: 400 },
       );
     }
 
-    // ─── 7. CONFIRM ──────────────────────────────────────────────────────────
-    await redis.set(checkinKey(student.barcodeId), true, { ex: 86_400 });
-    logMetrics.capacity(claimed, VENUE_CAPACITY);
-    logMetrics.checkin(student.barcodeId, "success", { by: staff.name });
+    await redis.incr(capacityKey());
+    await redis.set(checkinKey(cleanId), true, { ex: 3600 });
+    await t.commit();
+
+    // Fire-and-forget capacity warning
+    redis.get(capacityKey()).then((count) => {
+      const current = Number(count || 0);
+      if (current >= CAPACITY_LIMIT - 50) {
+        console.warn(`⚠️ Capacity warning: ${current}/${CAPACITY_LIMIT}`);
+      }
+    });
 
     return NextResponse.json({
       success: true,
-      error: null,
       message: `Welcome, ${student.name}!`,
-      data: {
-        name: student.name,
-        // A slug, not a label. The old response called this field `course` and
-        // put the slug in it, so the check-in desk rendered
-        // "aws-certified-cloud-practitioner-13" on the one screen a human reads
-        // out loud. The client maps it to a display name.
-        courseSlug: student.selectedCourseSlug ?? null,
-        venueCount: claimed,
-        venueCapacity: VENUE_CAPACITY,
-      },
+      name: student.name,
+      course: student.selectedCourseSlug || "Tech Scholarship",
+      timestamp: new Date().toISOString(),
+      code: "CHECKIN_SUCCESS",
     });
-  } catch (error) {
-    logMetrics.routeError(route, error);
+  } catch (error: any) {
+    await t.rollback();
+    // FIX: Log full error server-side, never send error.message to client
+    console.error("Check-in error:", error.name, error.message);
     return NextResponse.json(
-      { success: false, error: "SERVER_ERROR", message: "Server error. Please try again." },
+      { success: false, message: "Server Error. Please try again." },
       { status: 500 },
     );
   }

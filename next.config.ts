@@ -2,24 +2,11 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   serverExternalPackages: ["pg", "pg-native", "sequelize"],
-
-  // FIX: this was inside `experimental`, spread through `as any` to stop the
-  // type checker complaining. Two separate problems, and the cast was hiding
-  // both of them:
-  //
-  //  1. `allowedDevOrigins` is a TOP-LEVEL key, not an experimental one. Nested
-  //     under `experimental` Next did not read it at all — so the thing it was
-  //     added to fix (loading the app from a phone on the same wifi to test the
-  //     barcode scanner) never worked, and the config printed an unrecognised-key
-  //     warning that the cast made impossible to trace back here.
-  //  2. `as any` is what stopped anyone finding out. NextConfig is a closed
-  //     object type; the honest compile error was the only signal that the key was
-  //     in the wrong place.
-  //
-  // Host strings are origins, not URLs with a trailing slash. `192.168.2.22` is
-  // this machine's old LAN address — replace it with your own, or delete the
-  // entry when you are not testing on a phone.
-  allowedDevOrigins: ["localhost:3000", "192.168.2.22:3000"],
+  experimental: {
+    ...({
+      allowedDevOrigins: ["http://192.168.2.22:3000/", "localhost:3000"],
+    } as any),
+  },
 
   async headers() {
     return [

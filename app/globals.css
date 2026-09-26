@@ -44,39 +44,14 @@
   --radius-2xl: calc(var(--radius) + 8px);
   --radius-3xl: calc(var(--radius) + 12px);
   --radius-4xl: calc(var(--radius) + 16px);
-
-  /* ─── HOUSE PALETTE ────────────────────────────────────────────────────────
-     Ink on warm paper, one amber accent. Named tokens rather than hex literals
-     sprinkled through components, so the two stages of the assessment, the staff
-     tools and the marketing pages are provably the same product. The old pages
-     were #0000FF on #E6E6FF on #FFBB00 with four different blues, hardcoded at
-     every use, and the "brand" changed between screens.
-
-     Written as a CSS block comment, not a line comment. CSS has no line-comment
-     syntax: a leading double slash is parsed as an invalid selector and takes the
-     rest of the block with it, so the four tokens below were never applied at all.
-     Note that the block-comment terminator cannot appear inside this text — saying
-     it literally ends the comment early, which is the same class of mistake. */
-  --color-ink: var(--ink);
-  --color-ink-soft: var(--ink-soft);
-  --color-paper: var(--paper);
-  --color-amber: var(--amber);
-  --color-amber-deep: var(--amber-deep);
 }
 
 :root {
   --radius: 0.625rem;
-  /* Warm paper, near-black blue ink, and a single amber for anything the
-     candidate must not be able to scroll past. */
-  --ink: oklch(0.19 0.021 258);
-  --ink-soft: oklch(0.44 0.02 258);
-  --paper: oklch(0.985 0.008 85);
-  --amber: oklch(0.82 0.165 75);
-  --amber-deep: oklch(0.6 0.14 58);
-  --background: var(--paper);
-  --foreground: var(--ink);
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);
-  --card-foreground: var(--ink);
+  --card-foreground: oklch(0.145 0 0);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.145 0 0);
   --primary: oklch(0.205 0 0);

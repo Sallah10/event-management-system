@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   Card,
@@ -10,35 +10,7 @@ import {
   CardDescription,
 } from "@/components/ui/card";
 import { LogIn, Ticket, Mail, Loader2, ShieldAlert } from "lucide-react";
-import { apiFetch } from "@/lib/client/api";
-import { BRAND } from "@/config/branding";
-import {
-  OBJECTIVE_TTL_MINUTES,
-  THEORY_TTL_MINUTES,
-  QUALIFIED_POOL_SIZE,
-  PASS_MARK_PERCENT,
-  TOTAL_QUESTIONS,
-} from "@/config/rules";
-import { COURSES } from "@/config/course-matrix";
-
-interface LoginResponse {
-  status: string;
-  name: string;
-  next: string;
-}
-
-/**
- * What each `?reason=` actually means, in the candidate's own terms.
- *
- * A whitelist, not a fallback string. An unrecognised reason shows nothing rather
- * than something reassuring, because the failure mode of guessing here is telling
- * somebody their session expired when what actually happened is that they were
- * locked out of the venue.
- */
-const REASON_COPY: Record<string, string> = {
-  session: "Your session ended. Sign in again to carry on.",
-  timeout: "The assessment closed. Sign in to see where you got to.",
-};
+import { toast } from "sonner";
 
 export default function LoginForm() {
   const router = useRouter();
@@ -48,27 +20,30 @@ export default function LoginForm() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [acceptedRules, setAcceptedRules] = useState(false);
+  const [isClient, setIsClient] = useState(false);
 
-  // ─── WHY YOU WERE SENT BACK HERE ────────────────────────────────────────────
-  // The old version fired one hardcoded red toast reading "You have been
-  // disqualified due to multiple violations" whenever the URL had
-  // ?reason=disqualified — a string the redirect could produce for several very
-  // different reasons, so a candidate whose session merely expired was told they
-  // had been disqualified. A disqualification is a serious thing to tell
-  // someone on the strength of a query parameter. Each reason now says what
-  // actually happened.
-  //
-  // Derived during render rather than pushed into state by an effect. `reason`
-  // is already available here, so an effect that copies it into `error` was a
-  // second render pass for a value we already had — and it meant the message
-  // flashed in after the form appeared.
-  const reasonMessage = REASON_COPY[reason ?? ""] ?? "";
-  const message = error || reasonMessage;
+  // Set isClient to true after hydration
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  useEffect(() => {
+    if (reason === "disqualified") {
+      toast.error("❌ You have been disqualified due to multiple violations.", {
+        duration: 8000,
+        style: {
+          background: "#FF0000",
+          color: "white",
+          fontWeight: "bold",
+        },
+      });
+    }
+  }, [reason]);
 
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!acceptedRules) {
-      setError("Please read and accept the rules before you start.");
+      setError("You must accept the Rules of Engagement to proceed.");
       return;
     }
 
@@ -76,168 +51,173 @@ export default function LoginForm() {
     setError("");
 
     const formData = new FormData(e.currentTarget);
-    const email = String(formData.get("email") ?? "");
-    const ticketId = String(formData.get("ticketId") ?? "");
+    const email = formData.get("email") as string;
+    const ticketId = formData.get("ticketId") as string;
 
-    const result = await apiFetch<LoginResponse>("/api/assessment/login", {
-      method: "POST",
-      body: JSON.stringify({ email, ticketId }),
-    });
+    // Generate fingerprint only on client side
+    const deviceFingerprint = navigator.userAgent + navigator.language;
 
-    if (result.ok) {
-      // The server decides where the candidate goes next. Following its answer
-      // rather than hardcoding "/assessment/exam" is what stops a qualified
-      // candidate being bounced to a page they have already passed.
-      router.push(result.data.next);
-      router.refresh();
-      return;
+    try {
+      const res = await fetch("/api/assessment/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email,
+          ticketId,
+          deviceFingerprint,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (data.success) {
+        localStorage.setItem("user_email", email.toLowerCase());
+        localStorage.setItem("user_ticket", ticketId.toUpperCase());
+        localStorage.setItem("device_id", data.deviceId);
+        router.push("/assessment/exam");
+      } else {
+        setError(data.message);
+      }
+    } catch (err) {
+      setError("Connection error. Try again.");
+    } finally {
+      setLoading(false);
     }
-
-    // The server may know something more specific than "no": a candidate who has
-    // already submitted, or who never checked in, needs to be told that.
-    if (result.redirect) {
-      setError(result.message);
-      return;
-    }
-
-    setError(result.message);
   };
 
+  // Don't render anything until after hydration
+  if (!isClient) {
+    return (
+      <div className="min-h-screen bg-[#E6E6FF] flex items-center justify-center p-4">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin text-[#0000FF] mx-auto" />
+          <p className="mt-4 text-[#0000FF] font-bold">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="grid w-full max-w-5xl grid-cols-1 gap-6 md:grid-cols-2">
-      {/* ─── Rules ────────────────────────────────────────────────────────── */}
-      <Card className="border-stone-300 bg-white">
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-5xl w-full">
+      {/* Rules Section */}
+      <Card className="border-l-8 border-l-[#FFBB00] shadow-xl">
         <CardHeader>
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-amber-700">
-            Before you begin
-          </p>
-          <CardTitle className="font-serif text-2xl tracking-tight text-stone-900">
-            Rules of the assessment
+          <CardTitle className="text-[#0000FF] font-black italic">
+            RULES OF ENGAGEMENT
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4 text-sm leading-relaxed text-stone-700">
-          <ul className="list-disc space-y-2 pl-5">
+        <CardContent className="space-y-3 text-sm font-medium text-gray-700">
+          <ul className="space-y-2 list-disc pl-4">
             <li>
-              {TOTAL_QUESTIONS} objective questions in{" "}
-              <strong>{OBJECTIVE_TTL_MINUTES} minutes</strong>.
+              60 objective questions in <strong>30 minutes</strong>.
             </li>
             <li>
-              The top <strong>{QUALIFIED_POOL_SIZE}</strong> by score — ties
-              broken by who finished first — go through to{" "}
-              <strong>{THEORY_TTL_MINUTES} minutes</strong> of written questions.
+              3 Theory questions once you pass the objectives{" "}
+              <strong>(Max time of 1 hour)</strong>.
             </li>
             <li>
-              A score of <strong>{PASS_MARK_PERCENT}%</strong> is needed to be
-              eligible for a place in the pool.
+              Multiple device logins will result in{" "}
+              <strong>disqualification</strong>.
+            </li>
+            <li>No copying and pasting allowed.</li>
+            <li>
+              No use of AI <strong>(monitored)</strong>.
             </li>
             <li>
-              Your exam is tied to this browser. Opening it on a second device
-              signs you out here.
+              Opening new tabs during the assessment will lead to{" "}
+              <strong>automatic disqualification.</strong>
             </li>
-            <li>Switching tabs and leaving the page are recorded for review.</li>
             <li>
-              Writing is your own. Essays are screened for machine-generated
-              text, and a human reviews anything flagged.
+              Ranking is <strong>First Come, First Served</strong>.
+            </li>
+            <li>
+              <strong>80% pass mark </strong> is required for access to the
+              theory section.
             </li>
           </ul>
-
-          <div className="flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 p-3">
+          <div className="pt-4 flex items-center gap-3 bg-blue-50 p-3 rounded-lg border border-blue-100">
             <input
               type="checkbox"
               id="rules"
               checked={acceptedRules}
               onChange={(e) => setAcceptedRules(e.target.checked)}
-              className="mt-0.5 h-4 w-4 accent-amber-700"
+              className="h-5 w-5 accent-[#0000FF]"
             />
-            <label htmlFor="rules" className="cursor-pointer font-medium text-stone-900">
-              I have read these and I am ready to begin.
+            <label
+              htmlFor="rules"
+              className="font-bold text-[#0000FF] cursor-pointer"
+            >
+              I understand and agree to these rules.
             </label>
           </div>
         </CardContent>
       </Card>
 
-      {/* ─── Sign in ─────────────────────────────────────────────────────── */}
-      <Card className="w-full border-stone-300 bg-white">
+      {/* Login Form */}
+      <Card className="w-full max-w-md border-t-8 border-t-[#0000FF] shadow-2xl">
         <CardHeader className="text-center">
-          <div className="mb-1 flex justify-center">
-            <div className="rounded-full bg-amber-100 p-3">
-              <LogIn className="h-6 w-6 text-amber-800" />
+          <div className="flex justify-center mb-2">
+            <div className="bg-[#0000FF]/10 p-3 rounded-full">
+              <LogIn className="h-8 w-8 text-[#0000FF]" />
             </div>
           </div>
-          <CardTitle className="font-serif text-2xl tracking-tight text-stone-900">
-            Candidate sign-in
+          <CardTitle className="text-2xl font-black text-[#0000FF]">
+            PORTAL LOGIN
           </CardTitle>
           <CardDescription>
-            Use the email you registered with and the code on your ticket.
+            Enter your details to start the assessment
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleLogin} className="space-y-4">
             <div className="space-y-2">
-              <label htmlFor="email" className="text-xs font-semibold uppercase tracking-wide text-stone-500">
-                Email address
+              <label className="text-xs font-bold text-gray-500 uppercase">
+                Email Address
               </label>
               <div className="relative">
-                <Mail className="pointer-events-none absolute left-3 top-3 h-4 w-4 text-stone-400" />
+                <Mail className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
                 <input
-                  id="email"
                   name="email"
                   type="email"
-                  autoComplete="email"
                   required
                   placeholder="name@example.com"
-                  className="w-full rounded-lg border border-stone-300 bg-white py-2.5 pl-9 pr-3 text-sm outline-none transition focus:border-amber-600 focus:ring-2 focus:ring-amber-100"
+                  className="w-full pl-10 pr-4 py-3 rounded-xl border-2 border-gray-100 focus:border-[#0000FF] outline-none transition-all"
                 />
               </div>
             </div>
 
             <div className="space-y-2">
-              <label htmlFor="ticketId" className="text-xs font-semibold uppercase tracking-wide text-stone-500">
-                Ticket code
+              <label className="text-xs font-bold text-gray-500 uppercase">
+                Ticket ID (Barcode)
               </label>
               <div className="relative">
-                <Ticket className="pointer-events-none absolute left-3 top-3 h-4 w-4 text-stone-400" />
+                <Ticket className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
                 <input
-                  id="ticketId"
                   name="ticketId"
                   type="text"
                   required
-                  autoComplete="off"
-                  spellCheck={false}
-                  placeholder="TS26-XXXXXXXX"
-                  className="w-full rounded-lg border border-stone-300 bg-white py-2.5 pl-9 pr-3 font-mono text-sm uppercase outline-none transition focus:border-amber-600 focus:ring-2 focus:ring-amber-100"
+                  placeholder="TS26-XXXXX"
+                  className="w-full pl-10 pr-4 py-3 rounded-xl border-2 border-gray-100 focus:border-[#0000FF] outline-none transition-all uppercase"
                 />
               </div>
             </div>
 
-            {message && (
-              <div
-                role="alert"
-                className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800"
-              >
-                <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0" />
-                <span>{message}</span>
+            {error && (
+              <div className="bg-red-50 text-red-600 p-3 rounded-lg flex items-center gap-2 text-sm font-bold border border-red-100">
+                <ShieldAlert className="h-4 w-4" /> {error}
               </div>
             )}
 
             <button
-              type="submit"
-              disabled={loading || !acceptedRules}
-              className="flex w-full items-center justify-center gap-2 rounded-lg bg-stone-900 px-4 py-3 text-sm font-semibold text-stone-50 transition hover:bg-stone-800 disabled:cursor-not-allowed disabled:opacity-40"
+              disabled={loading}
+              className="w-full bg-[#0000FF] text-white py-4 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-[#0000CC] transition-all disabled:opacity-50"
             >
-              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Start the assessment"}
+              {loading ? (
+                <Loader2 className="animate-spin" />
+              ) : (
+                "ACCESS ASSESSMENT"
+              )}
             </button>
-
-            <p className="text-center text-xs text-stone-500">
-              Lost your code? Email{" "}
-              <a
-                href={`mailto:${BRAND.contactEmail}`}
-                className="underline underline-offset-2 hover:text-stone-800"
-              >
-                {BRAND.contactEmail}
-              </a>
-              . {COURSES.length} tracks are open this year.
-            </p>
           </form>
         </CardContent>
       </Card>
