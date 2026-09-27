@@ -1,7 +1,14 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Search, CheckCircle, AlertTriangle, Loader2 } from "lucide-react";
+import { AlertTriangle, CheckCircle, Search } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Field, Input } from "@/components/ui/field";
+import { Alert, EmptyState, Spinner } from "@/components/ui/display";
+import { Page, PageHeader } from "@/components/ui/shell";
+import { BRAND } from "@/config/branding";
 
 /**
  * One row from /api/admin/manual-search.
@@ -19,6 +26,21 @@ interface SearchHit {
   status: string;
   selectedCourseSlug: string | null;
 }
+
+// PRESENTATION ONLY. This page was the last screen in the product still wearing
+// a different brand: a lavender `#E6E6FF` field, a `#0000FF` heading, grey-500
+// sub-text, `font-black` on every name and on the button, and a
+// `hover:scale-105` on the check-in action. It also had a search field whose
+// only label was its placeholder, and a bare lucide `<svg>` spinner with no
+// accessible name at all.
+//
+// The desk is used by volunteers under time pressure, so the changes that matter
+// are functional rather than cosmetic: the search field now has a real `<label>`
+// (it is a `Field`, so it physically cannot lose one), the result list is a
+// `role="list"` region marked `aria-live` so a search that returns nothing is
+// announced instead of silently rendering blank, the two statuses are `Badge`
+// chips paired with a word rather than bare green/orange text, and the "done"
+// state is carried by an icon and a word as well as a colour.
 
 export default function ManualCheckinPage() {
   const [query, setQuery] = useState("");
@@ -109,92 +131,105 @@ export default function ManualCheckinPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#E6E6FF] flex flex-col items-center justify-start p-6 pt-16">
-      <div className="w-full max-w-xl space-y-6">
-        <div className="text-center">
-          <h1 className="text-2xl font-black text-[#0000FF]">
-            MANUAL CHECK-IN
-          </h1>
-          <p className="text-sm text-gray-500 font-medium mt-1">
-            Search by name, email, or ticket ID
-          </p>
-        </div>
+    <Page width="form" className="flex flex-col gap-6">
+      <PageHeader
+        eyebrow={BRAND.shortName}
+        title="Manual check-in"
+        lede="Search by name, email, or ticket ID"
+      />
 
-        {/* Search input — no button needed, live search */}
-        <div className="relative">
-          <Search className="absolute left-4 top-3.5 h-5 w-5 text-gray-400" />
-          <input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Type name, email or ticket ID..."
-            className="w-full pl-12 pr-4 py-3 rounded-xl border-2 border-white focus:border-[#0000FF] outline-none font-medium"
-          />
-          {searching && (
-            <Loader2 className="absolute right-4 top-3.5 h-5 w-5 text-[#0000FF] animate-spin" />
-          )}
-        </div>
-
-        {error && (
-          <div className="bg-red-50 text-red-600 p-3 rounded-xl flex items-center gap-2 font-bold text-sm border border-red-100">
-            <AlertTriangle className="h-4 w-4" /> {error}
+      {/* Search input — no button needed, live search */}
+      <Field label="Search">
+        {({ id }) => (
+          <div className="relative">
+            <Search
+              aria-hidden
+              className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-ink-faint"
+            />
+            <Input
+              id={id}
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Name, email or ticket ID…"
+              autoComplete="off"
+              spellCheck={false}
+              className="pl-10 pr-10"
+            />
+            {searching && (
+              <span className="absolute right-2.5 top-1/2 -translate-y-1/2">
+                <Spinner label="Searching" />
+              </span>
+            )}
           </div>
         )}
+      </Field>
 
-        <div className="space-y-3">
-          {results.map((r) => (
-            <div
-              key={r.barcodeId}
-              className="bg-white rounded-2xl p-4 shadow flex items-center justify-between"
-            >
-              <div>
-                <p className="font-black text-[#0000FF]">{r.name}</p>
-                <p className="text-xs text-gray-500">{r.email}</p>
-                <p className="text-xs font-mono text-gray-400 mt-1">
-                  {r.barcodeId}
-                </p>
-                <span
-                  className={`text-xs font-bold mt-1 inline-block ${
-                    r.checkedIn ? "text-green-600" : "text-orange-500"
-                  }`}
-                >
-                  {r.checkedIn ? "Already checked in" : "Not checked in"}
-                </span>
-              </div>
-              <div>
-                {r.checkedIn || checkedIn === r.barcodeId ? (
-                  <span className="flex items-center gap-1 text-green-600 font-bold text-sm">
-                    <CheckCircle className="h-4 w-4" /> Done
-                  </span>
-                ) : (
-                  <button
-                    onClick={() => checkIn(r.barcodeId)}
-                    className="bg-[#FFBB00] text-[#0000FF] px-4 py-2 rounded-xl font-black text-sm hover:scale-105 transition-all"
-                  >
-                    CHECK IN
-                  </button>
-                )}
-              </div>
-            </div>
-          ))}
+      {error && (
+        <Alert tone="critical" icon={AlertTriangle}>
+          {error}
+        </Alert>
+      )}
 
-          {/* Only show "no results" after a completed search, not while typing */}
-          {hasSearched &&
-            !searching &&
-            results.length === 0 &&
-            query.length >= 2 &&
-            !error && (
-              <p className="text-center text-gray-400 font-medium py-8">
-                No results found for &ldquo;{query}&rdquo;
-              </p>
-            )}
+      {/* Announced when it changes, so a volunteer who has looked away from the
+          screen hears that a search finished. */}
+      <div aria-live="polite" aria-busy={searching} className="flex flex-col gap-6">
+        {results.length > 0 && (
+          <ul className="flex flex-col gap-3">
+            {results.map((r) => (
+              <li key={r.barcodeId}>
+                <Card className="flex-row items-center gap-4 p-4">
+                  <div className="min-w-0 flex-1">
+                    <p className="font-medium text-ink">{r.name}</p>
+                    <p className="truncate text-small text-ink-soft">{r.email}</p>
+                    <p className="mt-1 font-mono text-micro text-ink-faint">
+                      {r.barcodeId}
+                    </p>
+                    <Badge
+                      variant={r.checkedIn ? "positive" : "caution"}
+                      className="mt-2"
+                    >
+                      {r.checkedIn ? "Already checked in" : "Not checked in"}
+                    </Badge>
+                  </div>
 
-          {query.length < 2 && (
-            <p className="text-center text-gray-400 font-medium py-8">
-              Type at least 2 characters to search
-            </p>
+                  {r.checkedIn || checkedIn === r.barcodeId ? (
+                    <span className="flex shrink-0 items-center gap-1.5 text-small font-medium text-positive">
+                      <CheckCircle aria-hidden className="size-4" />
+                      Done
+                    </span>
+                  ) : (
+                    <Button
+                      type="button"
+                      variant="accent"
+                      onClick={() => checkIn(r.barcodeId)}
+                    >
+                      Check in
+                    </Button>
+                  )}
+                </Card>
+              </li>
+            ))}
+          </ul>
+        )}
+
+        {/* Only show "no results" after a completed search, not while typing */}
+        {hasSearched &&
+          !searching &&
+          results.length === 0 &&
+          query.length >= 2 &&
+          !error && (
+            <EmptyState
+              icon={Search}
+              title={`No results found for “${query}”`}
+            />
           )}
-        </div>
+
+        {query.length < 2 && (
+          <p className="py-6 text-small text-ink-faint">
+            Type at least 2 characters to search
+          </p>
+        )}
       </div>
-    </div>
+    </Page>
   );
 }

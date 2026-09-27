@@ -1,9 +1,12 @@
 "use client";
 
+import Link from "next/link";
 import { Suspense, useCallback, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
-  Loader2,
+  AlertTriangle,
+  Download,
+  Inbox,
   LogOut,
   Search,
   ShieldAlert,
@@ -13,6 +16,23 @@ import {
 import { apiFetch, type ApiResult } from "@/lib/client/api";
 import { BRAND } from "@/config/branding";
 import { cn } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Field, Input } from "@/components/ui/field";
+import {
+  Alert,
+  EmptyState,
+  Spinner,
+  TBody,
+  TD,
+  TH,
+  THead,
+  TR,
+  Table,
+  Tabs,
+} from "@/components/ui/display";
+import { Page, PageHeader, Stack } from "@/components/ui/shell";
 import CandidatePanel, { type QueueRow } from "@/components/admissions/CandidatePanel";
 
 // ─── ADMISSIONS PORTAL ────────────────────────────────────────────────────────
@@ -34,6 +54,14 @@ import CandidatePanel, { type QueueRow } from "@/components/admissions/Candidate
 // Every status change goes to /api/admissions/decision, which is a transaction
 // plus an audit row, and the seat cap is enforced inside it. The buttons here
 // cannot bypass that, because there is no other path to a status.
+//
+// PRESENTATION ONLY. The frame was a white masthead on a rounded-3xl card, the
+// three queues were `rounded-2xl` buttons with `font-bold` labels and a second
+// line of 11px text, the table was hand-rolled with `tracking-widest` headers,
+// and the empty queue rendered a bare "Nothing in this queue" row. It is now the
+// shared frame — one h1 from `PageHeader`, `Tabs` for the three queues,
+// `Field` for the search (it had a placeholder and an aria-label but no visible
+// label), `Table` for the queue and `Badge` for the three integrity markers.
 
 type Tab = "grading" | "integrity" | "awards";
 
@@ -72,9 +100,9 @@ export default function AdmissionsPage() {
 
 function QueueSkeleton() {
   return (
-    <div className="flex min-h-dvh items-center justify-center bg-paper text-ink">
-      <Loader2 className="h-6 w-6 animate-spin text-ink-soft" aria-label="Loading" />
-    </div>
+    <Page width="wide" className="flex min-h-dvh items-center justify-center">
+      <Spinner className="text-ink-soft" label="Loading the queue" />
+    </Page>
   );
 }
 
@@ -90,6 +118,12 @@ function AdmissionsQueue() {
   const [selected, setSelected] = useState<QueueRow | null>(null);
   const [banner, setBanner] = useState<string | null>(null);
   const router = useRouter();
+
+  // The queue the reviewer is looking at, for the one line of context under the
+  // tabs. `Tabs` takes a plain string, so the change is routed back through the
+  // list rather than cast — the same two state updates the old inline handler
+  // made, and no others.
+  const activeTab = TABS.find((item) => item.id === tab)!;
 
   // Debounced search, so typing a name is one query rather than eleven.
   useEffect(() => {
@@ -163,214 +197,259 @@ function AdmissionsQueue() {
   };
 
   return (
-    <div className="min-h-dvh bg-paper text-ink">
-      <header className="border-b border-ink/10 bg-white">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-5 py-4">
-          <div>
-            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-ink-soft">
-              {BRAND.shortName} · admissions
-            </p>
-            <h1 className="text-xl font-bold">Decisions</h1>
-          </div>
-          <div className="flex items-center gap-2">
-            <a
-              href="/api/admin/winners-export"
-              className="rounded-full border border-ink/15 px-4 py-2 text-sm font-semibold"
-            >
-              Winners export
-            </a>
-            <button
-              onClick={signOut}
-              className="flex items-center gap-1.5 rounded-full border border-ink/15 px-3 py-2 text-xs font-semibold"
-            >
-              <LogOut className="h-3.5 w-3.5" aria-hidden /> Sign out
-            </button>
-          </div>
-        </div>
-      </header>
-
-      <main className="mx-auto max-w-6xl space-y-6 px-5 py-8">
-        {denied && (
-          <p className="rounded-2xl border border-amber-deep/40 bg-amber/10 p-4 text-sm font-semibold">
-            You are signed in as event staff, so scholarship decisions are not
-            available to you. The attendance desk is{" "}
-            <a href="/admin/dashboard" className="underline underline-offset-4">
-              here
-            </a>
-            .
-          </p>
-        )}
-
-        {banner && (
-          <p
-            role="status"
-            className="flex items-center gap-2 rounded-2xl border border-green-300 bg-green-50 p-4 text-sm font-semibold text-green-900"
-          >
-            <UserCheck className="h-4 w-4" aria-hidden />
-            {banner}
-          </p>
-        )}
-        {error && (
-          <p
-            role="alert"
-            className="rounded-2xl border border-red-300 bg-red-50 p-4 text-sm font-semibold text-red-900"
-          >
-            {error}
-          </p>
-        )}
-
-        <nav className="flex flex-wrap gap-2">
-          {TABS.map((item) => (
-            <button
-              key={item.id}
-              onClick={() => {
-                setTab(item.id);
-                setSelected(null);
-              }}
-              aria-current={tab === item.id ? "page" : undefined}
-              className={cn(
-                "rounded-2xl border px-4 py-2.5 text-left text-sm transition-colors",
-                tab === item.id
-                  ? "border-ink bg-ink text-paper"
-                  : "border-ink/15 bg-white hover:border-ink/40",
-              )}
-            >
-              <span className="block font-bold">{item.label}</span>
-              <span
-                className={cn(
-                  "mt-0.5 block text-[11px]",
-                  tab === item.id ? "text-paper/60" : "text-ink-soft",
-                )}
+    <Page width="wide" className="flex flex-col gap-6">
+      <PageHeader
+        eyebrow={`${BRAND.shortName} · Admissions`}
+        title="Decisions"
+        actions={
+          <>
+            {/* A real file download, so it stays an <a>: `download` tells the
+                browser to save the response instead of navigating to it, and the
+                server builds the payload on request. The accessible name says so
+                rather than leaving a reviewer to guess whether it is a page. */}
+            <Button asChild variant="outline">
+              <a
+                href="/api/admin/winners-export"
+                download="winners-export.json"
               >
-                {item.hint}
-              </span>
-            </button>
-          ))}
-        </nav>
+                <Download aria-hidden />
+                Winners export
+                <span className="sr-only">
+                  {" "}— built on the server and downloaded as a file
+                </span>
+              </a>
+            </Button>
 
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="relative flex-1 min-w-64">
-            <Search
-              className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-soft"
-              aria-hidden
-            />
-            <input
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder="Name or ticket"
-              aria-label="Search candidates"
-              className="w-full rounded-full border border-ink/15 bg-white py-2.5 pl-10 pr-4 text-sm outline-none focus:border-ink/40"
-            />
-          </div>
-          <p className="text-xs tabular-nums text-ink-soft">
-            {loading ? "Loading…" : `${rows.length} of ${total}`}
-          </p>
-        </div>
+            <Button type="button" variant="ghost" onClick={signOut}>
+              <LogOut aria-hidden />
+              Sign out
+            </Button>
+          </>
+        }
+      />
 
-        {selected && (
-          <CandidatePanel
-            candidate={selected}
-            onClose={() => setSelected(null)}
-            onDecided={onDecided}
-          />
-        )}
+      {denied && (
+        <Alert tone="caution" icon={ShieldAlert}>
+          You are signed in as event staff, so scholarship decisions are not
+          available to you. The{" "}
+          <Link
+            href="/admin/dashboard"
+            className="font-medium text-ink underline decoration-line-strong underline-offset-4 transition-colors hover:decoration-ink"
+          >
+            attendance desk
+          </Link>{" "}
+          is open to you.
+        </Alert>
+      )}
 
-        <div className="overflow-hidden rounded-3xl border border-ink/10 bg-white">
-          <table className="w-full text-left text-sm">
-            <thead className="border-b border-ink/10 text-[10px] uppercase tracking-widest text-ink-soft">
-              <tr>
-                <th className="px-4 py-3 font-bold">Candidate</th>
-                <th className="px-4 py-3 font-bold">Objective</th>
-                <th className="px-4 py-3 font-bold">Theory</th>
-                <th className="px-4 py-3 font-bold">Track</th>
-                <th className="px-4 py-3 font-bold">Review</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-ink/8">
-              {rows.map((row) => (
-                <tr
-                  key={row.id}
-                  className="cursor-pointer transition-colors hover:bg-paper"
-                  onClick={() => setSelected(row)}
-                >
-                  <td className="px-4 py-3">
-                    <p className="font-semibold">{row.name}</p>
-                    <p className="font-mono text-[11px] text-ink-soft">
-                      {row.barcodeId}
-                    </p>
-                  </td>
-                  <td className="px-4 py-3 tabular-nums">
-                    <p className="font-bold">
-                      {row.objectiveScore ?? "—"}
-                      <span className="text-[11px] font-normal text-ink-soft">%</span>
-                    </p>
-                    <p className="text-[11px] text-ink-soft">
-                      {row.objectiveRank ? `rank #${row.objectiveRank}` : "unranked"}
-                    </p>
-                  </td>
-                  <td className="px-4 py-3 tabular-nums">
-                    {row.theoryGradedAt ? (
-                      <>
-                        <p className="font-bold">{row.theoryScore}</p>
-                        <p className="text-[11px] text-ink-soft">graded</p>
-                      </>
-                    ) : (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-amber/25 px-2.5 py-1 text-[11px] font-bold">
-                        <Loader2 className="h-3 w-3" aria-hidden /> awaiting
-                      </span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3 text-[13px] text-ink-soft">
-                    {row.course ?? "—"}
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex flex-wrap items-center gap-1.5">
-                      {row.isFlagged && (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-red-800">
-                          <ShieldAlert className="h-3 w-3" aria-hidden /> Flagged
-                        </span>
-                      )}
-                      {row.aiSuspected && (
-                        <span
-                          className="inline-flex items-center gap-1 rounded-full bg-amber/25 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide"
-                          title={row.aiGradeReason ?? undefined}
-                        >
-                          <Sparkles className="h-3 w-3" aria-hidden /> AI:{" "}
-                          {row.aiConfidence ?? "flagged"}
-                        </span>
-                      )}
-                      {Number(row.tabSwitches) > 0 && (
-                        <span
-                          className="rounded-full bg-ink/8 px-2 py-0.5 text-[10px] font-bold tabular-nums text-ink-soft"
-                          title={`${row.tabSwitches} recorded focus losses`}
-                        >
-                          {row.tabSwitches} focus
-                        </span>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))}
-              {!loading && rows.length === 0 && (
-                <tr>
-                  <td colSpan={5} className="px-4 py-10 text-center text-ink-soft">
-                    Nothing in this queue.
-                    {tab === "grading" && " No essays are awaiting grading."}
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+      {banner && (
+        <Alert tone="positive" icon={UserCheck} role="status">
+          {banner}
+        </Alert>
+      )}
 
-        <p className="text-[11px] leading-relaxed text-ink-soft">
-          Flags and AI observations are shown separately and never the same thing: a
-          flag suspends a candidate pending review, an AI note is a suggestion for
-          whoever reviews. Deciding a candidate is disqualified is a person&apos;s
-          call, it requires a written reason, and both actions are recorded with
-          your name against the time.
+      {error && (
+        <Alert tone="critical" icon={AlertTriangle} role="alert">
+          {error}
+        </Alert>
+      )}
+
+      {/* Three queues, one selection. `Tabs` replaces three rounded-2xl buttons
+          carrying their own hint line: the underline indicator is quieter, and
+          the hint is now one line of context under the row rather than three
+          stacked two-line buttons. `aria-selected` in a tablist replaces the
+          `aria-current="page"` these buttons used — they are not links to pages,
+          they are a filter over the queue on this page, and claiming otherwise
+          told a screen reader they navigated somewhere. */}
+      <Stack gap="sm">
+        <Tabs
+          value={tab}
+          onValueChange={(value) => {
+            const next = TABS.find((item) => item.id === value);
+            if (!next) return;
+            setTab(next.id);
+            setSelected(null);
+          }}
+          aria-label="Candidate queues"
+          items={TABS.map((item) => ({ value: item.id, label: item.label }))}
+        />
+        <p className="text-small text-ink-soft">{activeTab.hint}</p>
+      </Stack>
+
+      <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
+        <Field label="Search candidates" className="w-full max-w-sm">
+          {({ id }) => (
+            <div className="relative">
+              <Search
+                aria-hidden
+                className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-ink-faint"
+              />
+              <Input
+                id={id}
+                aria-label="Search candidates"
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="Name or ticket"
+                autoComplete="off"
+                className="pl-10"
+              />
+            </div>
+          )}
+        </Field>
+
+        <p data-numeric className="text-small tabular-nums text-ink-soft">
+          {loading ? "Loading…" : `${rows.length} of ${total}`}
         </p>
-      </main>
-    </div>
+      </div>
+
+      {selected && (
+        <CandidatePanel
+          candidate={selected}
+          onClose={() => setSelected(null)}
+          onDecided={onDecided}
+        />
+      )}
+
+      {!loading && rows.length === 0 ? (
+        <EmptyState icon={Inbox} title="Nothing in this queue">
+          {tab === "grading" ? "No essays are awaiting grading." : null}
+        </EmptyState>
+      ) : (
+        <Card>
+          <Table>
+            {/* A data table that says what it holds. The old one had column
+                headers and nothing else, so a screen-reader user tabbing into it
+                heard "Candidate, Objective, Theory" with no idea which queue or
+                what activating a row does. */}
+            <caption className="sr-only">
+              {activeTab.label} queue — {activeTab.hint}. Activate a candidate&apos;s
+              name to open the review panel.
+            </caption>
+            <THead>
+              <tr>
+                <TH>Candidate</TH>
+                <TH className="text-right">Objective</TH>
+                <TH className="text-right">Theory</TH>
+                <TH>Track</TH>
+                <TH>Review</TH>
+              </tr>
+            </THead>
+            <TBody>
+              {loading ? (
+                <TR>
+                  <TD colSpan={5} className="py-10 text-center">
+                    <Spinner
+                      className="justify-center text-ink-soft"
+                      label="Loading the queue"
+                    />
+                  </TD>
+                </TR>
+              ) : (
+                rows.map((row) => (
+                  <TR
+                    key={row.id}
+                    onClick={() => setSelected(row)}
+                    className={cn(
+                      "cursor-pointer",
+                      selected?.id === row.id && "bg-paper-sunk",
+                    )}
+                  >
+                    <TD>
+                      {/* The row click is a mouse affordance on a <tr>, which is
+                          not focusable, so the candidate's name is also a real
+                          button that calls the same state update. That is the only
+                          keyboard route into a review that existed. */}
+                      <Button
+                        type="button"
+                        variant="link"
+                        size="sm"
+                        onClick={() => setSelected(row)}
+                        aria-label={`Open review for ${row.name}`}
+                        className="h-auto px-0 py-0.5 text-left text-small font-medium"
+                      >
+                        {row.name}
+                      </Button>
+                      <p className="font-mono text-micro text-ink-faint">
+                        {row.barcodeId}
+                      </p>
+                    </TD>
+                    <TD data-numeric className="text-right tabular-nums">
+                      <p className="font-medium text-ink">
+                        {row.objectiveScore ?? "—"}
+                        <span className="text-small font-normal text-ink-faint">%</span>
+                      </p>
+                      <p className="text-micro text-ink-faint">
+                        {row.objectiveRank ? `rank #${row.objectiveRank}` : "unranked"}
+                      </p>
+                    </TD>
+                    <TD className="text-right" data-numeric>
+                      {row.theoryGradedAt ? (
+                        <>
+                          <p className="font-medium text-ink">{row.theoryScore}</p>
+                          <p className="text-micro text-ink-faint">graded</p>
+                        </>
+                      ) : (
+                        /* Not a spinner: this queue is every ungraded essay, so
+                           fifty rows would have been fifty rotating icons. The
+                           amber dot and the word carry it. */
+                        <Badge variant="accent">
+                          <span
+                            aria-hidden
+                            className="size-1.5 rounded-pill bg-amber-deep"
+                          />
+                          awaiting
+                        </Badge>
+                      )}
+                    </TD>
+                    <TD className="text-small text-ink-soft">
+                      {row.course ?? "—"}
+                    </TD>
+                    <TD>
+                      {/* Three separate badges, never merged. A human flag, a
+                          model opinion and a focus-loss count are different
+                          facts with different consequences. */}
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        {row.isFlagged && (
+                          <Badge variant="destructive">
+                            <ShieldAlert aria-hidden />
+                            Flagged
+                          </Badge>
+                        )}
+                        {row.aiSuspected && (
+                          <Badge
+                            variant="accent"
+                            title={row.aiGradeReason ?? undefined}
+                          >
+                            <Sparkles aria-hidden />
+                            AI: {row.aiConfidence ?? "flagged"}
+                          </Badge>
+                        )}
+                        {Number(row.tabSwitches) > 0 && (
+                          <Badge
+                            variant="secondary"
+                            data-numeric
+                            title={`${row.tabSwitches} recorded focus losses`}
+                          >
+                            {row.tabSwitches} focus
+                          </Badge>
+                        )}
+                      </div>
+                    </TD>
+                  </TR>
+                ))
+              )}
+            </TBody>
+          </Table>
+        </Card>
+      )}
+
+      <p className="measure border-t border-line pt-4 text-small leading-relaxed text-ink-soft">
+        Flags and AI observations are shown separately and never the same thing: a
+        flag suspends a candidate pending review, an AI note is a suggestion for
+        whoever reviews. Deciding a candidate is disqualified is a person&apos;s
+        call, it requires a written reason, and both actions are recorded with
+        your name against the time.
+      </p>
+    </Page>
   );
 }

@@ -1,9 +1,21 @@
 "use client";
 
 import { useState } from "react";
-import { LifeBuoy, Loader2, X } from "lucide-react";
+import { LifeBuoy, Loader2, ShieldCheck } from "lucide-react";
 import { apiFetch } from "@/lib/client/api";
 import { BRAND } from "@/config/branding";
+import { Button } from "@/components/ui/button";
+import { Field, Select, Textarea } from "@/components/ui/field";
+import { Alert } from "@/components/ui/display";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 // ─── TECHNICAL SUPPORT ────────────────────────────────────────────────────────
 // A genuinely good idea, and worth keeping: the most common thing that goes
@@ -25,6 +37,11 @@ import { BRAND } from "@/config/branding";
 // The note in the panel is the important part and it is kept verbatim in spirit:
 // reporting a problem does not flag the account. See the old IntegrityObserver
 // comment for how that used to be false.
+//
+// Presentation: this is a reassurance dialog, so the reassurance is the largest
+// element in it and the form is secondary. The reassurance also leads with an
+// icon rather than being a grey box, because a candidate deciding whether to
+// trust this dialog is reading its shape before its words.
 
 const ISSUES = [
   { value: "back_button", label: "I pressed the browser back button" },
@@ -76,55 +93,47 @@ export default function TechnicalSupport() {
 
   return (
     <>
+      {/* Sits above the exam footer rather than over it, and carries a visible
+          label — a 48px circle with a lone lifebuoy is a control nobody can
+          name. */}
       <button
+        type="button"
         onClick={() => setOpen(true)}
-        aria-label="Report a technical problem"
-        className="fixed bottom-4 right-4 z-40 grid h-12 w-12 place-items-center rounded-full border border-ink/15 bg-white text-ink shadow-lg transition-colors hover:border-ink/40"
+        className="fixed bottom-4 right-4 z-40 inline-flex h-11 items-center gap-2 rounded-pill border border-line-strong bg-surface px-4 text-small font-medium text-ink shadow-float transition-colors duration-[var(--duration-quick)] hover:border-ink"
       >
-        <LifeBuoy className="h-5 w-5" aria-hidden />
+        <LifeBuoy aria-hidden className="size-4" />
+        <span className="hidden sm:inline">Report a problem</span>
+        <span className="sr-only sm:hidden">Report a technical problem</span>
       </button>
 
-      {open && (
-        <div
-          className="fixed inset-0 z-50 grid place-items-center bg-ink/60 p-4"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="support-title"
-        >
-          <div className="w-full max-w-md rounded-3xl bg-white p-7 shadow-2xl">
-            <div className="flex items-start justify-between gap-4">
-              <h2 id="support-title" className="text-lg font-bold">
-                Something gone wrong?
-              </h2>
-              <button
-                onClick={() => setOpen(false)}
-                aria-label="Close"
-                className="rounded-full p-1 text-ink-soft hover:bg-ink/5"
-              >
-                <X className="h-5 w-5" aria-hidden />
-              </button>
-            </div>
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent showCloseButton={false}>
+          <DialogHeader>
+            <DialogTitle className="font-display text-h4 text-ink">
+              Something gone wrong?
+            </DialogTitle>
+            <DialogDescription asChild>
+              {/* The reassurance is the point of this dialog, so it is set as
+                  the description and given the icon, not buried in the body. */}
+              <span className="flex items-start gap-2.5 rounded-md border border-positive/30 bg-positive/8 p-3.5 text-small leading-relaxed text-ink">
+                <ShieldCheck aria-hidden className="mt-px size-4 shrink-0 text-positive" />
+                <span>
+                  Telling us about a problem{" "}
+                  <strong className="font-semibold">will not flag your account</strong>.
+                  An admissions reviewer looks at these, and your paper keeps its
+                  place on the clock.
+                </span>
+              </span>
+            </DialogDescription>
+          </DialogHeader>
 
-            <p className="mt-3 rounded-2xl bg-paper p-4 text-sm leading-relaxed text-ink-soft">
-              Telling us about a problem{" "}
-              <strong className="text-ink">will not flag your account</strong>. An
-              admissions reviewer looks at these, and your paper keeps its place on
-              the clock.
-            </p>
-
-            <div className="mt-5 space-y-4">
-              <div>
-                <label
-                  htmlFor="support-issue"
-                  className="text-[11px] font-bold uppercase tracking-[0.18em] text-ink-soft"
-                >
-                  What happened
-                </label>
-                <select
-                  id="support-issue"
+          <div className="flex flex-col gap-4">
+            <Field label="What happened">
+              {({ id }) => (
+                <Select
+                  id={id}
                   value={issue}
                   onChange={(event) => setIssue(event.target.value)}
-                  className="mt-1.5 w-full rounded-xl border border-ink/15 bg-white p-3 text-sm outline-none focus:border-ink/40"
                 >
                   <option value="">Choose one…</option>
                   {ISSUES.map((item) => (
@@ -132,77 +141,59 @@ export default function TechnicalSupport() {
                       {item.label}
                     </option>
                   ))}
-                </select>
-              </div>
+                </Select>
+              )}
+            </Field>
 
-              <div>
-                <label
-                  htmlFor="support-detail"
-                  className="text-[11px] font-bold uppercase tracking-[0.18em] text-ink-soft"
-                >
-                  Anything else <span className="font-normal">(optional)</span>
-                </label>
-                <textarea
-                  id="support-detail"
+            <Field
+              label="Anything else"
+              hint="Optional. What you were doing when it happened."
+            >
+              {({ id, describedBy }) => (
+                <Textarea
+                  id={id}
+                  aria-describedby={describedBy}
                   value={description}
                   onChange={(event) => setDescription(event.target.value)}
                   rows={3}
                   maxLength={2000}
-                  placeholder="What you were doing when it happened."
-                  className="mt-1.5 w-full resize-none rounded-xl border border-ink/15 bg-white p-3 text-sm outline-none focus:border-ink/40"
+                  className="resize-none"
                 />
-              </div>
-            </div>
+              )}
+            </Field>
+          </div>
 
-            {message && (
-              <p className="mt-4 rounded-xl bg-amber/15 p-3 text-sm font-semibold">
-                {message}
-              </p>
-            )}
-            {error && (
-              <p
-                role="alert"
-                className="mt-4 rounded-xl border border-red-300 bg-red-50 p-3 text-sm font-semibold text-red-900"
-              >
-                {error}
-              </p>
-            )}
+          {message ? <Alert tone="positive">{message}</Alert> : null}
+          {error ? <Alert tone="critical">{error}</Alert> : null}
 
-            <div className="mt-6 flex gap-3">
-              <button
-                onClick={() => setOpen(false)}
-                className="flex-1 rounded-full border border-ink/20 px-4 py-2.5 text-sm font-semibold"
-              >
-                Close
-              </button>
-              <button
-                onClick={submit}
-                disabled={!issue || submitting}
-                className="flex-1 rounded-full bg-ink px-4 py-2.5 text-sm font-bold text-paper disabled:opacity-50"
-              >
-                {submitting ? (
-                  <span className="flex items-center justify-center gap-2">
-                    <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
-                    Sending
-                  </span>
-                ) : (
-                  "Send report"
-                )}
-              </button>
-            </div>
-
-            <p className="mt-4 text-center text-xs text-ink-soft">
+          <DialogFooter className="flex-col-reverse gap-2 sm:flex-row sm:justify-between">
+            <p className="order-last text-small text-ink-soft sm:order-first sm:self-center">
               Or email{" "}
               <a
                 href={`mailto:${BRAND.contactEmail}`}
-                className="font-semibold underline underline-offset-2"
+                className="font-medium text-ink underline decoration-line-strong underline-offset-4 transition-colors hover:decoration-ink"
               >
                 {BRAND.contactEmail}
               </a>
             </p>
-          </div>
-        </div>
-      )}
+            <div className="flex gap-2">
+              <DialogClose asChild>
+                <Button variant="ghost">Close</Button>
+              </DialogClose>
+              <Button onClick={submit} disabled={!issue || submitting}>
+                {submitting ? (
+                  <>
+                    <Loader2 aria-hidden className="animate-spin motion-reduce:animate-none" />
+                    Sending
+                  </>
+                ) : (
+                  "Send report"
+                )}
+              </Button>
+            </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

@@ -1,16 +1,26 @@
 import { Suspense } from "react";
+import type { Metadata } from "next";
 import LoginForm from "@/components/LoginForm";
+import { Spinner } from "@/components/ui/display";
+
+// The wrapper painted the whole page `#E6E6FF` and the spinner `#0000FF` — a
+// blue that exists nowhere else in the product, so the login screen was the one
+// place a candidate saw a different brand. Both are gone.
+//
+// The fallback also had no accessible name: it was a bare `div` spinner, so a
+// screen reader heard nothing while the form loaded. `Spinner` announces it.
+export const metadata: Metadata = {
+  title: "Candidate sign-in",
+};
 
 export default function LoginPage() {
   return (
-    <div className="min-h-screen bg-[#E6E6FF] flex items-center justify-center p-4">
+    <div className="flex min-h-dvh items-center justify-center bg-paper px-5 py-12">
       <Suspense
         fallback={
-          <div className="text-center">
-            <div className="animate-spin h-8 w-8 border-4 border-[#0000FF] border-t-transparent rounded-full mx-auto"></div>
-            <p className="mt-4 text-[#0000FF] font-bold">
-              Loading login page...
-            </p>
+          <div className="flex flex-col items-center gap-3">
+            <Spinner className="text-ink-soft" label="Loading sign-in" />
+            <p className="text-small text-ink-faint">Loading sign-in…</p>
           </div>
         }
       >

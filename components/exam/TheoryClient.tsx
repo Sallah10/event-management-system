@@ -7,6 +7,17 @@ import { apiFetch } from "@/lib/client/api";
 import Countdown from "@/components/exam/Countdown";
 import IntegrityObserver from "@/components/exam/IntegrityObserver";
 import TechnicalSupport from "@/components/TechnicalSupport";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Alert } from "@/components/ui/display";
 import { cn } from "@/lib/utils";
 import { countWords } from "@/lib/validate";
 import { useStoredJson } from "@/lib/client/storage";
@@ -177,13 +188,11 @@ export default function TheoryClient({
 
   return (
     <div className="min-h-dvh bg-paper text-ink">
-      <header className="sticky top-0 z-30 border-b border-ink/10 bg-paper/95 backdrop-blur">
-        <div className="mx-auto flex max-w-3xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
-          <div className="min-w-0">
-            <p className="truncate text-[11px] font-bold uppercase tracking-[0.2em] text-ink-soft">
-              Theory section
-            </p>
-            <p className="text-sm font-semibold">
+      <header className="sticky top-0 z-30 border-b border-line bg-paper/95 backdrop-blur-sm">
+        <div className="mx-auto flex max-w-3xl items-center justify-between gap-4 px-5 py-3 sm:px-6">
+          <div className="flex min-w-0 flex-col gap-0.5">
+            <p className="eyebrow truncate">Theory section</p>
+            <p className="text-small font-medium text-ink-soft">
               {minWords} words minimum per answer
             </p>
           </div>
@@ -191,46 +200,54 @@ export default function TheoryClient({
         </div>
       </header>
 
-      <main className="mx-auto max-w-3xl space-y-10 px-4 py-8 pb-32 sm:px-6">
+      <main id="main" className="mx-auto flex max-w-3xl flex-col gap-9 px-5 py-8 pb-28 sm:px-6">
         <IntegrityObserver />
 
-        {/* ─── TRACK ──────────────────────────────────────────────────────── */}
+        {/* ─── TRACK ──────────────────────────────────────────────────────────
+            The heading was an h2 and there was no h1 on this page at all, so
+            the document outline started at level two. The section title is the
+            h1 now; the step labels are h2. */}
         <section>
-          <h2 className="text-[11px] font-bold uppercase tracking-[0.2em] text-ink-soft">
-            1. Choose your track
-          </h2>
-          <p className="mt-2 text-sm text-ink-soft">
+          <h1 className="font-display text-h3 text-ink">Choose your track</h1>
+          <p className="mt-2 text-small text-ink-soft">
             Seats are counted live, including essays awaiting grading.
           </p>
-          <div className="mt-4 grid gap-2.5 sm:grid-cols-2">
+
+          <div
+            role="group"
+            aria-label="Available tracks"
+            className="mt-4 grid gap-2 sm:grid-cols-2"
+          >
             {courses.map((course) => {
               const active = selectedSlug === course.slug;
               return (
                 <button
                   key={course.slug}
+                  type="button"
                   onClick={() => !course.isFull && setSelectedSlug(course.slug)}
                   disabled={course.isFull}
                   aria-pressed={active}
                   className={cn(
-                    "flex items-center justify-between gap-3 rounded-2xl border p-4 text-left transition-colors",
+                    "flex items-center justify-between gap-3 rounded-md border px-4 py-3.5 text-left transition-colors duration-[var(--duration-quick)]",
                     active
                       ? "border-ink bg-ink text-paper"
                       : course.isFull
-                        ? "cursor-not-allowed border-ink/10 bg-ink/[0.03] opacity-55"
-                        : "border-ink/12 bg-white hover:border-ink/35",
+                        ? "cursor-not-allowed border-line bg-paper-sunk opacity-60"
+                        : "border-line bg-surface hover:border-line-strong hover:bg-paper-sunk/50",
                   )}
                 >
-                  <span className="text-sm font-semibold leading-snug">
+                  <span className="text-small font-medium leading-snug">
                     {course.displayName}
                   </span>
                   <span
+                    data-numeric
                     className={cn(
-                      "shrink-0 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider",
+                      "shrink-0 rounded-pill px-2 py-0.5 text-micro font-semibold",
                       active
                         ? "bg-amber text-ink"
                         : course.isFull
-                          ? "bg-ink/10 text-ink-soft"
-                          : "bg-amber/25 text-ink",
+                          ? "bg-line text-ink-soft"
+                          : "bg-amber/25 text-amber-deep",
                     )}
                   >
                     {course.isFull ? "Full" : `${course.remaining} seats`}
@@ -241,29 +258,32 @@ export default function TheoryClient({
           </div>
         </section>
 
-        {/* ─── ESSAYS ─────────────────────────────────────────────────────── */}
-        <section className="space-y-6">
-          <h2 className="text-[11px] font-bold uppercase tracking-[0.2em] text-ink-soft">
-            2. Write your answers
-          </h2>
+        {/* ─── ESSAYS ─────────────────────────────────────────────────────────
+            Each essay is a labelled field with its own word count beneath it,
+            because "am I long enough" is the question a candidate asks on every
+            one of these and the answer should not require counting. */}
+        <section className="flex flex-col gap-5">
+          <h2 className="font-display text-h3 text-ink">Write your answers</h2>
           {QUESTIONS.map((question, index) => {
             const words = countWords(answers[question.id]);
             const short = words < minWords;
+            const missing = minWords - words;
             return (
               <div
                 key={question.id}
-                className="rounded-3xl border border-ink/10 bg-white p-6 shadow-sm"
+                className="rounded-lg border border-line bg-surface p-5 sm:p-6"
               >
                 <label
                   htmlFor={question.id}
-                  className="block text-base font-semibold leading-snug"
+                  className="flex gap-2.5 text-body font-medium leading-snug text-ink"
                 >
-                  <span className="mr-2 text-amber-deep">
+                  <span aria-hidden data-numeric className="shrink-0 text-amber-deep">
                     {index + 1}.
                   </span>
                   {question.label}
                 </label>
-                <p className="mt-1.5 text-sm text-ink-soft">{question.hint}</p>
+                <p className="mt-1.5 pl-7 text-small text-ink-soft">{question.hint}</p>
+
                 <textarea
                   id={question.id}
                   value={answers[question.id]}
@@ -275,20 +295,22 @@ export default function TheoryClient({
                       [question.id]: event.target.value,
                     }))
                   }
-                  className="mt-4 w-full resize-y rounded-2xl border border-ink/12 bg-paper p-4 text-sm leading-relaxed outline-none focus:border-ink/40"
+                  aria-describedby={`${question.id}-count`}
+                  className="mt-4 w-full resize-y rounded-md border border-line-strong bg-paper px-3.5 py-3 text-body leading-relaxed transition-colors placeholder:text-ink-faint"
                 />
-                <div className="mt-2 flex items-center justify-between text-xs">
+
+                <div
+                  id={`${question.id}-count`}
+                  className="mt-2 flex flex-wrap items-center justify-between gap-x-4 gap-y-1 text-small"
+                >
                   <span
-                    className={cn(
-                      "font-semibold",
-                      short ? "text-ink-soft" : "text-amber-deep",
-                    )}
+                    className={cn("font-medium", short ? "text-ink-soft" : "text-positive")}
                   >
-                    {words < minWords
-                      ? `${minWords - words} more word${minWords - words === 1 ? "" : "s"} needed`
+                    {short
+                      ? `${missing} more word${missing === 1 ? "" : "s"} needed`
                       : "Length met"}
                   </span>
-                  <span className="tabular-nums text-ink-soft">
+                  <span data-numeric className="tabular-nums text-ink-faint">
                     {words} words · {answers[question.id].length}/{maxLength}
                   </span>
                 </div>
@@ -297,20 +319,16 @@ export default function TheoryClient({
           })}
         </section>
 
-        {error && (
-          <p
-            role="alert"
-            className="flex items-start gap-2 rounded-2xl border border-amber-deep/30 bg-amber/10 p-4 text-sm font-semibold text-ink"
-          >
-            <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
+        {error ? (
+          <Alert tone="caution" icon={TriangleAlert}>
             {error}
-          </p>
-        )}
+          </Alert>
+        ) : null}
 
-        {showValidation && !canSubmit && (
+        {showValidation && !canSubmit ? (
           <p
             role="alert"
-            className="rounded-2xl border border-ink/15 bg-white p-4 text-sm"
+            className="rounded-md border border-line-strong bg-surface px-4 py-3 text-small text-ink"
           >
             {!selectedSlug && "Choose a track to continue. "}
             {shortAnswers.length > 0 && (
@@ -321,9 +339,11 @@ export default function TheoryClient({
               </>
             )}
           </p>
-        )}
+        ) : null}
 
-        <button
+        <Button
+          size="lg"
+          variant="accent"
           onClick={() => {
             if (!canSubmit) {
               setShowValidation(true);
@@ -332,58 +352,50 @@ export default function TheoryClient({
             setConfirming(true);
           }}
           disabled={submitting}
-          className="w-full rounded-full bg-amber py-5 text-base font-bold text-ink shadow-sm disabled:opacity-50"
+          className="w-full"
         >
           {submitting ? (
-            <span className="flex items-center justify-center gap-2">
-              <Loader2 className="h-5 w-5 animate-spin" aria-hidden />
+            <>
+              <Loader2 aria-hidden className="animate-spin motion-reduce:animate-none" />
               Submitting
-            </span>
+            </>
           ) : (
-            <span className="flex items-center justify-center gap-2">
-              <Send className="h-5 w-5" aria-hidden />
+            <>
+              <Send aria-hidden />
               Submit application
-            </span>
+            </>
           )}
-        </button>
+        </Button>
       </main>
 
-      {confirming && (
-        <div
-          className="fixed inset-0 z-50 grid place-items-center bg-ink/60 p-4"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="confirm-theory"
-        >
-          <div className="w-full max-w-md rounded-3xl bg-white p-7 shadow-2xl">
-            <h2 id="confirm-theory" className="text-lg font-bold">
+      {/* Radix rather than a hand-rolled overlay — see the note in ExamClient
+          about the missing focus trap. */}
+      <Dialog open={confirming} onOpenChange={setConfirming}>
+        <DialogContent showCloseButton={false}>
+          <DialogHeader>
+            <DialogTitle className="font-display text-h4 text-ink">
               Submit this application?
-            </h2>
-            <p className="mt-3 text-sm leading-relaxed text-ink-soft">
+            </DialogTitle>
+            <DialogDescription className="text-small leading-relaxed text-ink-soft">
               Your answers cannot be edited afterwards. Choosing{" "}
-              <strong className="text-ink">
+              <strong className="font-semibold text-ink">
                 {courses.find((c) => c.slug === selectedSlug)?.displayName}
               </strong>{" "}
               now is a statement that you want this track.
-            </p>
-            <div className="mt-6 flex gap-3">
-              <button
-                onClick={() => setConfirming(false)}
-                className="flex-1 rounded-full border border-ink/20 px-4 py-2.5 text-sm font-semibold"
-              >
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+            <DialogClose asChild>
+              <Button variant="outline" className="w-full sm:w-auto">
                 Keep editing
-              </button>
-              <button
-                onClick={submit}
-                disabled={submitting}
-                className="flex-1 rounded-full bg-ink px-4 py-2.5 text-sm font-bold text-paper disabled:opacity-50"
-              >
-                Submit for good
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+              </Button>
+            </DialogClose>
+            <Button onClick={submit} disabled={submitting} className="w-full sm:w-auto">
+              Submit for good
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <TechnicalSupport />
     </div>

@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  CheckCircle2,
   Clock,
   Facebook,
   Instagram,
@@ -9,9 +8,9 @@ import {
   Twitter,
   type LucideIcon,
 } from "lucide-react";
-import { motion } from "framer-motion";
 import { BRAND } from "@/config/branding";
 import { COURSES } from "@/config/course-matrix";
+import { Alert } from "@/components/ui/display";
 
 /**
  * Icon per configured platform.
@@ -34,6 +33,19 @@ interface Props {
   track: string | null;
 }
 
+/**
+ * The confirmation screen, and the second-most machine-made surface in the
+ * product. It was a 2.5rem-radius card with an 80px stacked shadow, a dark
+ * header full of decorative CSS circles, a pulsing amber disc with a 50px
+ * glow, an uppercase `font-black` heading, everything centred, and a
+ * `scale: 0.96 → 1` entrance.
+ *
+ * What replaced it is a receipt. A confirmation is a document: it has a
+ * reference, a list of facts, and a way out. It is set as one, left-aligned,
+ * on paper, with the one piece of news that needs emphasis given a rule rather
+ * than a glow. Nothing here animates in, because a candidate who has just
+ * finished a paper does not need to be shown off to.
+ */
 export default function ThankYouView({ submittedLate, track }: Props) {
   // Only links a deployment actually configured. With nothing set, the row is not
   // rendered at all — an icon that goes nowhere is worse than no icon.
@@ -44,100 +56,88 @@ export default function ThankYouView({ submittedLate, track }: Props) {
   const trackName = COURSES.find((course) => course.slug === track)?.displayName;
 
   return (
-    <div className="flex min-h-dvh items-center justify-center bg-paper p-6 text-ink">
-      <motion.div
-        initial={{ opacity: 0, scale: 0.96 }}
-        animate={{ opacity: 1, scale: 1 }}
-        className="w-full max-w-xl overflow-hidden rounded-[2.5rem] border border-ink/10 bg-white shadow-[0_40px_80px_rgba(20,18,16,0.12)]"
-      >
-        <div className="relative -mt-10 bg-ink p-14 text-center text-paper">
-          <div
-            className="pointer-events-none absolute inset-0 opacity-10"
-            aria-hidden
-          >
-            <div className="absolute left-10 top-10 h-20 w-20 rounded-full border-8 border-paper" />
-            <div className="absolute bottom-10 right-10 h-20 w-20 rotate-45 border-8 border-amber" />
-          </div>
-          <div className="relative mb-6 flex justify-center">
-            <div className="animate-pulse rounded-full bg-amber p-6 shadow-[0_0_50px_rgba(180,83,9,0.45)]">
-              <CheckCircle2 className="h-16 w-16 text-ink" strokeWidth={3} />
-            </div>
-          </div>
-          <h1 className="text-4xl font-black uppercase leading-none tracking-tighter">
-            Application complete
+    <main
+      id="main"
+      className="flex min-h-dvh items-center justify-center bg-paper px-5 py-16 sm:px-8"
+    >
+      <div className="w-full max-w-lg">
+        {/* Masthead */}
+        <div className="flex flex-col gap-3">
+          <p className="rule eyebrow">Submitted</p>
+          <h1 className="font-display text-h1 text-balance text-ink">
+            Your paper is in.
           </h1>
-          <p className="mt-4 text-[10px] font-bold uppercase tracking-[0.3em] text-paper/60">
+          <p className="text-small text-ink-soft">
             {BRAND.name}
             {BRAND.date ? ` · ${BRAND.date}` : ""}
           </p>
         </div>
 
-        <div className="space-y-8 bg-white p-10 text-center">
-          {submittedLate && (
+        <div className="mt-8 flex flex-col gap-7 border-t border-line pt-7">
+          {submittedLate ? (
             // Said plainly rather than left for the candidate to assume. The paper
             // was accepted and is marked; the only consequence is that the finish
             // time is on the record, and hiding that would be the dishonest option.
-            <p className="flex items-start gap-3 rounded-2xl border border-amber-deep/40 bg-amber/10 p-4 text-left text-sm">
-              <Clock className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
-              <span>
-                Your answers were received after the time limit closed. They have
-                been submitted and will be read — the recorded finishing time is
-                later than the deadline, and that is all that has changed.
-              </span>
-            </p>
-          )}
+            <Alert tone="caution" icon={Clock} title="Submitted after the deadline">
+              Your answers were received after the time limit closed. They have been
+              submitted and will be read — the recorded finishing time is later than
+              the deadline, and that is all that has changed.
+            </Alert>
+          ) : null}
 
-          <div className="space-y-3">
-            <h2 className="text-xl font-black uppercase">What happens next</h2>
-            <p className="text-lg leading-relaxed text-ink-soft">
-              {trackName
-                ? `You applied for ${trackName}. `
-                : ""}
-              Decisions are made by the panel and any outcome is sent to the email
+          <section className="flex flex-col gap-2">
+            <h2 className="eyebrow">What happens next</h2>
+            <p className="measure text-lead text-pretty text-ink-soft">
+              {trackName ? `You applied for ${trackName}. ` : ""}
+              Decisions are made by the panel, and any outcome is sent to the email
               address on your application. There is nothing else for you to do.
             </p>
-          </div>
+          </section>
 
-          {socials.length > 0 && (
-            <div className="border-t border-ink/10 pt-6">
-              <p className="mb-4 text-[10px] font-black uppercase tracking-widest text-ink-soft">
-                Follow the programme
-              </p>
-              <div className="flex justify-center gap-4">
+          {socials.length > 0 ? (
+            <section className="flex flex-col gap-3 border-t border-line pt-6">
+              <h2 className="eyebrow">Follow the programme</h2>
+              <ul className="flex flex-wrap gap-x-5 gap-y-2">
                 {socials.map((social) => {
                   const Icon = ICONS[social.platform];
                   return (
-                    <a
-                      key={social.platform}
-                      href={social.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      aria-label={social.label}
-                      className="rounded-2xl bg-paper p-4 text-ink transition-all hover:-translate-y-0.5 hover:bg-ink hover:text-paper"
-                    >
-                      <Icon aria-hidden />
-                    </a>
+                    <li key={social.platform}>
+                      <a
+                        href={social.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 text-small font-medium text-ink transition-colors hover:text-amber-deep"
+                      >
+                        <Icon aria-hidden className="size-4" />
+                        {social.label}
+                        <span className="sr-only"> (opens in a new tab)</span>
+                      </a>
+                    </li>
                   );
                 })}
-              </div>
-            </div>
-          )}
+              </ul>
+            </section>
+          ) : null}
+        </div>
 
+        <div className="mt-8 flex flex-col gap-3 border-t border-line pt-6">
           <a
             href={BRAND.portalUrl}
-            className="block w-full rounded-2xl border-2 border-ink py-4 text-sm font-black uppercase transition-colors hover:bg-ink hover:text-paper"
+            className="inline-flex h-11 items-center justify-center rounded-md border border-ink px-5 text-small font-medium text-ink transition-colors duration-[var(--duration-quick)] hover:bg-ink hover:text-paper"
           >
             Return to {BRAND.shortName}
           </a>
-
-          <p className="text-[11px] text-ink-soft">
+          <p className="text-small text-ink-soft">
             Something wrong?{" "}
-            <a href={`mailto:${BRAND.contactEmail}`} className="underline underline-offset-4">
+            <a
+              href={`mailto:${BRAND.contactEmail}`}
+              className="font-medium text-ink underline decoration-line-strong underline-offset-4 transition-colors hover:decoration-ink"
+            >
               {BRAND.contactEmail}
             </a>
           </p>
         </div>
-      </motion.div>
-    </div>
+      </div>
+    </main>
   );
 }

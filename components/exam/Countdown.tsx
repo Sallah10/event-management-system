@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Clock } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 // ─── SERVER-ISSUED COUNTDOWN ──────────────────────────────────────────────────
 // The deadline is a prop, computed on the server from objective_started_at (see
@@ -64,27 +65,37 @@ export default function Countdown({
 
   if (variant === "bar") {
     return (
-      <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-ink/60">
-        <Clock className="h-3.5 w-3.5" aria-hidden />
+      <div className="flex items-center gap-2 text-small text-ink-soft">
+        <Clock aria-hidden className="size-3.5" />
         <span className="sr-only">{label}:</span>
-        <span className={urgent ? "text-amber-700 tabular-nums" : "tabular-nums"}>
+        <span
+          data-numeric
+          className={cn(
+            "font-mono tabular-nums",
+            urgent ? "font-semibold text-caution" : "text-ink"
+          )}
+        >
           {format(remaining)}
         </span>
       </div>
     );
   }
 
+  // A pill is correct here: this genuinely is a chip, and it is the only place
+  // in the exam UI where the shape is used. The digits are monospaced and
+  // tabular so the clock does not reflow as it counts.
   return (
     <div
-      className={`flex items-center gap-2 rounded-full border px-4 py-2 font-mono text-sm font-bold tabular-nums ${
+      className={cn(
+        "inline-flex items-center gap-2 rounded-pill border px-3.5 py-1.5 font-mono text-small font-medium tabular-nums transition-colors duration-[var(--duration-quick)]",
         urgent
-          ? "border-amber-500 bg-amber-50 text-amber-900"
-          : "border-ink/15 bg-ink/5 text-ink"
-      }`}
+          ? "border-caution/45 bg-caution/12 text-caution"
+          : "border-line-strong bg-surface text-ink"
+      )}
       role="timer"
       aria-live={urgent ? "assertive" : "off"}
     >
-      <Clock className="h-4 w-4" aria-hidden />
+      <Clock aria-hidden className="size-3.5" />
       <span className="sr-only">{label}:</span>
       <span>{format(remaining)}</span>
     </div>

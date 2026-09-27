@@ -15,6 +15,16 @@ import { useStoredJson } from "@/lib/client/storage";
 import Countdown from "@/components/exam/Countdown";
 import IntegrityObserver from "@/components/exam/IntegrityObserver";
 import TechnicalSupport from "@/components/TechnicalSupport";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 
 // ─── OBJECTIVE PAPER ──────────────────────────────────────────────────────────
@@ -181,42 +191,52 @@ export default function ExamClient({
 
   if (!current) return null;
 
+  const remainingCount = questions.length - answered;
+
   return (
     <div className="min-h-dvh bg-paper text-ink">
-      {/* ─── BAR ─────────────────────────────────────────────────────────── */}
-      <header className="sticky top-0 z-30 border-b border-ink/10 bg-paper/95 backdrop-blur">
-        <div className="mx-auto flex max-w-3xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
-          <div className="min-w-0">
-            <p className="truncate text-[11px] font-bold uppercase tracking-[0.2em] text-ink-soft">
-              Objective section
-            </p>
-            <p className="text-sm font-semibold tabular-nums">
+      {/* ─── BAR ─────────────────────────────────────────────────────────────
+          Sticky, and the only element on the page allowed a backdrop blur:
+          a candidate scrolling 60 questions needs the clock and the count to
+          stay put. The blur is on a near-opaque paper, not a translucent one,
+          so the text underneath it never shows through. */}
+      <header className="sticky top-0 z-30 border-b border-line bg-paper/95 backdrop-blur-sm">
+        <div className="mx-auto flex max-w-3xl items-center justify-between gap-4 px-5 py-3 sm:px-6">
+          <div className="flex min-w-0 flex-col gap-0.5">
+            <p className="eyebrow truncate">Objective section</p>
+            <p data-numeric className="text-small font-medium tabular-nums text-ink-soft">
               {answered} of {questions.length} answered
             </p>
           </div>
           <Countdown endAt={deadline} onExpire={onExpire} />
         </div>
-        <div className="h-1 w-full bg-ink/5">
+        {/* Progress as a 2px rule rather than a 4px bar: enough to read at a
+            glance, not enough to become the loudest thing on the page. */}
+        <div className="h-0.5 w-full bg-line/60">
           <div
-            className="h-full bg-amber transition-[width] duration-500"
+            className="h-full bg-amber transition-[width] duration-500 ease-[var(--ease-out-quint)]"
             style={{ width: `${(answered / questions.length) * 100}%` }}
           />
         </div>
       </header>
 
-      <main className="mx-auto max-w-3xl space-y-8 px-4 py-8 sm:px-6">
+      <main id="main" className="mx-auto flex max-w-3xl flex-col gap-6 px-5 py-8 sm:px-6">
         <IntegrityObserver onObservation={onObservation} />
 
-        {/* ─── QUESTION ──────────────────────────────────────────────────── */}
-        <section className="rounded-3xl border border-ink/10 bg-white p-6 shadow-sm sm:p-8">
-          <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-ink-soft">
+        {/* ─── QUESTION ──────────────────────────────────────────────────────
+            The question is the h1 on this screen. It was an h1 before too, but
+            competing with a `text-xl font-semibold` on a card; set as display
+            serif at reading size it is now obviously the subject of the page,
+            and the answer options are set one step down from it. */}
+        <section className="rounded-lg border border-line bg-surface p-6 sm:p-7">
+          <p className="eyebrow">
             Question {index + 1} of {questions.length}
           </p>
-          <h1 className="mt-3 text-xl font-semibold leading-snug sm:text-2xl">
+          <h1 className="mt-3 font-display text-h3 text-pretty text-ink">
             {current.question}
           </h1>
 
-          <fieldset className="mt-6 space-y-2.5">
+          <fieldset className="mt-6 flex flex-col gap-2">
             <legend className="sr-only">Choose one answer</legend>
             {Object.entries(current.options).map(([key, text]) => {
               const active = selected === key;
@@ -224,10 +244,10 @@ export default function ExamClient({
                 <label
                   key={key}
                   className={cn(
-                    "flex cursor-pointer items-start gap-3 rounded-2xl border p-4 transition-colors",
+                    "flex cursor-pointer items-start gap-3.5 rounded-md border px-4 py-3.5 transition-colors duration-[var(--duration-quick)]",
                     active
                       ? "border-ink bg-ink text-paper"
-                      : "border-ink/12 bg-paper hover:border-ink/35",
+                      : "border-line bg-surface hover:border-line-strong hover:bg-paper-sunk/50",
                   )}
                 >
                   <input
@@ -240,29 +260,44 @@ export default function ExamClient({
                     }
                     className="sr-only"
                   />
+                  {/* The letter is the affordance. Amber when chosen, hairline
+                      otherwise — a filled circle per option would be 4 more
+                      shapes competing with the text. */}
                   <span
+                    aria-hidden
                     className={cn(
-                      "mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-full border text-xs font-bold",
-                      active ? "border-amber bg-amber text-ink" : "border-ink/25",
+                      "mt-px grid size-6 shrink-0 place-items-center rounded-xs border text-micro font-semibold",
+                      active
+                        ? "border-amber bg-amber text-ink"
+                        : "border-line-strong text-ink-soft",
                     )}
                   >
                     {key}
                   </span>
-                  <span className="text-sm leading-relaxed">{text}</span>
+                  <span className="text-body leading-relaxed">{text}</span>
                 </label>
               );
             })}
           </fieldset>
         </section>
 
-        {/* ─── PALETTE ────────────────────────────────────────────────────── */}
-        <section className="rounded-3xl border border-ink/10 bg-white p-5">
-          <div className="mb-3 flex items-center justify-between">
-            <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-ink-soft">
-              All questions
-            </p>
-            <p className="text-[11px] font-semibold text-ink-soft">
-              Amber = answered
+        {/* ─── PALETTE ────────────────────────────────────────────────────────
+            The single most useful control on the page: "which have I done?"
+            answered 60 questions at a glance. It is a group of small squares,
+            not pills, and the legend is written out because the amber fill
+            alone is not a legend. */}
+        <section className="rounded-lg border border-line bg-surface p-5">
+          <div className="mb-3.5 flex flex-wrap items-baseline justify-between gap-2">
+            <h2 className="eyebrow">All questions</h2>
+            <p className="flex items-center gap-3 text-micro text-ink-faint">
+              <span className="flex items-center gap-1.5">
+                <span aria-hidden className="size-2.5 rounded-xs bg-amber" />
+                Answered
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span aria-hidden className="size-2.5 rounded-xs border border-line-strong bg-paper-sunk" />
+                Not yet
+              </span>
             </p>
           </div>
           <div className="flex flex-wrap gap-1.5">
@@ -272,16 +307,18 @@ export default function ExamClient({
               return (
                 <button
                   key={question.id}
+                  type="button"
                   onClick={() => setIndex(i)}
                   aria-label={`Question ${i + 1}${done ? ", answered" : ", not answered"}`}
                   aria-current={here ? "true" : undefined}
+                  data-numeric
                   className={cn(
-                    "h-9 w-9 rounded-xl text-xs font-bold tabular-nums transition-colors",
+                    "size-9 rounded-xs text-small font-medium tabular-nums transition-colors duration-[var(--duration-instant)]",
                     here
-                      ? "bg-ink text-paper"
+                      ? "bg-ink text-paper ring-1 ring-ink ring-offset-2 ring-offset-surface"
                       : done
-                        ? "bg-amber text-ink"
-                        : "bg-ink/5 text-ink-soft hover:bg-ink/12",
+                        ? "bg-amber text-ink hover:brightness-105"
+                        : "border border-line bg-paper-sunk text-ink-faint hover:border-line-strong hover:text-ink",
                   )}
                 >
                   {i + 1}
@@ -291,104 +328,90 @@ export default function ExamClient({
           </div>
         </section>
 
-        {error && (
+        {error ? (
           <p
             role="alert"
-            className="rounded-2xl border border-red-300 bg-red-50 p-4 text-sm font-semibold text-red-900"
+            className="rounded-md border border-critical/35 bg-critical-wash px-4 py-3 text-small font-medium text-ink"
           >
             {error}
           </p>
-        )}
+        ) : null}
 
-        {/* ─── NAVIGATION ────────────────────────────────────────────────── */}
-        <div className="flex items-center justify-between gap-3 pb-10">
-          <button
+        {/* ─── NAVIGATION ────────────────────────────────────────────────────
+            Back is quiet, forward is the loud one, and the loud one changes to
+            "Submit" only on the last question. A candidate should never be
+            unsure whether "Next" will submit. */}
+        <div className="flex items-center justify-between gap-3 pb-8">
+          <Button
+            variant="outline"
             onClick={() => setIndex((i) => Math.max(0, i - 1))}
             disabled={index === 0}
-            className="flex items-center gap-2 rounded-full border border-ink/15 px-5 py-2.5 text-sm font-semibold disabled:opacity-35"
           >
-            <ArrowLeft className="h-4 w-4" aria-hidden /> Back
-          </button>
+            <ArrowLeft aria-hidden /> Back
+          </Button>
 
           {index === questions.length - 1 ? (
-            <button
-              onClick={() => setConfirming(true)}
-              disabled={submitting}
-              className="flex items-center gap-2 rounded-full bg-amber px-6 py-2.5 text-sm font-bold text-ink shadow-sm disabled:opacity-50"
-            >
+            <Button variant="accent" onClick={() => setConfirming(true)} disabled={submitting}>
               {submitting ? (
-                <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+                <Loader2 aria-hidden className="animate-spin motion-reduce:animate-none" />
               ) : (
-                <Send className="h-4 w-4" aria-hidden />
+                <Send aria-hidden />
               )}
               Submit paper
-            </button>
+            </Button>
           ) : (
-            <button
-              onClick={() => setIndex((i) => Math.min(questions.length - 1, i + 1))}
-              className="flex items-center gap-2 rounded-full bg-ink px-6 py-2.5 text-sm font-bold text-paper"
-            >
-              Next <ArrowRight className="h-4 w-4" aria-hidden />
-            </button>
+            <Button onClick={() => setIndex((i) => Math.min(questions.length - 1, i + 1))}>
+              Next <ArrowRight aria-hidden />
+            </Button>
           )}
         </div>
       </main>
 
-      {/* ─── CONFIRM ───────────────────────────────────────────────────────── */}
-      {confirming && (
-        <div
-          className="fixed inset-0 z-50 grid place-items-center bg-ink/60 p-4"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="confirm-submit"
-        >
-          <div className="w-full max-w-md rounded-3xl bg-white p-7 shadow-2xl">
-            <h2
-              id="confirm-submit"
-              className="flex items-center gap-2 text-lg font-bold"
-            >
-              <ShieldQuestion className="h-5 w-5 text-amber-deep" aria-hidden />
+      {/* ─── CONFIRM ──────────────────────────────────────────────────────────
+          This was a hand-rolled `role="dialog"` div with no focus trap, no
+          Esc-to-close and no focus restoration — a keyboard user could tab
+          straight out of the overlay into the page behind it, and the browser
+          back gesture would leave it open. It now uses the Radix primitive,
+          which does all three. */}
+      <Dialog open={confirming} onOpenChange={setConfirming}>
+        <DialogContent showCloseButton={false}>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2.5 font-display text-h4 text-ink">
+              <ShieldQuestion aria-hidden className="size-5 text-amber-deep" />
               Submit this paper?
-            </h2>
-            <p className="mt-3 text-sm leading-relaxed text-ink-soft">
+            </DialogTitle>
+            <DialogDescription className="text-small leading-relaxed text-ink-soft">
               You cannot change your answers afterwards, and the paper cannot be
               reopened.
+            </DialogDescription>
+          </DialogHeader>
+
+          {remainingCount === 0 ? (
+            <p className="flex items-center gap-2 rounded-md border border-positive/30 bg-positive/8 px-3.5 py-3 text-small font-medium text-ink">
+              <Check aria-hidden className="size-4 text-positive" />
+              All {questions.length} questions answered.
             </p>
-            <p className="mt-4 rounded-2xl bg-paper p-4 text-sm">
-              {questions.length - answered === 0 ? (
-                <span className="flex items-center gap-2 font-semibold">
-                  <Check className="h-4 w-4 text-amber-deep" aria-hidden />
-                  All {questions.length} questions answered.
-                </span>
-              ) : (
-                <>
-                  <strong className="font-bold">
-                    {questions.length - answered} unanswered
-                  </strong>{" "}
-                  {questions.length - answered === 1 ? "question" : "questions"}.
-                  Unanswered questions are marked wrong. The pass mark is{" "}
-                  {passMark}%.
-                </>
-              )}
+          ) : (
+            <p className="rounded-md border border-caution/35 bg-caution/10 px-3.5 py-3 text-small leading-relaxed text-ink">
+              <strong className="font-semibold">
+                {remainingCount} unanswered {remainingCount === 1 ? "question" : "questions"}.
+              </strong>{" "}
+              Unanswered questions are marked wrong. The pass mark is {passMark}%.
             </p>
-            <div className="mt-6 flex gap-3">
-              <button
-                onClick={() => setConfirming(false)}
-                className="flex-1 rounded-full border border-ink/20 px-4 py-2.5 text-sm font-semibold"
-              >
+          )}
+
+          <DialogFooter className="flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+            <DialogClose asChild>
+              <Button variant="outline" className="w-full sm:w-auto">
                 Keep working
-              </button>
-              <button
-                onClick={submit}
-                disabled={submitting}
-                className="flex-1 rounded-full bg-ink px-4 py-2.5 text-sm font-bold text-paper disabled:opacity-50"
-              >
-                {submitting ? "Submitting…" : "Submit for good"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+              </Button>
+            </DialogClose>
+            <Button onClick={submit} disabled={submitting} className="w-full sm:w-auto">
+              {submitting ? "Submitting…" : "Submit for good"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* A candidate whose setup has broken needs a way to say so. This used to
           exist and had been orphaned by the rewrite above, which is how a

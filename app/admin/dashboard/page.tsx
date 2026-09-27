@@ -4,16 +4,32 @@ import { Suspense, useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
-  Loader2,
+  AlertTriangle,
   LogOut,
   RefreshCw,
   ScanLine,
+  ShieldAlert,
   UserCheck,
-  Users,
 } from "lucide-react";
 import { apiFetch, type ApiResult } from "@/lib/client/api";
 import { BRAND } from "@/config/branding";
 import { cn } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import {
+  Alert,
+  EmptyState,
+  Spinner,
+  Stat,
+  TBody,
+  TD,
+  TH,
+  THead,
+  TR,
+  Table,
+} from "@/components/ui/display";
+import { Page, PageHeader, Stack } from "@/components/ui/shell";
 
 // ─── STAFF DASHBOARD ──────────────────────────────────────────────────────────
 // Rebuilt. The two things worth reading about are the ones that were removed.
@@ -39,6 +55,17 @@ import { cn } from "@/lib/utils";
 // file while the server read VENUE_CAPACITY and QUALIFIED_POOL_SIZE, so
 // retuning either one left the staff dashboard quoting last year's numbers to
 // the person running the door.
+//
+// PRESENTATION ONLY. This was the most machine-styled screen in the product: a
+// sticky white header with four rounded-full controls, five rounded-3xl panels,
+// a hand-rolled `Metric` card with a `font-black` 30px number, uppercase
+// `tracking-[0.2em]` section kickers, a hand-rolled table, and
+// `aria-label="Loading"` on a bare `<svg>` — which is not a labellable role, so
+// the Suspense fallback announced nothing at all. It is now `Page` +
+// `PageHeader` for the frame, `Stat` for the figures, `Table` for the queue,
+// `Alert` for the two banners and `Spinner` for every loading state, and the
+// amber is rationed to the one door that matters: the fill meter and the link to
+// the check-in desk.
 
 interface Stats {
   summary: {
@@ -91,9 +118,9 @@ export default function StaffDashboard() {
 
 function DashboardSkeleton() {
   return (
-    <div className="flex min-h-dvh items-center justify-center bg-paper">
-        <Loader2 className="h-6 w-6 animate-spin text-ink-soft" aria-label="Loading" />
-    </div>
+    <Page width="wide" className="flex min-h-dvh items-center justify-center">
+      <Spinner className="text-ink-soft" label="Loading the attendance desk" />
+    </Page>
   );
 }
 
@@ -175,29 +202,28 @@ function StaffDashboardInner() {
   };
 
   return (
-    <div className="min-h-dvh bg-paper text-ink">
-      <header className="border-b border-ink/10 bg-white">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-5 py-4">
-          <div>
-            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-ink-soft">
-              {BRAND.shortName} · staff
-            </p>
-            <h1 className="text-xl font-bold">Attendance desk</h1>
-          </div>
-          <div className="flex items-center gap-2">
-            <Link
-              href="/checkin"
-              className="flex items-center gap-2 rounded-full bg-amber px-4 py-2 text-sm font-bold"
-            >
-              <ScanLine className="h-4 w-4" aria-hidden /> Check-in desk
-            </Link>
-            <Link
-              href="/admin/manual-checkin"
-              className="rounded-full border border-ink/15 px-4 py-2 text-sm font-semibold"
-            >
-              Manual desk
-            </Link>
-            <button
+    <Page width="wide" className="flex flex-col gap-8">
+      <PageHeader
+        eyebrow={`${BRAND.shortName} · Staff`}
+        title="Attendance desk"
+        actions={
+          <>
+            <Button asChild variant="accent">
+              <Link href="/checkin">
+                <ScanLine aria-hidden />
+                Check-in desk
+              </Link>
+            </Button>
+
+            <Button asChild variant="outline">
+              <Link href="/admin/manual-checkin">Manual desk</Link>
+            </Button>
+
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              aria-label="Refresh"
               onClick={() => {
                 // Set the spinner here, in the handler, rather than at the top of
                 // `load()`. The click is the user asking for a refresh, so a state
@@ -205,207 +231,255 @@ function StaffDashboardInner() {
                 setLoading(true);
                 void load();
               }}
-              aria-label="Refresh"
-              className="grid h-9 w-9 place-items-center rounded-full border border-ink/15"
             >
               <RefreshCw
-                className={cn("h-4 w-4", loading && "animate-spin")}
                 aria-hidden
+                className={cn(
+                  "size-4",
+                  loading && "animate-spin motion-reduce:animate-none",
+                )}
               />
-            </button>
-            <button
-              onClick={signOut}
-              className="flex items-center gap-1.5 rounded-full border border-ink/15 px-3 py-2 text-xs font-semibold"
-            >
-              <LogOut className="h-3.5 w-3.5" aria-hidden /> Sign out
-            </button>
-          </div>
-        </div>
-      </header>
+            </Button>
 
-      <main className="mx-auto max-w-6xl space-y-8 px-5 py-8">
-        {denied && (
-          <p className="rounded-2xl border border-amber-deep/40 bg-amber/10 p-4 text-sm font-semibold">
-            You are signed in as{" "}
-            {denied === "admissions" ? "an admissions officer" : "event staff"}, so
-            that area is not available to you. Admissions decisions live in{" "}
-            <Link href="/admissions" className="underline underline-offset-4">
-              the admissions portal
-            </Link>
-            .
-          </p>
-        )}
+            <Button type="button" variant="ghost" onClick={signOut}>
+              <LogOut aria-hidden />
+              Sign out
+            </Button>
+          </>
+        }
+      />
 
-        {error && (
-          <p
-            role="alert"
-            className="rounded-2xl border border-red-300 bg-red-50 p-4 text-sm font-semibold text-red-900"
+      {denied && (
+        <Alert tone="caution" icon={ShieldAlert}>
+          You are signed in as{" "}
+          {denied === "admissions" ? "an admissions officer" : "event staff"}, so that
+          area is not available to you. Admissions decisions live in{" "}
+          <Link
+            href="/admissions"
+            className="font-medium text-ink underline decoration-line-strong underline-offset-4 transition-colors hover:decoration-ink"
           >
-            {error} Figures below may be out of date.
-          </p>
-        )}
+            the admissions portal
+          </Link>
+          .
+        </Alert>
+      )}
 
-        {/* ─── HEADLINE ────────────────────────────────────────────────────── */}
-        <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <Metric
-            label="Registered"
-            value={stats?.summary.total ?? 0}
-            icon={<Users className="h-4 w-4" aria-hidden />}
-          />
-          <Metric
+      {error && (
+        <Alert tone="critical" icon={AlertTriangle} role="alert">
+          {error} Figures below may be out of date.
+        </Alert>
+      )}
+
+      <Stack gap="lg">
+        {/* ─── HEADLINE ──────────────────────────────────────────────────────
+            Four figures on a hairline rather than four shadowed cards. The
+            totals update every 30 seconds, so `Stat` sets them in the display
+            serif with tabular figures — at 30px, proportional digits make the
+            whole row twitch every time a single person walks in. */}
+        <div className="grid grid-cols-2 gap-x-6 gap-y-7 border-y border-line py-7 lg:grid-cols-4">
+          <Stat label="Registered" value={stats?.summary.total ?? 0} />
+
+          <Stat
             label="Checked in"
-            value={stats ? `${stats.summary.checkedIn.toLocaleString()} / ${stats.summary.venueCapacity.toLocaleString()}` : "—"}
-            sub={stats ? `${stats.summary.attendanceRate}% of registrations` : undefined}
-            icon={<UserCheck className="h-4 w-4" aria-hidden />}
-            alert={Boolean(stats && stats.summary.venueRemaining === 0)}
+            value={
+              stats
+                ? `${stats.summary.checkedIn.toLocaleString()} / ${stats.summary.venueCapacity.toLocaleString()}`
+                : "—"
+            }
+            hint={
+              stats ? `${stats.summary.attendanceRate}% of registrations` : undefined
+            }
+            tone={
+              stats && stats.summary.venueRemaining === 0 ? "critical" : undefined
+            }
           />
-          <Metric
+
+          <Stat
             label="In the pool"
             value={stats?.pool.insidePool ?? 0}
-            sub={stats ? `of ${stats.pool.size} places` : undefined}
+            hint={stats ? `of ${stats.pool.size} places` : undefined}
           />
-          <Metric
+
+          <Stat
             label="Seats held"
             value={
               stats ? stats.scholarships.awarded + stats.scholarships.shortlisted : 0
             }
-            sub={stats ? `of ${stats.scholarships.total} scholarships` : undefined}
+            hint={stats ? `of ${stats.scholarships.total} scholarships` : undefined}
           />
-        </section>
+        </div>
 
         {/* ─── PIPELINE ────────────────────────────────────────────────────── */}
-        <section className="rounded-3xl border border-ink/10 bg-white p-6">
-          <h2 className="text-[11px] font-bold uppercase tracking-[0.2em] text-ink-soft">
-            Where everyone is
-          </h2>
-          <div className="mt-4 grid gap-2.5 sm:grid-cols-2 lg:grid-cols-4">
-            {(stats?.pipeline ?? []).map((stage) => (
-              <div key={stage.key} className="rounded-2xl bg-paper p-4">
-                <p className="text-2xl font-bold tabular-nums">{stage.count}</p>
-                <p className="mt-1 text-sm font-semibold">{stage.label}</p>
-                <p className="mt-0.5 text-[11px] leading-snug text-ink-soft">
-                  {stage.blurb}
-                </p>
+        <Card>
+          <section
+            aria-labelledby="desk-pipeline"
+            className="flex flex-col gap-5 p-5 sm:p-6"
+          >
+            <h2 id="desk-pipeline" className="eyebrow">
+              Where everyone is
+            </h2>
+
+            {stats ? (
+              <div className="grid gap-x-6 gap-y-5 sm:grid-cols-2 lg:grid-cols-4">
+                {(stats.pipeline ?? []).map((stage) => (
+                  <div
+                    key={stage.key}
+                    className="flex flex-col gap-1 border-l border-line pl-4"
+                  >
+                    <p
+                      data-numeric
+                      className="font-display text-h4 leading-none tabular-nums text-ink"
+                    >
+                      {stage.count}
+                    </p>
+                    <p className="text-small font-medium text-ink">{stage.label}</p>
+                    <p className="text-small leading-relaxed text-ink-soft">
+                      {stage.blurb}
+                    </p>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-        </section>
+            ) : (
+              <Spinner className="text-ink-soft" label="Loading the pipeline" />
+            )}
+          </section>
+        </Card>
 
         {/* ─── COURSES ─────────────────────────────────────────────────────── */}
-        <section className="rounded-3xl border border-ink/10 bg-white p-6">
-          <div className="flex flex-wrap items-baseline justify-between gap-2">
-            <h2 className="text-[11px] font-bold uppercase tracking-[0.2em] text-ink-soft">
-              Seats by track
-            </h2>
-            <p className="text-xs text-ink-soft">
-              Counts include essays awaiting grading
-            </p>
-          </div>
-          <div className="mt-4 space-y-3">
-            {(stats?.courses ?? []).map((course) => (
-              <div key={course.slug} className="flex items-center gap-4">
-                <span className="w-56 shrink-0 truncate text-sm font-semibold">
-                  {course.displayName}
-                </span>
-                <div className="h-2 flex-1 overflow-hidden rounded-full bg-ink/8">
-                  <div
-                    className={cn(
-                      "h-full rounded-full",
-                      course.remaining === 0 ? "bg-ink/40" : "bg-amber",
-                    )}
-                    style={{ width: `${Math.min(100, course.fillRate)}%` }}
-                  />
-                </div>
-                <span className="w-24 shrink-0 text-right text-xs tabular-nums text-ink-soft">
-                  {course.taken}/{course.capacity}
-                </span>
+        <Card>
+          <section
+            aria-labelledby="desk-courses"
+            className="flex flex-col gap-5 p-5 sm:p-6"
+          >
+            <div className="flex flex-wrap items-baseline justify-between gap-2">
+              <h2 id="desk-courses" className="eyebrow">
+                Seats by track
+              </h2>
+              <p className="text-small text-ink-soft">
+                Counts include essays awaiting grading
+              </p>
+            </div>
+
+            {stats ? (
+              <div className="flex flex-col gap-3.5">
+                {(stats.courses ?? []).map((course) => (
+                  <div key={course.slug} className="flex items-center gap-4">
+                    <span
+                      id={`course-${course.slug}`}
+                      className="w-56 shrink-0 truncate text-small font-medium text-ink"
+                    >
+                      {course.displayName}
+                    </span>
+                    {/* The meter is the amber on this screen: one hairline per
+                        track, full-amber while seats remain and drained to ink
+                        once a track is closed. Labelled from the visible track
+                        name, so the bar is not colour-only. */}
+                    <div
+                      role="progressbar"
+                      aria-labelledby={`course-${course.slug}`}
+                      aria-valuemin={0}
+                      aria-valuemax={100}
+                      aria-valuenow={course.fillRate}
+                      className="h-1.5 flex-1 overflow-hidden rounded-pill bg-paper-sunk"
+                    >
+                      <div
+                        className={cn(
+                          "h-full rounded-pill",
+                          course.remaining === 0 ? "bg-ink/30" : "bg-amber",
+                        )}
+                        style={{ width: `${Math.min(100, course.fillRate)}%` }}
+                      />
+                    </div>
+                    <span
+                      data-numeric
+                      className="w-24 shrink-0 text-right text-small tabular-nums text-ink-soft"
+                    >
+                      {course.taken}/{course.capacity}
+                    </span>
+                  </div>
+                ))}
               </div>
-            ))}
-            {!stats && <p className="text-sm text-ink-soft">Loading tracks…</p>}
-          </div>
-        </section>
+            ) : (
+              <Spinner className="text-ink-soft" label="Loading tracks" />
+            )}
+          </section>
+        </Card>
 
         {/* ─── RECENT ──────────────────────────────────────────────────────── */}
-        <section className="rounded-3xl border border-ink/10 bg-white p-6">
-          <h2 className="text-[11px] font-bold uppercase tracking-[0.2em] text-ink-soft">
-            Last 25 checked in
-          </h2>
-          <div className="mt-4 overflow-x-auto">
-            <table className="w-full text-left text-sm">
-              <thead className="text-[10px] uppercase tracking-widest text-ink-soft">
-                <tr>
-                  <th className="pb-3 pr-4 font-bold">Name</th>
-                  <th className="pb-3 pr-4 font-bold">Ticket</th>
-                  <th className="pb-3 pr-4 font-bold">Status</th>
-                  <th className="pb-3 font-bold">Time</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-ink/8">
-                {(stats?.recent ?? []).map((row) => (
-                  <tr key={row.id}>
-                    <td className="py-3 pr-4">
-                      <p className="font-semibold">{row.name}</p>
-                      <p className="text-xs text-ink-soft">{row.email}</p>
-                    </td>
-                    <td className="py-3 pr-4 font-mono text-xs">{row.barcodeId}</td>
-                    <td className="py-3 pr-4">
-                      <span className="rounded-full bg-paper px-2.5 py-1 text-[11px] font-semibold">
-                        {row.status}
-                      </span>
-                    </td>
-                    <td className="py-3 text-xs tabular-nums text-ink-soft">
-                      {new Date(row.updatedAt).toLocaleTimeString()}
-                    </td>
-                  </tr>
-                ))}
-                {stats && stats.recent.length === 0 && (
+        <Card>
+          <section
+            aria-labelledby="desk-recent"
+            className="flex flex-col gap-5 p-5 sm:p-6"
+          >
+            <h2 id="desk-recent" className="eyebrow">
+              Last 25 checked in
+            </h2>
+
+            {stats && stats.recent.length === 0 ? (
+              <EmptyState icon={UserCheck} title="Nobody has checked in yet">
+                Entries appear here the moment a ticket is accepted at the door.
+              </EmptyState>
+            ) : (
+              <Table>
+                <THead>
                   <tr>
-                    <td colSpan={4} className="py-6 text-center text-ink-soft">
-                      Nobody has checked in yet.
-                    </td>
+                    <TH>Name</TH>
+                    <TH>Ticket</TH>
+                    <TH>Status</TH>
+                    <TH className="text-right">Time</TH>
                   </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </section>
+                </THead>
+                <TBody>
+                  {!stats ? (
+                    <TR>
+                      <TD colSpan={4} className="py-8 text-center">
+                        <Spinner
+                          className="justify-center text-ink-soft"
+                          label="Loading check-ins"
+                        />
+                      </TD>
+                    </TR>
+                  ) : (
+                    (stats.recent ?? []).map((row) => (
+                      <TR key={row.id}>
+                        <TD>
+                          <p className="font-medium text-ink">{row.name}</p>
+                          <p className="truncate text-small text-ink-soft">
+                            {row.email}
+                          </p>
+                        </TD>
+                        {/* The ticket is the one column an operator retypes, so
+                            it is the one column in the display mono. */}
+                        <TD className="font-mono text-small text-ink-soft">
+                          {row.barcodeId}
+                        </TD>
+                        <TD>
+                          <Badge variant="secondary">{row.status}</Badge>
+                        </TD>
+                        <TD
+                          data-numeric
+                          className="whitespace-nowrap text-right text-small tabular-nums text-ink-soft"
+                        >
+                          {new Date(row.updatedAt).toLocaleTimeString()}
+                        </TD>
+                      </TR>
+                    ))
+                  )}
+                </TBody>
+              </Table>
+            )}
+          </section>
+        </Card>
+      </Stack>
 
-        {lastSync && (
-          <p className="text-right text-[11px] text-ink-soft">
-            Updated {lastSync.toLocaleTimeString()} · refreshes every 30s
-          </p>
-        )}
-      </main>
-    </div>
-  );
-}
-
-function Metric({
-  label,
-  value,
-  sub,
-  icon,
-  alert,
-}: {
-  label: string;
-  value: string | number;
-  sub?: string;
-  icon?: React.ReactNode;
-  alert?: boolean;
-}) {
-  return (
-    <div
-      className={cn(
-        "rounded-3xl border p-5",
-        alert ? "border-red-300 bg-red-50" : "border-ink/10 bg-white",
+      {lastSync && (
+        <p className="border-t border-line pt-4 text-micro text-ink-faint">
+          <span data-numeric className="tabular-nums">
+            Updated {lastSync.toLocaleTimeString()}
+          </span>{" "}
+          · refreshes every 30s
+        </p>
       )}
-    >
-      <p className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.18em] text-ink-soft">
-        {icon}
-        {label}
-      </p>
-      <p className="mt-2 text-3xl font-bold tabular-nums">{value}</p>
-      {sub && <p className="mt-1 text-[11px] text-ink-soft">{sub}</p>}
-    </div>
+    </Page>
   );
 }

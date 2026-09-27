@@ -2,10 +2,14 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, Lock } from "lucide-react";
+import { Loader2, Lock, ShieldAlert } from "lucide-react";
 import { apiFetch } from "@/lib/client/api";
 import { BRAND } from "@/config/branding";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { Field, Input } from "@/components/ui/field";
+import { Alert } from "@/components/ui/display";
+import { Page, PageHeader } from "@/components/ui/shell";
 
 // ─── STAFF SIGN-IN ────────────────────────────────────────────────────────────
 // Two roles, two PINs, two doors. The page used to have no role control at all:
@@ -19,6 +23,13 @@ import { cn } from "@/lib/utils";
 // reads essays, flags candidates and awards scholarships. A single shared PIN
 // meant one leaked number gave somebody both, and the audit trail recorded them
 // as the same person.
+//
+// PRESENTATION ONLY. The sign-in was a white rounded-3xl card floating on an
+// ink field, with a rounded-2xl lock tile, two rounded-2xl role cards, a
+// rounded-full submit and a `rounded-xl` red error box. It is now the shared page
+// frame: a hairline, one h1, and the form set on the paper. The role control
+// keeps its `aria-pressed` semantics — two buttons, not a segmented pill, because
+// a pill made it look like a tab row and it is not one.
 
 type Role = "staff" | "admissions";
 
@@ -62,99 +73,90 @@ export default function AdminLoginPage() {
   };
 
   return (
-    <div className="grid min-h-dvh place-items-center bg-ink p-4">
-      <div className="w-full max-w-sm overflow-hidden rounded-3xl bg-white shadow-2xl">
-        <header className="bg-paper px-7 py-8 text-center">
-          <div className="mx-auto mb-4 grid h-12 w-12 place-items-center rounded-2xl bg-ink">
-            <Lock className="h-5 w-5 text-amber" aria-hidden />
-          </div>
-          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-ink-soft">
+    <Page
+      width="form"
+      className="flex min-h-dvh flex-col justify-center py-14 sm:py-20"
+    >
+      <PageHeader
+        eyebrow={
+          <span className="flex items-center gap-2">
+            <Lock aria-hidden className="size-3.5 text-amber" />
             {BRAND.shortName}
-          </p>
-          <h1 className="mt-1 text-xl font-bold">Staff access</h1>
-        </header>
+          </span>
+        }
+        title="Staff access"
+      />
 
-        <form onSubmit={signIn} className="space-y-5 p-7">
-          <fieldset>
-            <legend className="text-[11px] font-bold uppercase tracking-[0.18em] text-ink-soft">
-              Signing in as
-            </legend>
-            <div className="mt-2 grid grid-cols-2 gap-2">
-              {ROLES.map((option) => (
-                <button
-                  key={option.id}
-                  type="button"
-                  onClick={() => setRole(option.id)}
-                  aria-pressed={role === option.id}
+      <form onSubmit={signIn} className="mt-8 flex flex-col gap-6">
+        <fieldset className="flex flex-col gap-2">
+          <legend className="text-small font-medium text-ink">Signing in as</legend>
+          <div className="grid gap-2 sm:grid-cols-2">
+            {ROLES.map((option) => (
+              <Button
+                key={option.id}
+                type="button"
+                onClick={() => setRole(option.id)}
+                aria-pressed={role === option.id}
+                variant={role === option.id ? "default" : "outline"}
+                className="h-auto w-full flex-col items-start gap-1 whitespace-normal px-4 py-3.5 text-left"
+              >
+                <span className="text-small font-medium">{option.label}</span>
+                <span
                   className={cn(
-                    "rounded-2xl border p-3 text-left transition-colors",
-                    role === option.id
-                      ? "border-ink bg-ink text-paper"
-                      : "border-ink/15 bg-white hover:border-ink/40",
+                    "text-micro",
+                    role === option.id ? "text-paper/70" : "text-ink-soft",
                   )}
                 >
-                  <span className="block text-sm font-bold">{option.label}</span>
-                  <span
-                    className={cn(
-                      "mt-0.5 block text-[11px]",
-                      role === option.id ? "text-paper/60" : "text-ink-soft",
-                    )}
-                  >
-                    {option.blurb}
-                  </span>
-                </button>
-              ))}
-            </div>
-          </fieldset>
+                  {option.blurb}
+                </span>
+              </Button>
+            ))}
+          </div>
+        </fieldset>
 
-          <div>
-            <label
-              htmlFor="pin"
-              className="text-[11px] font-bold uppercase tracking-[0.18em] text-ink-soft"
-            >
-              PIN
-            </label>
-            <input
-              id="pin"
+        <Field label="PIN">
+          {({ id }) => (
+            <Input
+              id={id}
               type="password"
               inputMode="numeric"
               autoComplete="current-password"
+              data-numeric
               value={pin}
               onChange={(event) => setPin(event.target.value)}
-              className="mt-2 w-full rounded-2xl border border-ink/15 bg-paper p-4 text-center font-mono text-lg tracking-[0.4em] outline-none focus:border-ink/50"
+              className="text-center font-mono text-lead"
             />
-          </div>
-
-          {error && (
-            <p
-              role="alert"
-              className="rounded-xl border border-red-300 bg-red-50 p-3 text-sm font-semibold text-red-900"
-            >
-              {error}
-            </p>
           )}
+        </Field>
 
-          <button
-            type="submit"
-            disabled={!pin || loading}
-            className="flex w-full items-center justify-center gap-2 rounded-full bg-ink py-4 text-sm font-bold text-paper disabled:opacity-50"
-          >
-            {loading ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
-                Checking
-              </>
-            ) : (
-              "Authorise session"
-            )}
-          </button>
+        {error && (
+          <Alert tone="critical" icon={ShieldAlert} role="alert">
+            {error}
+          </Alert>
+        )}
 
-          <p className="text-center text-xs text-ink-soft">
-            Sessions are role-scoped and end on sign out. Shared event laptops
-            should be signed out at the end of a shift.
-          </p>
-        </form>
-      </div>
-    </div>
+        <Button
+          type="submit"
+          size="lg"
+          variant="accent"
+          className="w-full"
+          disabled={!pin || loading}
+        >
+          {loading ? (
+            <>
+              <Loader2 aria-hidden className="animate-spin motion-reduce:animate-none" />
+              Checking
+            </>
+          ) : (
+            "Authorise session"
+          )}
+        </Button>
+      </form>
+
+      <p className="mt-8 border-t border-line pt-5 text-small text-ink-faint">
+        Sessions are role-scoped and end on sign out. Shared event laptops should
+        be signed out at the end of a shift.
+      </p>
+    </Page>
   );
 }

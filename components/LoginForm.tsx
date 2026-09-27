@@ -2,16 +2,12 @@
 
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from "@/components/ui/card";
-import { LogIn, Ticket, Mail, Loader2, ShieldAlert } from "lucide-react";
-import { apiFetch } from "@/lib/client/api";
+import { Mail, Ticket, ShieldAlert, ArrowRight, Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Field, Input } from "@/components/ui/field";
+import { Alert } from "@/components/ui/display";
 import { BRAND } from "@/config/branding";
+import { apiFetch } from "@/lib/client/api";
 import {
   OBJECTIVE_TTL_MINUTES,
   THEORY_TTL_MINUTES,
@@ -39,6 +35,31 @@ const REASON_COPY: Record<string, string> = {
   session: "Your session ended. Sign in again to carry on.",
   timeout: "The assessment closed. Sign in to see where you got to.",
 };
+
+const RULES = [
+  <>
+    <strong>{TOTAL_QUESTIONS}</strong> objective questions in{" "}
+    <strong>{OBJECTIVE_TTL_MINUTES} minutes</strong>.
+  </>,
+  <>
+    The top <strong>{QUALIFIED_POOL_SIZE}</strong> by score — ties broken by who
+    finished first — go through to <strong>{THEORY_TTL_MINUTES} minutes</strong>{" "}
+    of written questions.
+  </>,
+  <>
+    A score of <strong>{PASS_MARK_PERCENT}%</strong> is needed to be eligible for
+    a place in the pool.
+  </>,
+  <>
+    Your paper is tied to this browser. Opening it on a second device signs you
+    out here.
+  </>,
+  <>Switching tabs and leaving the page are recorded for review.</>,
+  <>
+    Writing is your own. Essays are screened for machine-generated text, and a
+    human reviews anything flagged.
+  </>,
+];
 
 export default function LoginForm() {
   const router = useRouter();
@@ -104,143 +125,134 @@ export default function LoginForm() {
   };
 
   return (
-    <div className="grid w-full max-w-5xl grid-cols-1 gap-6 md:grid-cols-2">
-      {/* ─── Rules ────────────────────────────────────────────────────────── */}
-      <Card className="border-stone-300 bg-white">
-        <CardHeader>
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-amber-700">
-            Before you begin
-          </p>
-          <CardTitle className="font-serif text-2xl tracking-tight text-stone-900">
-            Rules of the assessment
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4 text-sm leading-relaxed text-stone-700">
-          <ul className="list-disc space-y-2 pl-5">
-            <li>
-              {TOTAL_QUESTIONS} objective questions in{" "}
-              <strong>{OBJECTIVE_TTL_MINUTES} minutes</strong>.
-            </li>
-            <li>
-              The top <strong>{QUALIFIED_POOL_SIZE}</strong> by score — ties
-              broken by who finished first — go through to{" "}
-              <strong>{THEORY_TTL_MINUTES} minutes</strong> of written questions.
-            </li>
-            <li>
-              A score of <strong>{PASS_MARK_PERCENT}%</strong> is needed to be
-              eligible for a place in the pool.
-            </li>
-            <li>
-              Your exam is tied to this browser. Opening it on a second device
-              signs you out here.
-            </li>
-            <li>Switching tabs and leaving the page are recorded for review.</li>
-            <li>
-              Writing is your own. Essays are screened for machine-generated
-              text, and a human reviews anything flagged.
-            </li>
-          </ul>
+    <div className="grid w-full max-w-4xl grid-cols-1 gap-5 md:grid-cols-[1.15fr_1fr] md:items-start">
+      {/* ─── Rules ──────────────────────────────────────────────────────────
+          Left column on a wide screen, above the form on a narrow one. The
+          order matters: a candidate should meet the conditions before the field
+          that starts the clock, not after. */}
+      <section className="rounded-lg border border-line bg-surface p-6">
+        <p className="rule eyebrow mb-4">Before you begin</p>
+        <h1 className="font-display text-h3 text-balance text-ink">
+          Rules of the assessment
+        </h1>
 
-          <div className="flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 p-3">
-            <input
-              type="checkbox"
-              id="rules"
-              checked={acceptedRules}
-              onChange={(e) => setAcceptedRules(e.target.checked)}
-              className="mt-0.5 h-4 w-4 accent-amber-700"
-            />
-            <label htmlFor="rules" className="cursor-pointer font-medium text-stone-900">
-              I have read these and I am ready to begin.
-            </label>
-          </div>
-        </CardContent>
-      </Card>
+        <ul className="mt-5 flex flex-col gap-2.5">
+          {RULES.map((rule, index) => (
+            <li key={index} className="flex gap-3 text-small leading-relaxed text-ink-soft">
+              <span
+                aria-hidden
+                data-numeric
+                className="mt-px shrink-0 font-mono text-micro text-amber-deep tabular-nums"
+              >
+                {String(index + 1).padStart(2, "0")}
+              </span>
+              <span>{rule}</span>
+            </li>
+          ))}
+        </ul>
+
+        {/* The consent control is a native checkbox with a real label, at 20px.
+            It gates the submit button, and the button also stays disabled so
+            the requirement is visible before anything is clicked. */}
+        <div className="mt-6 flex items-start gap-3 border-t border-line pt-5">
+          <input
+            type="checkbox"
+            id="rules"
+            checked={acceptedRules}
+            onChange={(e) => setAcceptedRules(e.target.checked)}
+            className="mt-0.5 size-5 shrink-0 cursor-pointer accent-ink"
+          />
+          <label htmlFor="rules" className="cursor-pointer text-small font-medium text-ink">
+            I have read these and I am ready to begin.
+          </label>
+        </div>
+      </section>
 
       {/* ─── Sign in ─────────────────────────────────────────────────────── */}
-      <Card className="w-full border-stone-300 bg-white">
-        <CardHeader className="text-center">
-          <div className="mb-1 flex justify-center">
-            <div className="rounded-full bg-amber-100 p-3">
-              <LogIn className="h-6 w-6 text-amber-800" />
-            </div>
-          </div>
-          <CardTitle className="font-serif text-2xl tracking-tight text-stone-900">
-            Candidate sign-in
-          </CardTitle>
-          <CardDescription>
-            Use the email you registered with and the code on your ticket.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleLogin} className="space-y-4">
-            <div className="space-y-2">
-              <label htmlFor="email" className="text-xs font-semibold uppercase tracking-wide text-stone-500">
-                Email address
-              </label>
+      <section className="rounded-lg border border-line bg-surface p-6">
+        <h2 className="font-display text-h3 text-ink">Candidate sign-in</h2>
+        <p className="mt-1.5 text-small leading-relaxed text-ink-soft">
+          Use the email you registered with and the code printed on your ticket.
+        </p>
+
+        <form onSubmit={handleLogin} className="mt-6 flex flex-col gap-4">
+          <Field label="Email address">
+            {({ id }) => (
               <div className="relative">
-                <Mail className="pointer-events-none absolute left-3 top-3 h-4 w-4 text-stone-400" />
-                <input
-                  id="email"
+                <Mail
+                  aria-hidden
+                  className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-ink-faint"
+                />
+                <Input
+                  id={id}
                   name="email"
                   type="email"
                   autoComplete="email"
                   required
                   placeholder="name@example.com"
-                  className="w-full rounded-lg border border-stone-300 bg-white py-2.5 pl-9 pr-3 text-sm outline-none transition focus:border-amber-600 focus:ring-2 focus:ring-amber-100"
+                  className="pl-10"
                 />
               </div>
-            </div>
+            )}
+          </Field>
 
-            <div className="space-y-2">
-              <label htmlFor="ticketId" className="text-xs font-semibold uppercase tracking-wide text-stone-500">
-                Ticket code
-              </label>
+          <Field
+            label="Ticket code"
+            hint={`Printed on your ticket. ${COURSES.length} tracks are open this year.`}
+          >
+            {({ id, describedBy }) => (
               <div className="relative">
-                <Ticket className="pointer-events-none absolute left-3 top-3 h-4 w-4 text-stone-400" />
-                <input
-                  id="ticketId"
+                <Ticket
+                  aria-hidden
+                  className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-ink-faint"
+                />
+                <Input
+                  id={id}
+                  aria-describedby={describedBy}
                   name="ticketId"
                   type="text"
                   required
                   autoComplete="off"
                   spellCheck={false}
                   placeholder="TS26-XXXXXXXX"
-                  className="w-full rounded-lg border border-stone-300 bg-white py-2.5 pl-9 pr-3 font-mono text-sm uppercase outline-none transition focus:border-amber-600 focus:ring-2 focus:ring-amber-100"
+                  className="pl-10 font-mono uppercase tracking-wider"
                 />
               </div>
-            </div>
-
-            {message && (
-              <div
-                role="alert"
-                className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800"
-              >
-                <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0" />
-                <span>{message}</span>
-              </div>
             )}
+          </Field>
 
-            <button
-              type="submit"
-              disabled={loading || !acceptedRules}
-              className="flex w-full items-center justify-center gap-2 rounded-lg bg-stone-900 px-4 py-3 text-sm font-semibold text-stone-50 transition hover:bg-stone-800 disabled:cursor-not-allowed disabled:opacity-40"
+          {message ? (
+            <Alert tone="critical" icon={ShieldAlert}>
+              {message}
+            </Alert>
+          ) : null}
+
+          <Button type="submit" size="lg" disabled={loading || !acceptedRules}>
+            {loading ? (
+              <>
+                <Loader2 aria-hidden className="animate-spin motion-reduce:animate-none" />
+                Signing in…
+              </>
+            ) : (
+              <>
+                Start the assessment
+                <ArrowRight aria-hidden />
+              </>
+            )}
+          </Button>
+
+          <p className="text-small text-ink-soft">
+            Lost your code?{" "}
+            <a
+              href={`mailto:${BRAND.contactEmail}`}
+              className="font-medium text-ink underline decoration-line-strong underline-offset-4 transition-colors hover:decoration-ink"
             >
-              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Start the assessment"}
-            </button>
-
-            <p className="text-center text-xs text-stone-500">
-              Lost your code? Email{" "}
-              <a
-                href={`mailto:${BRAND.contactEmail}`}
-                className="underline underline-offset-2 hover:text-stone-800"
-              >
-                {BRAND.contactEmail}
-              </a>
-              . {COURSES.length} tracks are open this year.
-            </p>
-          </form>
-        </CardContent>
-      </Card>
+              Email {BRAND.contactEmail}
+            </a>
+            .
+          </p>
+        </form>
+      </section>
     </div>
   );
 }

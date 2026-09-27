@@ -2,20 +2,15 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Html5Qrcode } from "html5-qrcode";
-import {
-  AlertTriangle,
-  Camera,
-  CheckCircle2,
-  Keyboard,
-  Loader2,
-  ScanLine,
-  Users,
-} from "lucide-react";
+import { AlertTriangle, Camera, CheckCircle2, Keyboard, Users } from "lucide-react";
 import { apiFetch } from "@/lib/client/api";
 import { COURSES } from "@/config/course-matrix";
 import { BRAND } from "@/config/branding";
 import { VENUE_CAPACITY } from "@/config/rules";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { Alert, Spinner } from "@/components/ui/display";
+import { Page, PageHeader, Stack } from "@/components/ui/shell";
 
 // ─── CHECK-IN DESK ────────────────────────────────────────────────────────────
 // The camera + hardware-gun behaviour here was the most valuable part of the
@@ -50,6 +45,16 @@ import { cn } from "@/lib/utils";
 // A door has one job and it is unforgiving: scan, get an unambiguous answer,
 // scan again. Every state below is a decision the person on the desk has to
 // make, and each one says what to do next.
+//
+// PRESENTATION ONLY. The old frame was a white rounded-3xl card on a centred
+// paper field, with a dark masthead band, a rounded-full mode pill, a pulsing
+// amber dot and three hand-rolled result cards in Tailwind green/red. It is now
+// the shared page frame: one hairline, one h1 from `PageHeader`, `Button` for
+// the mode switch, and `Alert` for the three outcomes. The two states that used
+// to be visually loudest — accepted and denied — now differ by tone and wording
+// rather than by three separate sets of palette colours, and the candidate's
+// name is set in the display serif because it is the one thing on the screen
+// read aloud.
 
 interface CheckinOk {
   name: string;
@@ -289,151 +294,148 @@ export default function CheckinPage() {
   };
 
   return (
-    <div className="grid min-h-dvh place-items-center bg-paper p-4 text-ink">
-      <div className="w-full max-w-md overflow-hidden rounded-3xl border border-ink/10 bg-white shadow-xl">
-        {/* Focus sink for the gun. Invisible but real: without a focused element
-            the browser window may not be the keyboard target at a kiosk. */}
-        <input
-          ref={hardwareInput}
-          type="text"
-          className="absolute h-0 w-0 opacity-0"
-          aria-hidden
-          tabIndex={-1}
-          readOnly
-        />
+    <Page
+      width="form"
+      className="flex min-h-dvh flex-col justify-center gap-6 py-10 sm:py-14"
+    >
+      {/* Focus sink for the gun. Invisible but real: without a focused element
+          the browser window may not be the keyboard target at a kiosk.
+          Deliberately outside the accessibility tree and the tab order — nothing
+          fills it in, the gun types into it — so it gets no <label>. If that ever
+          changes, it needs a real one like every other control. */}
+      <input
+        ref={hardwareInput}
+        type="text"
+        className="absolute h-0 w-0 opacity-0"
+        aria-hidden
+        tabIndex={-1}
+        readOnly
+      />
 
-        <header className="bg-ink px-6 py-5 text-paper">
-          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-paper/60">
-            {BRAND.shortName}
-          </p>
-          <h1 className="mt-1 flex items-center gap-2 text-lg font-bold">
-            <ScanLine className="h-5 w-5 text-amber" aria-hidden />
-            Entrance check-in
-          </h1>
-          <p className="mt-1.5 flex items-center gap-1.5 text-xs text-paper/60">
+      <PageHeader
+        eyebrow={BRAND.shortName}
+        title="Entrance check-in"
+        actions={
+          <Button type="button" variant="outline" size="lg" onClick={toggleMode}>
             {inputMode === "camera" ? (
               <>
-                <Camera className="h-3.5 w-3.5" aria-hidden /> Camera
+                <Keyboard aria-hidden />
+                Use a barcode gun
               </>
             ) : (
               <>
-                <Keyboard className="h-3.5 w-3.5" aria-hidden /> Barcode gun
+                <Camera aria-hidden />
+                Use the camera
               </>
             )}
-            <span className="mx-1 text-paper/30">·</span>
-            <Users className="h-3.5 w-3.5" aria-hidden />
+          </Button>
+        }
+      >
+        <p className="flex items-center gap-2 text-small text-ink-soft">
+          {inputMode === "camera" ? (
+            <>
+              <Camera aria-hidden className="size-4 text-ink-faint" />
+              Camera
+            </>
+          ) : (
+            <>
+              <Keyboard aria-hidden className="size-4 text-ink-faint" />
+              Barcode gun
+            </>
+          )}
+          <span aria-hidden className="text-ink-faint">
+            ·
+          </span>
+          <Users aria-hidden className="size-4 text-ink-faint" />
+          <span data-numeric className="tabular-nums">
             cap {VENUE_CAPACITY.toLocaleString()}
-          </p>
-        </header>
+          </span>
+        </p>
+      </PageHeader>
 
-        <div className="space-y-4 p-5">
-          <button
-            onClick={toggleMode}
-            className="flex w-full items-center justify-center gap-2 rounded-full border border-ink/15 px-4 py-2 text-xs font-semibold transition-colors hover:border-ink/40"
-          >
-            {inputMode === "camera" ? (
-              <>
-                <Keyboard className="h-4 w-4" aria-hidden /> Use a barcode gun
-              </>
-            ) : (
-              <>
-                <Camera className="h-4 w-4" aria-hidden /> Use the camera
-              </>
-            )}
-          </button>
+      <Stack gap="md">
+        {/* Always mounted in camera mode so html5-qrcode has a node to attach
+            to. An unmounted-then-mounted div is why the original polled for it
+            20 times. */}
+        <div className={cn(inputMode === "camera" ? "block" : "hidden")}>
+          <div
+            id="scanner"
+            className="aspect-square w-full overflow-hidden rounded-md bg-ink"
+          />
+        </div>
 
-          {/* Always mounted in camera mode so html5-qrcode has a node to attach
-              to. An unmounted-then-mounted div is why the original polled for it
-              20 times. */}
-          <div className={cn(inputMode === "camera" ? "block" : "hidden")}>
-            <div
-              id="scanner"
-              className="aspect-square w-full overflow-hidden rounded-2xl bg-ink"
-            />
+        {inputMode === "gun" && (
+          <div className="grid aspect-[3/2] place-items-center rounded-md bg-ink p-5">
+            <div className="text-center">
+              <Keyboard aria-hidden className="mx-auto size-10 text-amber" />
+              <p className="mt-3 text-small font-medium text-paper">
+                Scan or type a code
+              </p>
+              {scanBuffer && (
+                <p className="mt-2 break-all font-mono text-small text-amber">
+                  {scanBuffer}
+                </p>
+              )}
+            </div>
           </div>
+        )}
 
-          {inputMode === "gun" && (
-            <div className="grid aspect-[3/2] place-items-center rounded-2xl bg-ink p-4">
-              <div className="text-center">
-                <Keyboard className="mx-auto h-10 w-10 text-amber" aria-hidden />
-                <p className="mt-3 text-sm font-bold text-paper">Scan or type a code</p>
-                {scanBuffer && (
-                  <p className="mt-2 break-all font-mono text-xs text-amber">
-                    {scanBuffer}
-                  </p>
-                )}
-              </div>
+        <div className="grid min-h-32 place-items-center">
+          {state.kind === "IDLE" && (
+            <p className="flex items-center gap-2 text-small text-ink-soft">
+              <span aria-hidden className="size-1.5 rounded-pill bg-amber" />
+              Ready for the next ticket
+            </p>
+          )}
+
+          {state.kind === "SCANNING" && (
+            <div className="flex items-center justify-center gap-2 text-small text-ink-soft">
+              <Spinner label="Checking" />
+              <span aria-hidden>Checking the ticket</span>
             </div>
           )}
 
-          <div className="grid min-h-32 place-items-center">
-            {state.kind === "IDLE" && (
-              <p className="flex items-center gap-2 text-sm font-semibold text-ink-soft">
-                <span className="h-2 w-2 animate-pulse rounded-full bg-amber" />
-                Ready for the next ticket
+          {state.kind === "OK" && (
+            /* The name goes in the body rather than the `title` slot: it is the
+               one thing on this screen read aloud, so it is set in the display
+               serif, and the alert's own title is typed for body copy. */
+            <Alert
+              tone="positive"
+              icon={CheckCircle2}
+              role="status"
+              className="w-full p-6"
+            >
+              <p className="font-display text-h3 leading-tight text-balance text-ink">
+                {state.name}
               </p>
-            )}
-
-            {state.kind === "SCANNING" && (
-              <p className="flex items-center gap-2 text-sm font-semibold text-ink-soft">
-                <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
-                Checking
+              <p className="mt-1.5">{state.course}</p>
+              <p
+                data-numeric
+                className="mt-3 border-t border-line pt-3 text-small font-medium tabular-nums text-ink"
+              >
+                In · {state.count.toLocaleString()} /{" "}
+                {state.capacity.toLocaleString()}
               </p>
-            )}
+            </Alert>
+          )}
 
-            {state.kind === "OK" && (
-              <div
-                className="w-full rounded-2xl border border-green-300 bg-green-50 p-5 text-center"
-                role="status"
-              >
-                <CheckCircle2 className="mx-auto h-8 w-8 text-green-700" aria-hidden />
-                <p className="mt-2 text-base font-bold text-green-900">{state.name}</p>
-                <p className="mt-1 text-sm text-green-800">{state.course}</p>
-                <p className="mt-2 text-[11px] font-semibold uppercase tracking-wider text-green-700">
-                  In · {state.count.toLocaleString()} /{" "}
-                  {state.capacity.toLocaleString()}
-                </p>
-              </div>
-            )}
-
-            {state.kind === "DENIED" && (
-              <div
-                className={cn(
-                  "w-full rounded-2xl border p-5 text-center",
-                  state.tone === "warn"
-                    ? "border-amber-deep/40 bg-amber/10"
-                    : "border-red-300 bg-red-50",
-                )}
-                role="status"
-              >
-                <AlertTriangle
-                  className={cn(
-                    "mx-auto h-8 w-8",
-                    state.tone === "warn" ? "text-amber-deep" : "text-red-700",
-                  )}
-                  aria-hidden
-                />
-                <p
-                  className={cn(
-                    "mt-2 text-base font-bold",
-                    state.tone === "warn" ? "text-ink" : "text-red-900",
-                  )}
-                >
-                  {state.headline}
-                </p>
-                <p
-                  className={cn(
-                    "mt-1 text-sm",
-                    state.tone === "warn" ? "text-ink-soft" : "text-red-800",
-                  )}
-                >
-                  {state.detail}
-                </p>
-              </div>
-            )}
-          </div>
+          {/* `role="status"` is kept on the refusal as it was, including for the
+              "stop" case: at a door the operator is already watching this
+              screen, so a polite announcement is the right register even for a
+              hard refusal. */}
+          {state.kind === "DENIED" && (
+            <Alert
+              tone={state.tone === "warn" ? "caution" : "critical"}
+              icon={AlertTriangle}
+              role="status"
+              className="w-full"
+              title={state.headline}
+            >
+              {state.detail}
+            </Alert>
+          )}
         </div>
-      </div>
-    </div>
+      </Stack>
+    </Page>
   );
 }
