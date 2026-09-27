@@ -59,15 +59,63 @@ function tooMany(ttl: number, message = "Too many requests. Please slow down."):
   );
 }
 
-/** Fixed-window counter. INCR first so concurrent requests can't all read null. */
-async function hit(key: string, max: number, window: number): Promise<number | null> {
-  const current = await redis.incr(key);
-  if (current === 1) await redis.expire(key, window);
-  if (current > max) {
-    const ttl = await redis.ttl(key);
-    return ttl;
+/**
+ * Fallback counters, used only when Redis is unreachable outside production.
+ * Per-instance and lost on restart - which is the point: in dev the alternative
+ * is that a network blip makes the app unusable, and in dev the limiter is not
+ * a security boundary.
+ */
+const localCounters = new Map<string, { count: number; expiresAt: number }>();
+let warnedLocalFallback = false;
+
+function localHit(key: string, max: number, window: number): number | null {
+  const now = Date.now();
+  const entry = localCounters.get(key);
+
+  if (!entry || entry.expiresAt <= now) {
+    localCounters.set(key, { count: 1, expiresAt: now + window * 1000 });
+    return null;
   }
-  return null;
+
+  entry.count += 1;
+  if (localCounters.size > 5000) {
+    for (const [k, v] of localCounters) if (v.expiresAt <= now) localCounters.delete(k);
+  }
+  return entry.count > max ? Math.ceil((entry.expiresAt - now) / 1000) : null;
+}
+
+/**
+ * Fixed-window counter. INCR first so concurrent requests can't all read null.
+ *
+ * Redis being *absent* is handled at construction (lib/redis.ts falls back to an
+ * in-memory store). Redis being *present but unreachable* was not handled, and
+ * that is the case that broke local development: a 10s connect timeout to
+ * Upstash turned every write into a 503, so a developer could not sign in.
+ * Production still fails closed - a rate limiter that silently stops limiting
+ * is worse than one that refuses writes - but only in production.
+ */
+async function hit(key: string, max: number, window: number): Promise<number | null> {
+  try {
+    const current = await redis.incr(key);
+    if (current === 1) await redis.expire(key, window);
+    if (current > max) {
+      const ttl = await redis.ttl(key);
+      return ttl;
+    }
+    return null;
+  } catch (error) {
+    if (process.env.NODE_ENV === "production") throw error;
+
+    if (!warnedLocalFallback) {
+      warnedLocalFallback = true;
+      console.warn(
+        "[proxy] Rate-limit store unreachable; counting locally for this dev session. " +
+          "If you did not expect this, check UPSTASH_REDIS_REST_URL / _TOKEN in .env.local. " +
+          `(${(error as Error)?.message})`,
+      );
+    }
+    return localHit(key, max, window);
+  }
 }
 
 export async function proxy(request: NextRequest) {
@@ -191,9 +239,13 @@ export async function proxy(request: NextRequest) {
         if (ttl !== null) return tooMany(ttl);
       }
     } catch (error) {
-      // Fail CLOSED on writes. The old code failed open here, which meant a
-      // Redis blip silently disabled every limit at once. A rejected write is
-      // recoverable; a mass check-in bypass is not.
+      // Fail CLOSED on writes, in production. The old code failed open here,
+      // which meant a Redis blip silently disabled every limit at once. A
+      // rejected write is recoverable; a mass check-in bypass is not.
+      //
+      // `hit()` already absorbs an unreachable store outside production, so
+      // reaching here on a dev machine means something else is genuinely wrong
+      // and should still surface.
       console.error("[proxy] rate limiter unavailable, blocking write", error);
       return NextResponse.json(
         { success: false, error: "SERVICE_UNAVAILABLE", message: "Please try again in a moment." },
