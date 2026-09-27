@@ -196,9 +196,13 @@ export async function proxy(request: NextRequest) {
         if (ttl !== null) return tooMany(ttl);
       }
 
-      if (path === "/api/register") {
+      if (path === "/api/register" || path === "/api/apply") {
         // The in-handler limit is per-IP; this is a coarse global ceiling so a
         // burst of WordPress traffic can't flatten the function.
+        //
+        // /api/apply shares it deliberately. That endpoint is public, so its
+        // real threat is a distributed flood rather than a busy CMS, and one
+        // shared ceiling bounds both without letting either starve the other.
         const ttl = await hit(
           rateLimitKey("register", "global"),
           RATE_LIMITS.register.max,

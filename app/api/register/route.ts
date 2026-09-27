@@ -1,15 +1,11 @@
 import { NextResponse } from "next/server";
-import { randomBytes } from "node:crypto";
-import { Registrant } from "@/lib/models/Registrant";
-import { sendEntranceTicket } from "@/lib/email-service";
-import { ensureDatabase } from "@/lib/db";
 import { redis, rateLimitKey } from "@/lib/redis";
 import { log, maskEmail } from "@/lib/logger";
-import { cleanText, cleanPhone, isValidEmail } from "@/lib/validate";
-import { isValidCourseSlug } from "@/config/rules";
-import { CURRENT_COHORT, WP_FORM_FIELDS } from "@/config/branding";
+import { cleanText } from "@/lib/validate";
+import { WP_FORM_FIELDS } from "@/config/branding";
 import { safeEqual } from "@/lib/session";
 import { requireEnv } from "@/lib/env";
+import { registerApplicant } from "@/lib/registration";
 
 export const dynamic = "force-dynamic";
 
@@ -152,82 +148,30 @@ export async function POST(request: Request) {
           success: false,
           message: "The form sent unrendered template tags. This is a CMS configuration error.",
         },
-        { status: 400 },
+      { status: 400 },
       );
     }
 
-    name = cleanText(name, 100);
-    email = cleanText(email, 254).toLowerCase();
-
-    if (!name || !email) {
-      return NextResponse.json({ message: "Missing name or email." }, { status: 400 });
-    }
-    if (!isValidEmail(email)) {
-      return NextResponse.json({ message: "Invalid email address." }, { status: 400 });
-    }
-
-    // ─── COURSE ──────────────────────────────────────────────────────────────
-    // Validated, or null. "General Admission" is not a course and must never
-    // reach a column that counts seats.
-    const courseSlug = isValidCourseSlug(courseInterest) ? courseInterest : null;
-
-    // ─── TICKET ──────────────────────────────────────────────────────────────
-    // 4 random bytes = 2^32 possible codes, with a unique index behind them.
-    const barcodeId = `TS26-${randomBytes(4).toString("hex").toUpperCase()}`;
-
-    await ensureDatabase();
-
-    const existing = await Registrant.findOne({ where: { email } });
-    if (existing) {
-      // Idempotent. The CMS retried, or the person registered twice. Either way
-      // they already have a ticket and losing it helps nobody.
-      log.info("register.duplicate", { email, barcodeId: existing.barcodeId });
-      return NextResponse.json(
-        { success: true, ticketId: existing.barcodeId, duplicate: true },
-        { status: 200 },
-      );
-    }
-
-    const registrant = await Registrant.create({
+    // ─── REGISTER ─────────────────────────────────────────────────────────────
+    // Validation, dedupe, row creation and the ticket email all live in
+    // lib/registration.ts, shared with the public /api/apply route. This file
+    // keeps only what is specific to the CMS: the shared secret, the rate-limit
+    // budget, and the field names WordPress happens to use.
+    const result = await registerApplicant({
       name,
       email,
-      phone: cleanPhone(phone),
-      selectedCourseSlug: courseSlug,
-      careerStatus: career ? cleanText(career, 50) : null,
-      barcodeId,
-      checkedIn: false,
-      status: "registered",
-      cohortYear: CURRENT_COHORT,
+      phone,
+      course: courseInterest,
+      career,
     });
 
-    // ─── TICKET EMAIL ────────────────────────────────────────────────────────
-    // Best-effort, and that is a real trade-off worth naming: if Resend is down
-    // the person is registered and has no ticket, and the fix is a resend from
-    // the admin console. Failing the whole request instead would lose the
-    // registration too, which is worse — and it would fail the CMS, which would
-    // then retry, which would create a second applicant. So: log it loudly, keep
-    // the row, and let a human send the ticket.
-    try {
-      const result = await sendEntranceTicket({
-        name: registrant.name,
-        email: registrant.email,
-        barcodeId: registrant.barcodeId,
-      });
-      log.info("register.ticket_sent", { email, id: result?.id });
-    } catch (mailError) {
-      log.error("register.ticket_failed", {
-        email,
-        barcodeId: registrant.barcodeId,
-        message: (mailError as Error)?.message,
-        remedy: "Registration is saved. Resend the ticket from the admin console.",
-      });
+    if (!result.ok) {
+      return NextResponse.json({ message: result.message, error: result.code }, { status: result.status });
     }
 
-    log.info("register.created", { email, barcodeId, course: courseSlug });
-
     return NextResponse.json(
-      { success: true, ticketId: registrant.barcodeId },
-      { status: 201 },
+      { success: true, ticketId: result.ticketId, ...(result.duplicate ? { duplicate: true } : {}) },
+      { status: result.duplicate ? 200 : 201 },
     );
   } catch (error) {
     const err = error as Error & { name?: string };

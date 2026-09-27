@@ -77,3 +77,21 @@ export const COURSES: CourseMapping[] = [
 // the single source of truth for every business number. They used to be
 // declared here AND in config/event-settings.ts, the two were never compared,
 // and the event-settings copy was read by nothing at all.
+
+// ─── DISPLAY ───────────────────────────────────────────────────────────────────
+
+/**
+ * Programmes for the in-app registration form.
+ *
+ * Lives here rather than in lib/registration.ts so the form can render its
+ * course list without importing anything that needs a database. Reading config
+ * from a module that throws on a missing DATABASE_URL means the page 500s
+ * instead of showing a person a form.
+ *
+ * Derived from COURSES, so a programme added above appears in the form
+ * automatically and the form can never offer something the ranking does not
+ * know about.
+ */
+export function courseOptions(): { slug: string; label: string }[] {
+  return COURSES.map((course) => ({ slug: course.slug, label: course.displayName }));
+}

@@ -130,6 +130,52 @@ A candidate who never receives their ticket becomes a support queue, a phone
 number at the venue desk, and a manual check-in. Set the key, and set `MAIL_FROM`
 to a domain you can send from.
 
+The in-app form at `/register` does not depend on any of this — it prints the
+ticket on screen, and tells the person whether the email actually went out. That
+is what makes the app usable on a bad mail day, and usable in a venue with no
+reliable connectivity. Email is the backup channel, not the only one.
+
+---
+
+## 6b. Public registration (Turnstile)
+
+There are two ways to register, and both end up in the same place
+(`lib/registration.ts`):
+
+| Path | Gate | Who calls it |
+| --- | --- | --- |
+| `POST /api/register` | `x-api-key` shared secret | The WordPress form |
+| `POST /api/apply` | Cloudflare Turnstile | Anyone, via `/register` |
+
+The second endpoint is **public**. That is the point of it, but it means anything
+on the internet can call it, and every row it creates is a real registrant that
+later counts toward the ranking, the per-course seat totals and the scholarship
+allocation. A bot flood does not just cost database rows — it quietly corrupts the
+one number this programme exists to produce. The rate limit is per-IP, so it caps
+speed, not volume.
+
+Set both keys from Cloudflare → Turnstile → Add widget:
+
+```
+NEXT_PUBLIC_TURNSTILE_SITE_KEY=0x4AAAA...   # public, goes in the browser
+TURNSTILE_SECRET_KEY=0x4AAAA...             # server only, never ship it
+```
+
+Behaviour when they are missing, which is deliberate:
+
+- **Development** — the form works, the server logs a loud warning on every page
+  that says so in the UI. You can build and test without signing up for anything.
+- **Production** — `/api/apply` returns `503` and refuses every request. Failing
+  open here would mean shipping a public write endpoint with the protection
+  silently absent, which is the exact failure the check was added to prevent.
+
+If Cloudflare is unreachable, registration is refused rather than waved through,
+for the same reason: their downtime should not become an open sign-up window.
+
+A honeypot field would also work and needs no account with anyone. It stops naive
+bots only, so if you would rather not manage keys, that is a reasonable choice —
+just do not ship the endpoint with no protection at all.
+
 ---
 
 ## 7. Configuring a round

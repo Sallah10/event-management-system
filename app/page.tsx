@@ -17,6 +17,12 @@ import { BRAND, CURRENT_COHORT } from "@/config/branding";
 
 const DOORS = [
   {
+    href: "/register",
+    kicker: "New applicants",
+    title: "Register",
+    blurb: "Apply in a minute and get your ticket ID on the spot. No account, no waiting.",
+  },
+  {
     href: "/assessment/login",
     kicker: "Candidates",
     title: "Assessment",
