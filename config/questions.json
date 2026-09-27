@@ -7,14 +7,17 @@
       "B": "Sarah is a computer",
       "C": "Everyone uses computers",
       "D": "Computers use Sarah"
-    },
-    "correct": "A"
+    }
   },
   {
     "id": "q2",
     "question": "Complete the sequence: 2, 6, 12, 20, 30, ___?",
-    "options": { "A": "10", "B": "42", "C": "15", "D": "30" },
-    "correct": "B"
+    "options": {
+      "A": "10",
+      "B": "42",
+      "C": "15",
+      "D": "30"
+    }
   },
   {
     "id": "q3",
@@ -24,26 +27,37 @@
       "B": "Communication overhead increases",
       "C": "Computers get tired",
       "D": "Office space runs out"
-    },
-    "correct": "B"
+    }
   },
   {
     "id": "q4",
     "question": "If 'SHIFT' is coded as 'Tijgu,' what is 'TECH' coded as? (Hint: +1 letter)",
-    "options": { "A": "UFDI", "B": "UGEJ", "C": "VGEJ", "D": "SGDI" },
-    "correct": "A"
+    "options": {
+      "A": "UFDI",
+      "B": "UGEJ",
+      "C": "VGEJ",
+      "D": "SGDI"
+    }
   },
   {
     "id": "q5",
     "question": "A bat and a ball cost ₦1,100. The bat costs ₦1,000 more than the ball. How much is the ball?",
-    "options": { "A": "₦10", "B": "₦100", "C": "₦50", "D": "₦15" },
-    "correct": "C"
+    "options": {
+      "A": "₦10",
+      "B": "₦100",
+      "C": "₦50",
+      "D": "₦15"
+    }
   },
   {
     "id": "q6",
     "question": "Which word does not belong?",
-    "options": { "A": "AI", "B": "Cloud", "C": "Blockchain", "D": "Paper" },
-    "correct": "D"
+    "options": {
+      "A": "AI",
+      "B": "Cloud",
+      "C": "Blockchain",
+      "D": "Paper"
+    }
   },
   {
     "id": "q7",
@@ -53,8 +67,7 @@
       "B": "P is true",
       "C": "P is none of the above",
       "D": "Q and P are the same"
-    },
-    "correct": "A"
+    }
   },
   {
     "id": "q8",
@@ -64,8 +77,7 @@
       "B": "ALRITHIOM",
       "C": "ALGORITHM",
       "D": "MTHNORGAL"
-    },
-    "correct": "C"
+    }
   },
   {
     "id": "q9",
@@ -75,14 +87,17 @@
       "B": "5 minutes",
       "C": "10 minutes",
       "D": "1 hr"
-    },
-    "correct": "B"
+    }
   },
   {
     "id": "q10",
     "question": "Solve for X: 2x + 10 = 30.",
-    "options": { "A": "10", "B": "5", "C": "20", "D": "2" },
-    "correct": "A"
+    "options": {
+      "A": "10",
+      "B": "5",
+      "C": "20",
+      "D": "2"
+    }
   },
   {
     "id": "q11",
@@ -92,14 +107,17 @@
       "B": "Second",
       "C": "Last",
       "D": "None of the above"
-    },
-    "correct": "B"
+    }
   },
   {
     "id": "q12",
     "question": "Find the odd one out: Python, Java, Microsoft, C++.",
-    "options": { "A": "Microsoft", "B": "Java", "C": "Python", "D": "C++" },
-    "correct": "A"
+    "options": {
+      "A": "Microsoft",
+      "B": "Java",
+      "C": "Python",
+      "D": "C++"
+    }
   },
   {
     "id": "q13",
@@ -109,8 +127,7 @@
       "B": "False",
       "C": "Sometimes",
       "D": "Only in AI"
-    },
-    "correct": "B"
+    }
   },
   {
     "id": "q14",
@@ -120,8 +137,7 @@
       "B": "Megabyte",
       "C": "Kilobyte",
       "D": "Byte"
-    },
-    "correct": "A"
+    }
   },
   {
     "id": "q15",
@@ -131,14 +147,17 @@
       "B": "4hrs",
       "C": "6hrs",
       "D": "11 intervals of time"
-    },
-    "correct": "D"
+    }
   },
   {
     "id": "q16",
     "question": "In a team of 5, everyone shakes hands once. How many handshakes total?",
-    "options": { "A": "5", "B": "10", "C": "15", "D": "No handshake" },
-    "correct": "B"
+    "options": {
+      "A": "5",
+      "B": "10",
+      "C": "15",
+      "D": "No handshake"
+    }
   },
   {
     "id": "q17",
@@ -148,20 +167,27 @@
       "B": "North-East",
       "C": "South-West",
       "D": "South"
-    },
-    "correct": "B"
+    }
   },
   {
     "id": "q18",
     "question": "A folder contains 3 files. Each file is 10MB. How much space is used?",
-    "options": { "A": "10MB", "B": "30MB", "C": "300MB", "D": "3MB" },
-    "correct": "B"
+    "options": {
+      "A": "10MB",
+      "B": "30MB",
+      "C": "300MB",
+      "D": "3MB"
+    }
   },
   {
     "id": "q19",
     "question": "Which is faster?",
-    "options": { "A": "4G", "B": "5G", "C": "3G", "D": "Edge" },
-    "correct": "B"
+    "options": {
+      "A": "4G",
+      "B": "5G",
+      "C": "3G",
+      "D": "Edge"
+    }
   },
   {
     "id": "q20",
@@ -171,8 +197,7 @@
       "B": "Garbage out (Wrong output)",
       "C": "Computer crashes",
       "D": "Nothing happens"
-    },
-    "correct": "B"
+    }
   },
   {
     "id": "q21",
@@ -182,14 +207,17 @@
       "B": "Uniform Resource Locator",
       "C": "United Resource Locator",
       "D": "Uniform Record Link"
-    },
-    "correct": "B"
+    }
   },
   {
     "id": "q22",
     "question": "Which of these is a 'Cloud' service provider?",
-    "options": { "A": "Toyota", "B": "AWS", "C": "Samsung", "D": "McDonalds" },
-    "correct": "B"
+    "options": {
+      "A": "Toyota",
+      "B": "AWS",
+      "C": "Samsung",
+      "D": "McDonalds"
+    }
   },
   {
     "id": "q23",
@@ -199,8 +227,7 @@
       "B": "Protect against malware",
       "C": "Clean keyboard",
       "D": "Write code"
-    },
-    "correct": "B"
+    }
   },
   {
     "id": "q24",
@@ -210,8 +237,7 @@
       "B": "Cybersecurity",
       "C": "Database Management",
       "D": "UI Design"
-    },
-    "correct": "B"
+    }
   },
   {
     "id": "q25",
@@ -221,14 +247,17 @@
       "B": "Automated Internet",
       "C": "Advanced Interface",
       "D": "Apple Inc"
-    },
-    "correct": "A"
+    }
   },
   {
     "id": "q26",
     "question": "Which of these is a web browser?",
-    "options": { "A": "Windows", "B": "Chrome", "C": "Google", "D": "MacOS" },
-    "correct": "B"
+    "options": {
+      "A": "Windows",
+      "B": "Chrome",
+      "C": "Google",
+      "D": "MacOS"
+    }
   },
   {
     "id": "q27",
@@ -238,8 +267,7 @@
       "B": "User Interfaces",
       "C": "Server hardware",
       "D": "Network cables"
-    },
-    "correct": "B"
+    }
   },
   {
     "id": "q28",
@@ -249,8 +277,7 @@
       "B": "An error in code",
       "C": "A new feature",
       "D": "A type of mouse"
-    },
-    "correct": "B"
+    }
   },
   {
     "id": "q29",
@@ -260,8 +287,7 @@
       "B": "Photoshop",
       "C": "Word",
       "D": "HTML"
-    },
-    "correct": "A"
+    }
   },
   {
     "id": "q30",
@@ -271,14 +297,17 @@
       "B": "Web World Wide",
       "C": "World Web Wrestling",
       "D": "Wide Web World"
-    },
-    "correct": "A"
+    }
   },
   {
     "id": "q31",
     "question": "What is the 'Brain' of a computer called?",
-    "options": { "A": "RAM", "B": "CPU", "C": "Hard Drive", "D": "Monitor" },
-    "correct": "B"
+    "options": {
+      "A": "RAM",
+      "B": "CPU",
+      "C": "Hard Drive",
+      "D": "Monitor"
+    }
   },
   {
     "id": "q32",
@@ -288,8 +317,7 @@
       "B": "LinkedIn",
       "C": "Python",
       "D": "Instagram"
-    },
-    "correct": "C"
+    }
   },
   {
     "id": "q33",
@@ -299,8 +327,7 @@
       "B": "Fixing hardware",
       "C": "Typing fast",
       "D": "Building monitors"
-    },
-    "correct": "A"
+    }
   },
   {
     "id": "q34",
@@ -310,8 +337,7 @@
       "B": "A computer providing data to others",
       "C": "A keyboard type",
       "D": "A mouse pad"
-    },
-    "correct": "B"
+    }
   },
   {
     "id": "q35",
@@ -321,8 +347,7 @@
       "B": "A website for buying things",
       "C": "A type of internet cable",
       "D": "A search engine"
-    },
-    "correct": "A"
+    }
   },
   {
     "id": "q36",
@@ -332,8 +357,7 @@
       "B": "Ask a peer/Google",
       "C": "Restart the computer",
       "D": "Cry"
-    },
-    "correct": "B"
+    }
   },
   {
     "id": "q37",
@@ -343,8 +367,7 @@
       "B": "5-10 hours",
       "C": "20+ hours (Whatever it takes)",
       "D": "None"
-    },
-    "correct": "C"
+    }
   },
   {
     "id": "q38",
@@ -354,8 +377,7 @@
       "B": "Attend TechShift",
       "C": "Skip both",
       "D": "Sleep"
-    },
-    "correct": "B"
+    }
   },
   {
     "id": "q39",
@@ -365,8 +387,7 @@
       "B": "Improve and apply it",
       "C": "Ignore it",
       "D": "Argue"
-    },
-    "correct": "B"
+    }
   },
   {
     "id": "q40",
@@ -376,14 +397,17 @@
       "B": "Break it down and research",
       "C": "Wait for someone to do it",
       "D": "Complain"
-    },
-    "correct": "B"
+    }
   },
   {
     "id": "q41",
     "question": "True or False: Technology is a 'get rich quick' scheme.",
-    "options": { "A": "True", "B": "False", "C": "Sometimes", "D": "Always" },
-    "correct": "B"
+    "options": {
+      "A": "True",
+      "B": "False",
+      "C": "Sometimes",
+      "D": "Always"
+    }
   },
   {
     "id": "q42",
@@ -393,8 +417,7 @@
       "B": "Accuracy & Logic",
       "C": "Typing speed",
       "D": "Memorization"
-    },
-    "correct": "B"
+    }
   },
   {
     "id": "q43",
@@ -404,8 +427,7 @@
       "B": "Study harder",
       "C": "Find an easier course",
       "D": "Cheat"
-    },
-    "correct": "B"
+    }
   },
   {
     "id": "q44",
@@ -415,8 +437,7 @@
       "B": "Communicate and find out why",
       "C": "Ignore them",
       "D": "Do their work silently"
-    },
-    "correct": "B"
+    }
   },
   {
     "id": "q45",
@@ -426,8 +447,7 @@
       "B": "Impact & Career Growth",
       "C": "Boredom",
       "D": "For fun"
-    },
-    "correct": "B"
+    }
   },
   {
     "id": "q46",
@@ -437,8 +457,7 @@
       "B": "No, I need money immediately",
       "C": "Maybe",
       "D": "I don't know"
-    },
-    "correct": "A"
+    }
   },
   {
     "id": "q47",
@@ -448,8 +467,7 @@
       "B": "Once a month",
       "C": "Daily / Regularly",
       "D": "Only when expecting a password reset"
-    },
-    "correct": "C"
+    }
   },
   {
     "id": "q48",
@@ -459,8 +477,7 @@
       "B": "I adapt and learn quickly",
       "C": "I ignore them",
       "D": "I complain to management"
-    },
-    "correct": "B"
+    }
   },
   {
     "id": "q49",
@@ -470,8 +487,7 @@
       "B": "In a team",
       "C": "Both, adaptable to the situation",
       "D": "I don't like working"
-    },
-    "correct": "C"
+    }
   },
   {
     "id": "q50",
@@ -481,8 +497,7 @@
       "B": "Gaining mastery, a career, and impacting society",
       "C": "Getting free food at the event",
       "D": "Showing off on social media"
-    },
-    "correct": "B"
+    }
   },
   {
     "id": "q51",
@@ -492,8 +507,7 @@
       "B": "Software Dev / Cloud Engineer",
       "C": "UI Designer",
       "D": "Marketer"
-    },
-    "correct": "B"
+    }
   },
   {
     "id": "q52",
@@ -503,8 +517,7 @@
       "B": "No, I report or delete it",
       "C": "I forward it to friends",
       "D": "I reply to the email"
-    },
-    "correct": "B"
+    }
   },
   {
     "id": "q53",
@@ -514,8 +527,7 @@
       "B": "Frontend/Mobile Development",
       "C": "Cybersecurity",
       "D": "Cloud Computing"
-    },
-    "correct": "B"
+    }
   },
   {
     "id": "q54",
@@ -525,8 +537,7 @@
       "B": "Notepad",
       "C": "Calculator",
       "D": "Paint"
-    },
-    "correct": "A"
+    }
   },
   {
     "id": "q55",
@@ -536,8 +547,7 @@
       "B": "Cybersecurity",
       "C": "Digital Marketing",
       "D": "Python Beginners"
-    },
-    "correct": "B"
+    }
   },
   {
     "id": "q56",
@@ -547,8 +557,7 @@
       "B": "Check the data source and verify",
       "C": "Start buying winter coats",
       "D": "Post it on social media"
-    },
-    "correct": "B"
+    }
   },
   {
     "id": "q57",
@@ -558,8 +567,7 @@
       "B": "Hidden (Hard to find)",
       "C": "Only at the bottom",
       "D": "No button needed"
-    },
-    "correct": "A"
+    }
   },
   {
     "id": "q58",
@@ -569,8 +577,7 @@
       "B": "Check Task Manager / Running Processes",
       "C": "Unplug the monitor",
       "D": "Change the keyboard"
-    },
-    "correct": "B"
+    }
   },
   {
     "id": "q59",
@@ -580,8 +587,7 @@
       "B": "Communication & Core Tech Skills",
       "C": "Having a nice webcam",
       "D": "Knowing the CEO"
-    },
-    "correct": "B"
+    }
   },
   {
     "id": "q60",
@@ -591,7 +597,6 @@
       "B": "To create creators and industry leaders",
       "C": "To host a party",
       "D": "To sell laptops"
-    },
-    "correct": "B"
+    }
   }
 ]

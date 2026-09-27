@@ -1,36 +1,33 @@
 import { NextResponse } from "next/server";
-import { redis } from "@/lib/redis";
-import { verifyToken, getAuthToken } from "@/lib/auth";
+import { requireCandidate } from "@/lib/auth";
+import { redis, backButtonKey } from "@/lib/redis";
+import { log } from "@/lib/logger";
+
+export const dynamic = "force-dynamic";
+
+// ─── BACK-NAVIGATION WARNING ──────────────────────────────────────────────────
+// Fired when the candidate navigates backwards inside the exam. Counted per
+// candidate so the page can escalate the messaging, TTL-bounded to the sitting.
+//
+// Recorded as an observation, not a verdict — same reasoning as /api/assessment/flag.
+// A human in the integrity queue decides what a pattern of these means.
+const MAX_WARNINGS = 2;
 
 export async function POST(request: Request) {
-  try {
-    const token = getAuthToken(request as any);
-    if (!token) {
-      return NextResponse.json({ success: false }, { status: 401 });
-    }
+  const { session, error } = await requireCandidate(request);
+  if (error) return error;
 
-    const payload = verifyToken(token);
-    if (!payload) {
-      return NextResponse.json({ success: false }, { status: 401 });
-    }
+  const key = backButtonKey(session.barcodeId);
+  const count = Number((await redis.incr(key)) ?? 1);
+  if (count === 1) await redis.expire(key, 60 * 60 * 2);
 
-    const { action } = await request.json();
+  log.info("assessment.backnav", { barcodeId: session.barcodeId, count });
 
-    // Track back button warnings in Redis
-    const backKey = `back:${payload.barcodeId}`;
-
-    if (action === "warning") {
-      const warningCount = await redis.incr(backKey);
-      await redis.expire(backKey, 3600); // Expire after 1 hour
-
-      console.log(
-        `🔙 Back button warning ${warningCount}/2 for ${payload.email}`,
-      );
-    }
-
-    return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error("Back button warning error:", error);
-    return NextResponse.json({ success: false }, { status: 500 });
-  }
+  return NextResponse.json({
+    success: true,
+    error: null,
+    count,
+    maxWarnings: MAX_WARNINGS,
+    warning: count < MAX_WARNINGS,
+  });
 }

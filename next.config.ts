@@ -2,11 +2,13 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   serverExternalPackages: ["pg", "pg-native", "sequelize"],
-  experimental: {
-    ...({
-      allowedDevOrigins: ["http://192.168.2.22:3000/", "localhost:3000"],
-    } as any),
-  },
+  allowedDevOrigins: ["*.tunnel.example.com", "local-origin.dev"],
+  // experimental: {
+  //   ...({
+  //     allowedDevOrigins: ["http://192.168.2.22:3000/", "localhost:3000"],
+  //     // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  //   } as any),
+  // },
 
   async headers() {
     return [

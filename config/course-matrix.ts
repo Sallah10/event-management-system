@@ -1,10 +1,11 @@
 export interface CourseMapping {
   slug: string;
+  /** Identifier in the downstream LMS. Carried in exports, never trusted inbound. */
   lmsId: number;
   displayName: string;
 }
 
-export const TECHSHIFT_COURSES: CourseMapping[] = [
+export const COURSES: CourseMapping[] = [
   {
     slug: "aws-certified-cloud-practitioner-13",
     lmsId: 13,
@@ -72,9 +73,7 @@ export const TECHSHIFT_COURSES: CourseMapping[] = [
   },
 ];
 
-// DYNAMIC MATH: Calculate limit per course based on the 13 courses above
-export const TOTAL_SLOTS = Number(process.env.TOTAL_SLOTS) || 546;
-export const LIMIT_PER_COURSE = Math.floor(
-  TOTAL_SLOTS / TECHSHIFT_COURSES.length,
-);
-// Math: 546 / 13 = 42 slots per course.
+// NOTE: TOTAL_SLOTS and LIMIT_PER_COURSE now live in config/rules.ts, which is
+// the single source of truth for every business number. They used to be
+// declared here AND in config/event-settings.ts, the two were never compared,
+// and the event-settings copy was read by nothing at all.

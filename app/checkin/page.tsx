@@ -1,497 +1,439 @@
 "use client";
 
-import { useEffect, useState, useRef, useCallback } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Html5Qrcode } from "html5-qrcode";
 import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import {
-  QrCode,
-  ShieldCheck,
   AlertTriangle,
-  Loader2,
   Camera,
-  Keyboard,
   CheckCircle2,
+  Keyboard,
+  Loader2,
   ScanLine,
+  Users,
 } from "lucide-react";
+import { apiFetch } from "@/lib/client/api";
+import { COURSES } from "@/config/course-matrix";
+import { BRAND } from "@/config/branding";
+import { VENUE_CAPACITY } from "@/config/rules";
+import { cn } from "@/lib/utils";
+
+// ─── CHECK-IN DESK ────────────────────────────────────────────────────────────
+// The camera + hardware-gun behaviour here was the most valuable part of the
+// original, and it is kept: a door queue cannot wait for someone to find the
+// right app, and barcode guns behave differently enough per device that a
+// keyboard-capture layer earns its keep.
+//
+// Four things were wrong around it:
+//
+// 1. THE KEYBOARD HANDLER WAS WRITTEN TWICE. Lines 194-247 and 262-303 of the
+//    old file were the same ~50 lines, differing only in what the 500ms timeout
+//    did (discard the buffer, or submit it). A `useEffect` assigned the second
+//    over the first, so the first version was unreachable — a live edit that
+//    looked like a fix and was silently reverted by the line below it. It is one
+//    handler now, and it submits on timeout, which is the behaviour that helps a
+//    candidate whose gun is slow.
+//
+// 2. SUCCESS WAS PARSED OUT OF A PROSE STRING.
+//    `info.message?.split(": ")[1] || info.message` — the greeting is built as
+//    `Welcome, ${name}!` and then taken apart again to recover the name the
+//    server already sent in its own field. One copy-edit of that template and
+//    the door displays "Welcome," with nothing after it.
+//
+// 3. `info.course` is a slug. The screen showed the candidate their raw
+//    registration slug — "aws-certified-cloud-practitioner-13" — on the one
+//    display a human reads out loud.
+//
+// 4. Raw `fetch` for an authenticated endpoint, and `console.log` of every
+//    single scan, which put every attendee's ticket in the browser console of a
+//    shared venue laptop.
+//
+// A door has one job and it is unforgiving: scan, get an unambiguous answer,
+// scan again. Every state below is a decision the person on the desk has to
+// make, and each one says what to do next.
+
+interface CheckinOk {
+  name: string;
+  courseSlug: string | null;
+  venueCount: number;
+  venueCapacity: number;
+}
+
+type DeskState =
+  | { kind: "IDLE" }
+  | { kind: "SCANNING" }
+  | { kind: "OK"; name: string; course: string; count: number; capacity: number }
+  | { kind: "DENIED"; headline: string; detail: string; tone: "warn" | "stop" };
+
+const courseLabel = (slug: string | null): string => {
+  if (!slug) return "Open admission";
+  return COURSES.find((course) => course.slug === slug)?.displayName ?? slug;
+};
+
+/** Gun buffer timeout. Slow hubs on older USB scanners need the room. */
+const GUN_IDLE_MS = 500;
 
 export default function CheckinPage() {
-  const [status, setStatus] = useState<
-    "IDLE" | "SCANNING" | "SUCCESS" | "ERROR"
-  >("IDLE");
-  const [info, setInfo] = useState<any>(null);
-  const [error, setError] = useState("");
+  const [state, setState] = useState<DeskState>({ kind: "IDLE" });
   const [inputMode, setInputMode] = useState<"camera" | "gun">("camera");
   const [scanBuffer, setScanBuffer] = useState("");
-  const [cameraReady, setCameraReady] = useState(false);
 
-  const html5QrCode = useRef<Html5Qrcode | null>(null);
-  const hardwareInputRef = useRef<HTMLInputElement>(null);
+  const scanner = useRef<Html5Qrcode | null>(null);
+  const hardwareInput = useRef<HTMLInputElement>(null);
+  const busy = useRef(false);
+  const lastScan = useRef("");
+  const buffer = useRef("");
+  const bufferTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const modeRef = useRef<"camera" | "gun">("camera");
+  const verifyRef = useRef<(ticket: string) => void>(() => {});
 
-  // These refs let callbacks always see latest values without re-creating them
-  const isProcessing = useRef(false);
-  const lastScanRef = useRef<string>("");
-  const scanBufferRef = useRef<string>("");
-  const scanTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const inputModeRef = useRef<"camera" | "gun">("camera");
-  const statusRef = useRef<"IDLE" | "SCANNING" | "SUCCESS" | "ERROR">("IDLE");
-
-  // Keep refs in sync with state
   useEffect(() => {
-    inputModeRef.current = inputMode;
+    modeRef.current = inputMode;
   }, [inputMode]);
-  useEffect(() => {
-    statusRef.current = status;
-  }, [status]);
 
-  // ─── RESET AFTER SCAN ────────────────────────────────────────────────────
-  const resetAfterDelay = useCallback((delay: number) => {
-    setTimeout(() => {
-      setStatus("IDLE");
-      setInfo(null);
-      isProcessing.current = false;
-      lastScanRef.current = "";
-
-      if (
-        inputModeRef.current === "camera" &&
-        html5QrCode.current?.isScanning
-      ) {
-        try {
-          html5QrCode.current.resume();
-        } catch (_) {}
-      }
-
-      if (hardwareInputRef.current) {
-        hardwareInputRef.current.value = "";
-        hardwareInputRef.current.focus();
-      }
-    }, delay);
+  const stopScanning = useCallback(() => {
+    // pause() and resume() are synchronous in html5-qrcode — only start() and
+    // stop() return promises. The original code .catch()ed all four.
+    if (scanner.current?.isScanning) scanner.current.pause();
   }, []);
 
-  // ─── UNIFIED VERIFY ───────────────────────────────────────────────────────
-  const handleVerify = useCallback(
-    async (barcodeId: string) => {
-      const cleanId = barcodeId.trim().toUpperCase();
+  const resume = useCallback(() => {
+    if (modeRef.current === "camera" && scanner.current?.isScanning) {
+      scanner.current.resume();
+    }
+    hardwareInput.current?.focus();
+  }, []);
 
-      if (!cleanId || cleanId.length < 3) return;
-      if (isProcessing.current) return;
-      if (cleanId === lastScanRef.current) return;
-
-      console.log("✅ Verifying:", cleanId);
-      lastScanRef.current = cleanId;
-      isProcessing.current = true;
-
-      setStatus("SCANNING");
-      setError("");
-
-      // Pause camera immediately
-      if (
-        inputModeRef.current === "camera" &&
-        html5QrCode.current?.isScanning
-      ) {
-        try {
-          html5QrCode.current.pause();
-        } catch (_) {}
-      }
-
-      try {
-        const res = await fetch("/api/check-in", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ barcodeId: cleanId }),
-        });
-
-        const data = await res.json();
-        console.log("API Response:", data);
-
-        if (data.success) {
-          setStatus("SUCCESS");
-          setInfo(data);
-          if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
-          resetAfterDelay(3000);
-        } else {
-          setStatus("ERROR");
-          setError(data.message || "Check-in failed");
-          if (navigator.vibrate) navigator.vibrate([100, 50, 100, 50, 100]);
-          resetAfterDelay(4000);
-        }
-      } catch (err) {
-        console.error("Network error:", err);
-        setStatus("ERROR");
-        setError("Network error. Try again.");
-        resetAfterDelay(4000);
-      }
+  /** Back to neutral, ready for the next person in the queue. */
+  const reset = useCallback(
+    (delay: number) => {
+      setTimeout(() => {
+        setState({ kind: "IDLE" });
+        busy.current = false;
+        lastScan.current = "";
+        resume();
+      }, delay);
     },
-    [resetAfterDelay],
+    [resume],
   );
 
-  // ─── CAMERA SCANNER ───────────────────────────────────────────────────────
-  // FIX: startCamera is called AFTER the reader div is confirmed in the DOM
+  const verify = useCallback(
+    async (raw: string) => {
+      const ticket = raw.trim().toUpperCase();
+      if (ticket.length < 3) return;
+      // One scan, one request. A gun fires the same code repeatedly while the
+      // first request is in flight, and a queue of duplicate requests is a queue
+      // of duplicate "already checked in" screens.
+      if (busy.current || ticket === lastScan.current) return;
+
+      lastScan.current = ticket;
+      busy.current = true;
+      setState({ kind: "SCANNING" });
+      stopScanning();
+
+      const result = await apiFetch<CheckinOk>("/api/check-in", {
+        method: "POST",
+        body: JSON.stringify({ barcodeId: ticket }),
+      });
+
+      navigator.vibrate?.(result.ok ? [200, 100, 200] : [100, 50, 100, 50, 100]);
+
+      if (result.ok) {
+        setState({
+          kind: "OK",
+          name: result.data.name,
+          course: courseLabel(result.data.courseSlug),
+          count: result.data.venueCount,
+          capacity: result.data.venueCapacity,
+        });
+        reset(4000);
+        return;
+      }
+
+      // "Already in" is a routine occurrence at a door; a full venue or an
+      // unknown ticket means a human has to step in. The desk needs to tell those
+      // apart at a glance, so the tone differs.
+      const tone = result.code === "ALREADY_CHECKED_IN" ? "warn" : "stop";
+      setState({
+        kind: "DENIED",
+        headline: result.message,
+        detail: result.details ?? result.message,
+        tone,
+      });
+      reset(result.code === "NETWORK" ? 5000 : 4000);
+    },
+    [reset, stopScanning],
+  );
+
+  verifyRef.current = verify;
+
+  // ─── CAMERA ────────────────────────────────────────────────────────────────
   const startCamera = useCallback(async () => {
-    // Wait for #reader element to actually exist in the DOM
+    // The scanner needs its mount point in the DOM. In gun mode that div is not
+    // rendered, so wait for it rather than assuming it is there.
     let attempts = 0;
-    const tryStart = async () => {
-      const readerElement = document.getElementById("reader");
-      if (!readerElement) {
-        attempts++;
-        if (attempts < 20) {
-          setTimeout(tryStart, 100); // retry every 100ms, up to 2 seconds
-        } else {
-          console.warn(
-            "Camera reader element never appeared, switching to gun mode",
-          );
-          setInputMode("gun");
-        }
-        return;
-      }
-
-      try {
-        if (!navigator.mediaDevices?.getUserMedia) {
-          setInputMode("gun");
-          return;
-        }
-
-        if (!html5QrCode.current) {
-          html5QrCode.current = new Html5Qrcode("reader");
-        }
-
-        if (html5QrCode.current.isScanning) {
-          try {
-            await html5QrCode.current.stop();
-          } catch (_) {}
-        }
-
-        await html5QrCode.current.start(
-          { facingMode: "environment" },
-          { fps: 20, qrbox: { width: 280, height: 280 }, aspectRatio: 1.0 },
-          (decodedText) => {
-            if (!isProcessing.current) {
-              handleVerify(decodedText);
-            }
-          },
-          () => {},
-        );
-
-        setCameraReady(true);
-        console.log("📷 Camera started successfully");
-      } catch (err) {
-        console.warn("Camera failed, switching to gun mode:", err);
-        setInputMode("gun");
-      }
-    };
-
-    tryStart();
-  }, [handleVerify]);
-
-  // ─── BARCODE GUN HANDLER ─────────────────────────────────────────────────
-  // FIX: Stable ref-based handler — never re-created, so the listener is added ONCE
-  const handleBarcodeInput = useRef((e: KeyboardEvent) => {
-    // Skip modifier-only keys
-    if (["Shift", "Control", "Alt", "Meta", "Tab"].includes(e.key)) return;
-    if (e.key.startsWith("F")) return;
-
-    // If we're already processing a scan, swallow all input
-    if (isProcessing.current) {
-      e.preventDefault();
+    while (!document.getElementById("scanner") && attempts < 20) {
+      attempts += 1;
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+    if (!document.getElementById("scanner")) {
+      setInputMode("gun");
+      return;
+    }
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setInputMode("gun");
       return;
     }
 
-    if (e.key === "Enter") {
-      e.preventDefault();
-      e.stopPropagation();
+    try {
+      if (!scanner.current) scanner.current = new Html5Qrcode("scanner");
+      if (scanner.current.isScanning) await scanner.current.stop();
 
-      // Clear any pending timeout
-      if (scanTimeoutRef.current) {
-        clearTimeout(scanTimeoutRef.current);
-        scanTimeoutRef.current = null;
-      }
-
-      const barcode = scanBufferRef.current.trim();
-      console.log("🔫 Gun Enter — barcode captured:", barcode);
-
-      if (barcode && barcode.length > 3) {
-        handleVerifyRef.current(barcode);
-      }
-
-      scanBufferRef.current = "";
-      setScanBuffer("");
-      if (hardwareInputRef.current) hardwareInputRef.current.value = "";
-      return;
+      await scanner.current.start(
+        { facingMode: "environment" },
+        { fps: 20, qrbox: { width: 260, height: 260 }, aspectRatio: 1 },
+        (decoded) => {
+          if (!busy.current) void verify(decoded);
+        },
+        () => {},
+      );
+    } catch {
+      // No camera permission, no camera, or a secure-context problem. The gun and
+      // the keyboard still work, so this is a downgrade rather than a dead page.
+      setInputMode("gun");
     }
+  }, [verify]);
 
-    if (e.key.length === 1) {
-      e.preventDefault();
-      scanBufferRef.current += e.key;
-      setScanBuffer(scanBufferRef.current);
-
-      if (hardwareInputRef.current) {
-        hardwareInputRef.current.value = scanBufferRef.current;
-      }
-
-      // FIX: Longer timeout (500ms) — barcode guns can be slow on some USB hubs
-      if (scanTimeoutRef.current) clearTimeout(scanTimeoutRef.current);
-      scanTimeoutRef.current = setTimeout(() => {
-        console.log("⏱ Scan timeout, buffer was:", scanBufferRef.current);
-        scanBufferRef.current = "";
-        setScanBuffer("");
-        if (hardwareInputRef.current) hardwareInputRef.current.value = "";
-        scanTimeoutRef.current = null;
-      }, 500);
-    }
-  });
-
-  // Keep handleVerify ref up to date
-  const handleVerifyRef = useRef(handleVerify);
+  // ─── GUN / KEYBOARD CAPTURE ────────────────────────────────────────────────
+  // One handler. A hardware scanner types a code and presses Enter, so the only
+  // thing this has to do is accumulate printable keys, swallow the modifiers and
+  // function keys that arrive as noise, and submit on Enter — or on the idle
+  // timeout, for the guns that never send one.
   useEffect(() => {
-    handleVerifyRef.current = handleVerify;
-  }, [handleVerify]);
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.metaKey || event.ctrlKey || event.altKey) return;
+      if (["Shift", "Tab", "Escape", "F5"].includes(event.key)) return;
+      if (event.key.length === 1 && /^F\d+$/.test(event.key)) return;
 
-  // Patch the gun handler to always call latest handleVerify
-  useEffect(() => {
-    handleBarcodeInput.current = (e: KeyboardEvent) => {
-      if (["Shift", "Control", "Alt", "Meta", "Tab"].includes(e.key)) return;
-      if (e.key.startsWith("F")) return;
-      if (isProcessing.current) {
-        e.preventDefault();
+      if (busy.current) {
+        // Swallow the rest of a scan we have already accepted, or the tail of it
+        // types itself into the page behind the result card.
+        event.preventDefault();
         return;
       }
 
-      if (e.key === "Enter") {
-        e.preventDefault();
-        e.stopPropagation();
-        if (scanTimeoutRef.current) {
-          clearTimeout(scanTimeoutRef.current);
-          scanTimeoutRef.current = null;
-        }
-        const barcode = scanBufferRef.current.trim();
-        console.log("🔫 Barcode gun Enter — value:", `"${barcode}"`);
-        if (barcode && barcode.length > 3) {
-          handleVerifyRef.current(barcode);
-        }
-        scanBufferRef.current = "";
+      if (event.key === "Enter") {
+        event.preventDefault();
+        if (bufferTimer.current) clearTimeout(bufferTimer.current);
+        const code = buffer.current.trim();
+        buffer.current = "";
         setScanBuffer("");
-        if (hardwareInputRef.current) hardwareInputRef.current.value = "";
+        if (hardwareInput.current) hardwareInput.current.value = "";
+        if (code.length > 3) verifyRef.current(code);
         return;
       }
 
-      if (e.key.length === 1) {
-        e.preventDefault();
-        scanBufferRef.current += e.key;
-        setScanBuffer(scanBufferRef.current);
-        if (hardwareInputRef.current)
-          hardwareInputRef.current.value = scanBufferRef.current;
+      if (event.key.length === 1) {
+        event.preventDefault();
+        buffer.current += event.key;
+        setScanBuffer(buffer.current);
+        if (hardwareInput.current) hardwareInput.current.value = buffer.current;
 
-        if (scanTimeoutRef.current) clearTimeout(scanTimeoutRef.current);
-        scanTimeoutRef.current = setTimeout(() => {
-          const barcode = scanBufferRef.current.trim();
-          console.log("⏱ Timeout fired, submitting:", barcode);
-          if (barcode && barcode.length > 3) {
-            handleVerifyRef.current(barcode); // ← submit instead of discard
-          }
-          scanBufferRef.current = "";
+        if (bufferTimer.current) clearTimeout(bufferTimer.current);
+        bufferTimer.current = setTimeout(() => {
+          // Fire on idle as well as Enter. Some scanners on some hubs never send
+          // Enter, and a door that silently swallows codes is worse than one that
+          // submits early.
+          const code = buffer.current.trim();
+          if (code.length > 3) verifyRef.current(code);
+          buffer.current = "";
           setScanBuffer("");
-          if (hardwareInputRef.current) hardwareInputRef.current.value = "";
-          scanTimeoutRef.current = null;
-        }, 500);
+          if (hardwareInput.current) hardwareInput.current.value = "";
+        }, GUN_IDLE_MS);
       }
     };
-  }, [handleVerify]);
 
-  // ─── SETUP — runs ONCE ────────────────────────────────────────────────────
-  useEffect(() => {
-    // FIX: Stable wrapper so the listener reference never changes
-    const keydownWrapper = (e: KeyboardEvent) => handleBarcodeInput.current(e);
-    window.addEventListener("keydown", keydownWrapper, { capture: true });
-
-    const focusInput = () => {
-      if (hardwareInputRef.current && !isProcessing.current) {
-        hardwareInputRef.current.focus();
-      }
+    window.addEventListener("keydown", onKeyDown, { capture: true });
+    const focus = () => {
+      if (!busy.current) hardwareInput.current?.focus();
     };
-    document.addEventListener("click", focusInput);
-    setTimeout(focusInput, 300);
-
-    // FIX: Start camera after a short delay to ensure DOM is rendered
-    const cameraTimer = setTimeout(() => {
-      startCamera();
-    }, 200);
+    document.addEventListener("click", focus);
+    const start = setTimeout(focus, 300);
+    const camera = setTimeout(() => void startCamera(), 200);
 
     return () => {
-      window.removeEventListener("keydown", keydownWrapper, { capture: true });
-      document.removeEventListener("click", focusInput);
-      clearTimeout(cameraTimer);
-      if (scanTimeoutRef.current) clearTimeout(scanTimeoutRef.current);
-      if (html5QrCode.current?.isScanning) {
-        html5QrCode.current.stop().catch(() => {});
+      window.removeEventListener("keydown", onKeyDown, { capture: true });
+      document.removeEventListener("click", focus);
+      clearTimeout(start);
+      clearTimeout(camera);
+      if (bufferTimer.current) clearTimeout(bufferTimer.current);
+      if (scanner.current?.isScanning) {
+        scanner.current.stop().catch(() => {});
       }
     };
+    // Mount only. startCamera is stable enough and re-running it would fight the
+    // operator toggling modes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // ← intentionally empty: runs once on mount
+  }, []);
 
-  // ─── TOGGLE MODE ─────────────────────────────────────────────────────────
   const toggleMode = async () => {
     if (inputMode === "camera") {
-      if (html5QrCode.current?.isScanning) {
-        try {
-          await html5QrCode.current.stop();
-        } catch (_) {}
+      if (scanner.current?.isScanning) {
+        await scanner.current.stop().catch(() => {});
       }
-      setCameraReady(false);
       setInputMode("gun");
     } else {
       setInputMode("camera");
-      // Give React time to render #reader before starting camera
-      setTimeout(() => startCamera(), 150);
+      setTimeout(() => void startCamera(), 150);
     }
-    setTimeout(() => hardwareInputRef.current?.focus(), 100);
+    setTimeout(() => hardwareInput.current?.focus(), 100);
   };
 
-  if (process.env.NODE_ENV === "development") {
-    (window as any).testCheckin = handleVerify;
-  }
-
   return (
-    <div className="min-h-screen bg-[#E6E6FF] flex items-center justify-center p-4 font-sans">
-      <Card className="w-full max-w-md border-2 border-[#0000FF] shadow-2xl bg-white overflow-hidden rounded-[40px]">
-        {/* Hidden input to capture focus for barcode gun */}
+    <div className="grid min-h-dvh place-items-center bg-paper p-4 text-ink">
+      <div className="w-full max-w-md overflow-hidden rounded-3xl border border-ink/10 bg-white shadow-xl">
+        {/* Focus sink for the gun. Invisible but real: without a focused element
+            the browser window may not be the keyboard target at a kiosk. */}
         <input
-          ref={hardwareInputRef}
+          ref={hardwareInput}
           type="text"
-          className="absolute opacity-0 pointer-events-none w-0 h-0"
-          autoFocus
+          className="absolute h-0 w-0 opacity-0"
+          aria-hidden
+          tabIndex={-1}
           readOnly
         />
 
-        <CardHeader className="bg-[#0000FF] text-white text-center py-8">
-          <CardTitle className="text-2xl font-black tracking-tighter flex items-center justify-center gap-2 italic">
-            <ShieldCheck className="h-7 w-7 text-[#FFBB00]" /> TS2026 ENTRANCE
-          </CardTitle>
-          <CardDescription className="text-blue-100 font-bold text-[10px] uppercase tracking-widest mt-1">
-            <span className="flex items-center justify-center gap-2">
-              <ScanLine className="h-4 w-4" />
-              {inputMode === "camera" ? "CAMERA MODE" : "BARCODE GUN MODE"}
-            </span>
-          </CardDescription>
-        </CardHeader>
-
-        <CardContent className="p-8 space-y-6">
-          <button
-            onClick={toggleMode}
-            className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2 px-4 rounded-xl flex items-center justify-center gap-2 transition-all text-sm border border-slate-300"
-          >
+        <header className="bg-ink px-6 py-5 text-paper">
+          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-paper/60">
+            {BRAND.shortName}
+          </p>
+          <h1 className="mt-1 flex items-center gap-2 text-lg font-bold">
+            <ScanLine className="h-5 w-5 text-amber" aria-hidden />
+            Entrance check-in
+          </h1>
+          <p className="mt-1.5 flex items-center gap-1.5 text-xs text-paper/60">
             {inputMode === "camera" ? (
               <>
-                <Keyboard size={16} /> Switch to Barcode Gun Mode
+                <Camera className="h-3.5 w-3.5" aria-hidden /> Camera
               </>
             ) : (
               <>
-                <Camera size={16} /> Switch to Camera Mode
+                <Keyboard className="h-3.5 w-3.5" aria-hidden /> Barcode gun
+              </>
+            )}
+            <span className="mx-1 text-paper/30">·</span>
+            <Users className="h-3.5 w-3.5" aria-hidden />
+            cap {VENUE_CAPACITY.toLocaleString()}
+          </p>
+        </header>
+
+        <div className="space-y-4 p-5">
+          <button
+            onClick={toggleMode}
+            className="flex w-full items-center justify-center gap-2 rounded-full border border-ink/15 px-4 py-2 text-xs font-semibold transition-colors hover:border-ink/40"
+          >
+            {inputMode === "camera" ? (
+              <>
+                <Keyboard className="h-4 w-4" aria-hidden /> Use a barcode gun
+              </>
+            ) : (
+              <>
+                <Camera className="h-4 w-4" aria-hidden /> Use the camera
               </>
             )}
           </button>
 
-          {/* Camera view — always rendered so #reader is in DOM */}
-          <div className={inputMode === "camera" ? "relative group" : "hidden"}>
+          {/* Always mounted in camera mode so html5-qrcode has a node to attach
+              to. An unmounted-then-mounted div is why the original polled for it
+              20 times. */}
+          <div className={cn(inputMode === "camera" ? "block" : "hidden")}>
             <div
-              id="reader"
-              className="rounded-3xl overflow-hidden bg-slate-900 aspect-square border-4 border-slate-100 shadow-inner"
+              id="scanner"
+              className="aspect-square w-full overflow-hidden rounded-2xl bg-ink"
             />
-            {status === "IDLE" && (
-              <div className="absolute inset-0 pointer-events-none border-2 border-[#FFBB00]/30 rounded-3xl animate-pulse" />
-            )}
           </div>
 
           {inputMode === "gun" && (
-            <div className="bg-slate-900 rounded-3xl aspect-square border-4 border-[#FFBB00] flex items-center justify-center">
-              <div className="text-center p-4">
-                <Keyboard className="h-16 w-16 text-[#FFBB00] mx-auto mb-4" />
-                <p className="text-white font-bold text-lg">BARCODE GUN MODE</p>
-                <p className="text-slate-400 text-sm mt-2">Scan now...</p>
+            <div className="grid aspect-[3/2] place-items-center rounded-2xl bg-ink p-4">
+              <div className="text-center">
+                <Keyboard className="mx-auto h-10 w-10 text-amber" aria-hidden />
+                <p className="mt-3 text-sm font-bold text-paper">Scan or type a code</p>
                 {scanBuffer && (
-                  <div className="mt-4 bg-slate-800 p-3 rounded-lg">
-                    <p className="text-[#FFBB00] font-mono break-all">
-                      Scanning: {scanBuffer}
-                    </p>
-                  </div>
+                  <p className="mt-2 break-all font-mono text-xs text-amber">
+                    {scanBuffer}
+                  </p>
                 )}
               </div>
             </div>
           )}
 
-          <div className="min-h-32 flex items-center justify-center text-center">
-            {status === "IDLE" && (
-              <div className="space-y-2">
-                <p className="text-[#0000FF] font-black animate-pulse flex items-center justify-center gap-2">
-                  <QrCode size={20} /> READY FOR SCAN...
-                </p>
-                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tighter">
-                  {inputMode === "camera"
-                    ? "Point camera at QR code"
-                    : "Scan barcode with gun"}
+          <div className="grid min-h-32 place-items-center">
+            {state.kind === "IDLE" && (
+              <p className="flex items-center gap-2 text-sm font-semibold text-ink-soft">
+                <span className="h-2 w-2 animate-pulse rounded-full bg-amber" />
+                Ready for the next ticket
+              </p>
+            )}
+
+            {state.kind === "SCANNING" && (
+              <p className="flex items-center gap-2 text-sm font-semibold text-ink-soft">
+                <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+                Checking
+              </p>
+            )}
+
+            {state.kind === "OK" && (
+              <div
+                className="w-full rounded-2xl border border-green-300 bg-green-50 p-5 text-center"
+                role="status"
+              >
+                <CheckCircle2 className="mx-auto h-8 w-8 text-green-700" aria-hidden />
+                <p className="mt-2 text-base font-bold text-green-900">{state.name}</p>
+                <p className="mt-1 text-sm text-green-800">{state.course}</p>
+                <p className="mt-2 text-[11px] font-semibold uppercase tracking-wider text-green-700">
+                  In · {state.count.toLocaleString()} /{" "}
+                  {state.capacity.toLocaleString()}
                 </p>
               </div>
             )}
 
-            {status === "SCANNING" && (
-              <div className="flex flex-col items-center gap-2">
-                <Loader2 className="h-8 w-8 animate-spin text-[#0000FF]" />
-                <p className="font-black text-[#0000FF] italic">
-                  AUTHENTICATING...
+            {state.kind === "DENIED" && (
+              <div
+                className={cn(
+                  "w-full rounded-2xl border p-5 text-center",
+                  state.tone === "warn"
+                    ? "border-amber-deep/40 bg-amber/10"
+                    : "border-red-300 bg-red-50",
+                )}
+                role="status"
+              >
+                <AlertTriangle
+                  className={cn(
+                    "mx-auto h-8 w-8",
+                    state.tone === "warn" ? "text-amber-deep" : "text-red-700",
+                  )}
+                  aria-hidden
+                />
+                <p
+                  className={cn(
+                    "mt-2 text-base font-bold",
+                    state.tone === "warn" ? "text-ink" : "text-red-900",
+                  )}
+                >
+                  {state.headline}
+                </p>
+                <p
+                  className={cn(
+                    "mt-1 text-sm",
+                    state.tone === "warn" ? "text-ink-soft" : "text-red-800",
+                  )}
+                >
+                  {state.detail}
                 </p>
               </div>
             )}
-
-            {status === "SUCCESS" && info && (
-              <div className="w-full bg-green-50 border-2 border-green-500 p-6 rounded-[25px] animate-in zoom-in-95">
-                <div className="flex items-center justify-center gap-3 mb-2">
-                  <CheckCircle2 className="h-6 w-6 text-green-600" />
-                  <span className="text-green-900 font-black text-xl">
-                    ACCESS GRANTED
-                  </span>
-                </div>
-                <p className="text-green-700 font-bold text-lg">
-                  {info.message?.split(": ")[1] || info.message || "Welcome!"}
-                </p>
-                <Badge className="bg-green-600 text-white mt-2 px-4 py-1">
-                  {info.course || "Attendee"}
-                </Badge>
-              </div>
-            )}
-
-            {status === "ERROR" && (
-              <div className="w-full bg-red-50 border-2 border-red-500 p-6 rounded-[25px] animate-in">
-                <div className="flex items-center justify-center gap-3 mb-2">
-                  <AlertTriangle className="h-6 w-6 text-red-600" />
-                  <span className="text-red-900 font-black text-lg uppercase italic">
-                    DENIED
-                  </span>
-                </div>
-                <p className="text-red-600 text-sm font-bold">{error}</p>
-              </div>
-            )}
-          </div>
-        </CardContent>
-
-        <div className="bg-slate-50 p-4 border-t flex justify-center gap-4 text-slate-400">
-          <div
-            className={`flex items-center gap-2 text-[10px] font-bold uppercase ${inputMode === "camera" ? "text-[#0000FF]" : ""}`}
-          >
-            <Camera size={14} /> QR Mode
-          </div>
-          <span className="text-slate-300">•</span>
-          <div
-            className={`flex items-center gap-2 text-[10px] font-bold uppercase ${inputMode === "gun" ? "text-[#0000FF]" : ""}`}
-          >
-            <Keyboard size={14} /> Gun Mode
           </div>
         </div>
-      </Card>
+      </div>
     </div>
   );
 }

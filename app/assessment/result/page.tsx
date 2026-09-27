@@ -1,182 +1,154 @@
-"use client";
+import { cookies } from "next/headers";
+import Link from "next/link";
+import { redirect } from "next/navigation";
+import { ArrowRight, Mail, Trophy, XCircle } from "lucide-react";
+import { CANDIDATE_COOKIE, verifyCandidateSession } from "@/lib/session";
+import { Registrant } from "@/lib/models/Registrant";
+import { ensureDatabase } from "@/lib/db";
+import { PASS_MARK_PERCENT, QUALIFIED_POOL_SIZE } from "@/config/rules";
+import { BRAND } from "@/config/branding";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Trophy,
-  ArrowRight,
-  XCircle,
-  AlertTriangle,
-  ExternalLink,
-} from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+// ─── OBJECTIVE RESULT (SERVER) ────────────────────────────────────────────────
+// The score on this page used to come from `localStorage.getItem("latest_result")`
+// — a JSON blob the previous page wrote. Two things wrong with that:
+//
+// 1. It is the candidate's own browser telling them their result. Editing one
+//    character in devtools turns "below the pass mark" into "Congratulations".
+//    Nothing about the database changed. The number had to be moved back to being
+//    read from the server, which is the only place it was ever true.
+//
+// 2. The page also linked to a real, private Google Form for the "next stream
+//    waitlist" — an external URL, in a public repository, pointing at somebody's
+//    private document. Removed. The contact address now comes from BRAND.
+//
+// It also renders a "REMEMBER!" overlay with a rules list and a "START THEORY
+// NOW" button that was dead code, commented-out score panels, and a claim in the
+// body — "Ranking is FIRST COME, FIRST SERVE not based on scores" — which is the
+// exact opposite of how lib/ranking.ts ranks. It ranks by score first, then by
+// finish time. So the page was stating a falsehood about the one rule candidates
+// care about most, in the place they were most likely to read carefully.
 
-export default function ResultPage() {
-  const router = useRouter();
-  const [data, setData] = useState<any>(null);
-  const [showRulesFlash, setShowRulesFlash] = useState(false);
+export const dynamic = "force-dynamic";
 
-  useEffect(() => {
-    const saved = localStorage.getItem("latest_result");
-    if (!saved) return router.push("/assessment/login");
-    const parsed = JSON.parse(saved);
-    setData(parsed);
-    if (!parsed.qualified) {
-      localStorage.removeItem("user_email");
-      localStorage.removeItem("user_ticket");
-      localStorage.removeItem("device_id");
-      // We leave "latest_result" so they can still see their score until they leave the page
-    }
-  }, [router]);
+export default async function ResultPage() {
+  const store = await cookies();
+  const session = await verifyCandidateSession(store.get(CANDIDATE_COOKIE)?.value);
 
-  if (!data) return null;
-  const isQualified = data.qualified;
+  if (!session) redirect("/assessment/login");
+
+  await ensureDatabase();
+
+  const student = await Registrant.findOne({
+    where: { email: session.email, barcodeId: session.barcodeId },
+  });
+
+  if (!student) redirect("/assessment/login");
+
+  // Past the objective paper there is nothing to report here.
+  if (!student.objectiveFinishedAt) redirect("/assessment/exam");
+  if (
+    student.status === "completed" ||
+    student.status === "shortlisted" ||
+    student.status === "awarded"
+  ) {
+    redirect("/assessment/thank-you");
+  }
+
+  const score = student.objectiveScore ?? 0;
+  const rank = student.objectiveRank;
+  const qualified = student.status === "qualified";
+  const metPassMark = score >= PASS_MARK_PERCENT;
+
+  const heading = qualified
+    ? "You're in the pool"
+    : metPassMark
+      ? "You met the pass mark"
+      : "You didn't reach the pass mark";
+
+  const body = qualified
+    ? "Your score put you inside the qualifying pool. The theory section is open to you now."
+    : metPassMark
+      ? `You scored ${score}%, which meets the ${PASS_MARK_PERCENT}% pass mark. The pool of ${QUALIFIED_POOL_SIZE} places filled before your turn, so you've been added to the waitlist rather than the shortlist. Your score and finish time are on record, and both are kept — that matters if places are released later.`
+      : `You scored ${score}%, below the ${PASS_MARK_PERCENT}% needed to continue. Your score has been recorded.`;
 
   return (
-    <div className="min-h-screen bg-[#E6E6FF] flex items-center justify-center p-6">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-lg"
-      >
-        {/* THE RULES FLASH OVERLAY */}
-        <AnimatePresence>
-          {showRulesFlash && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="fixed inset-0 z-100 bg-[#0000FF] p-6 flex items-center justify-center"
-            >
-              <div className="bg-white p-8 rounded-[32px] max-w-md w-full shadow-2xl space-y-6">
-                <h2 className="text-3xl font-black text-[#0000FF] italic flex items-center gap-2">
-                  <AlertTriangle className="text-[#FFBB00]" /> REMEMBER!
-                </h2>
-                <div className="space-y-4 text-gray-700 font-bold uppercase text-xs tracking-wider">
-                  <p>1. Multiple device logins = Disqualification</p>
-                  <p>2. No copying and pasting allowed</p>
-                  <p>3. No use of AI (Strictly monitored)</p>
-                  <p>4. Opening new tabs is prohibited</p>
-                  <p className="text-[#0000FF] bg-blue-50 p-2 rounded-lg">
-                    5. Ranking is FIRST COME, FIRST SERVE not based on scores
-                  </p>
-                </div>
-                <button
-                  onClick={() => router.push("/assessment/theory")}
-                  className="w-full bg-[#0000FF] text-white py-5 rounded-2xl font-black text-lg shadow-xl"
-                >
-                  START THEORY NOW
-                </button>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        <Card className="border-none shadow-2xl overflow-hidden rounded-[40px]">
+    <main className="grid min-h-dvh place-items-center bg-paper px-4 py-12 text-ink">
+      <div className="w-full max-w-lg">
+        <div className="overflow-hidden rounded-3xl border border-ink/10 bg-white shadow-sm">
           <div
-            className={`p-10 text-center text-white ${isQualified ? "bg-[#0000FF]" : "bg-red-600"} -mt-10 relative`}
+            className={`px-8 py-9 text-paper ${
+              qualified ? "bg-ink" : "bg-ink/85"
+            }`}
           >
-            <h1 className="text-2xl font-black italic uppercase leading-tight">
-              {isQualified ? "Congratulations!" : "Oops! "}
+            {qualified ? (
+              <Trophy className="mb-4 h-8 w-8 text-amber" aria-hidden />
+            ) : (
+              <XCircle className="mb-4 h-8 w-8 text-amber/70" aria-hidden />
+            )}
+            <h1 className="text-2xl font-bold leading-tight sm:text-3xl">
+              {heading}
             </h1>
-            <p className="mt-2 text-sm opacity-90 font-bold uppercase tracking-widest">
-              {isQualified
-                ? // ? "You just completed the objective session. Now proceed with the Theory"
-                  "You made it!"
-                : "You didn't meet the cut-off mark this time. Try again next stream."}
-            </p>
           </div>
 
-          <CardContent className="p-8 space-y-8 bg-white">
-            {/* THE 2 NUMBERS REQUIREMENT */}
-            {/* <div className="grid grid-cols-2 gap-4">
-              <div className="bg-slate-50 p-6 rounded-3xl border-2 border-gray-100 text-center">
-                <p className="text-[10px] font-black text-gray-400 uppercase mb-2">
-                  1. Your Score + 80%
+          <div className="space-y-7 px-8 py-8">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="rounded-2xl bg-paper p-5 text-center">
+                <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-ink-soft">
+                  Your score
                 </p>
-                <p
-                  className={`text-4xl font-black ${isQualified ? "text-[#0000FF]" : "text-red-500"}`}
-                >
-                  {data.score}%{" "}
-                  <span className="text-xs text-gray-400">/ 80%</span>
+                <p className="mt-2 text-4xl font-bold tabular-nums">
+                  {score}
+                  <span className="text-sm font-semibold text-ink-soft">%</span>
                 </p>
-              </div>
-              <div className="bg-slate-50 p-6 rounded-3xl border-2 border-gray-100 text-center">
-                <p className="text-[10px] font-black text-gray-400 uppercase mb-2">
-                  2. Submission -#
-                </p>
-                <p className="text-4xl font-black text-gray-800">
-                  #{data.submissionRank}
-                </p>
-              </div>
-            </div> */}
-            {/* STATS SECTION */}
-            <div
-              className={`grid ${isQualified ? "grid-cols-2" : "grid-cols-1"} gap-4`}
-            >
-              {/* Score Card - Always Show */}
-              <div className="bg-slate-50 p-6 rounded-3xl border-2 border-gray-100 text-center">
-                <p className="text-[10px] font-black text-gray-400 uppercase mb-2">
-                  Your Score
-                </p>
-                <p
-                  className={`text-4xl font-black ${isQualified ? "text-[#0000FF]" : "text-red-500"}`}
-                >
-                  {data.score}%{" "}
-                  <span className="text-xs text-gray-400">/ 80%</span>
+                <p className="mt-1 text-[11px] text-ink-soft">
+                  pass mark {PASS_MARK_PERCENT}%
                 </p>
               </div>
 
-              {/* Rank Card - Only Show for Qualified */}
-              {isQualified && data.submissionRank && (
-                <div className="bg-slate-50 p-6 rounded-3xl border-2 border-gray-100 text-center">
-                  <p className="text-[10px] font-black text-gray-400 uppercase mb-2">
-                    Your Rank
-                  </p>
-                  <p className="text-4xl font-black text-[#0000FF]">
-                    #{data.submissionRank}
-                  </p>
-                  <p className="text-[8px] text-gray-400 mt-1">
-                    among qualified candidates
-                  </p>
-                </div>
-              )}
+              <div className="rounded-2xl bg-paper p-5 text-center">
+                <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-ink-soft">
+                  {qualified ? "Pool position" : "Overall position"}
+                </p>
+                <p className="mt-2 text-4xl font-bold tabular-nums">
+                  {rank ? `#${rank}` : "—"}
+                </p>
+                <p className="mt-1 text-[11px] text-ink-soft">
+                  of {QUALIFIED_POOL_SIZE} places
+                </p>
+              </div>
             </div>
 
-            {/* MESSAGE BODY */}
-            <div
-              className={`p-6 rounded-3xl flex flex-col items-center text-center gap-3 ${isQualified ? "bg-blue-50" : "bg-red-50"}`}
-            >
-              {isQualified ? (
-                <Trophy className="text-[#0000FF] h-10 w-10" />
-              ) : (
-                <XCircle className="text-red-500 h-10 w-10" />
-              )}
-              <p className="text-sm font-bold text-gray-700 leading-relaxed italic">
-                {data.message}
-              </p>
-            </div>
+            <p className="text-sm leading-relaxed text-ink-soft">{body}</p>
 
-            {/* ACTION BUTTONS */}
-            {isQualified ? (
-              <button
-                onClick={() => setShowRulesFlash(true)}
-                className="w-full bg-[#FFBB00] text-[#0000FF] py-6 rounded-[24px] font-black text-xl shadow-[0_15px_35px_rgba(255,187,0,0.4)] flex items-center justify-center gap-2 hover:scale-[1.02] transition-all"
+            {qualified ? (
+              <Link
+                href="/assessment/theory"
+                className="flex w-full items-center justify-center gap-2 rounded-full bg-amber py-5 text-base font-bold text-ink"
               >
-                PROCEED TO THEORY <ArrowRight />
-              </button>
+                Go to the theory section
+                <ArrowRight className="h-5 w-5" aria-hidden />
+              </Link>
             ) : (
-              <a
-                href="https://forms.gle/JLWKJyFJwQXCuQqG6"
-                target="_blank"
-                className="w-full bg-gray-900 text-white py-6 rounded-[24px] font-black text-sm md:text-md flex items-center justify-center gap-2"
-              >
-                JOIN NEXT STREAM WAITLIST <ExternalLink size={18} />
-              </a>
+              <p className="rounded-2xl bg-paper p-4 text-sm leading-relaxed text-ink-soft">
+                Questions about your result? Email{" "}
+                <a
+                  href={`mailto:${BRAND.contactEmail}`}
+                  className="font-semibold text-ink underline underline-offset-4"
+                >
+                  {BRAND.contactEmail}
+                </a>{" "}
+                with your ticket reference and quote the score above. Please don&apos;t
+                include a copy of the paper itself.
+              </p>
             )}
-          </CardContent>
-        </Card>
-      </motion.div>
-    </div>
+
+            <p className="flex items-center justify-center gap-2 text-xs text-ink-soft">
+              <Mail className="h-3.5 w-3.5" aria-hidden />
+              {BRAND.organisation} · {BRAND.name}
+            </p>
+          </div>
+        </div>
+      </div>
+    </main>
   );
 }
