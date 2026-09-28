@@ -44,27 +44,51 @@ consistency of the rules of the round.
 
 ---
 
-## 2. The three secrets
+## 2. The secrets and pins
 
-`JWT_SECRET`, `DEVICE_PEPPER` and `WP_TO_APP_SECRET` are required. The process
-throws at startup without them rather than falling back to a default.
-
-That behaviour is deliberate. This codebase once had four different hardcoded
-fallback JWT secrets across six files. When the variable was missing, some routes
-broke loudly and others silently accepted tokens signed with a string published
-in the repository. That is fail-open on a security boundary, so `lib/env.ts` now
-fails closed.
-
-Generate them:
+Generate the three secrets:
 
 ```bash
 openssl rand -base64 32   # JWT_SECRET
-openssl rand -base64 32   # DEVICE_PEPPER — must differ from JWT_SECRET
+openssl rand -base64 32   # DEVICE_PEPPER - must differ from JWT_SECRET
 openssl rand -base64 32   # WP_TO_APP_SECRET
 ```
 
+Pick the two staff PINs yourself — six digits each, different from each other:
+
+```bash
+echo $((100000 + RANDOM % 900000))   # STAFF_PIN
+echo $((100000 + RANDOM % 900000))   # ADMISSIONS_PIN
+```
+
+| Variable | Needed for | If missing |
+| --- | --- | --- |
+| `JWT_SECRET` | every session cookie | app throws at startup |
+| `DEVICE_PEPPER` | device binding | app throws at startup |
+| `DATABASE_URL` | everything | app throws at startup |
+| `WP_TO_APP_SECRET` | WordPress only | `/api/register` fails closed — fine if retired |
+| `STAFF_PIN` | check-in staff login | that role cannot sign in |
+| `ADMISSIONS_PIN` | admissions panel | that role cannot sign in |
+| `UPSTASH_REDIS_*` | multi-instance correctness | **throws in production** |
+| `TURNSTILE_SECRET_KEY` | the public form | `/api/apply` refuses every request in production |
+| `RESEND_API_KEY` | ticket + report emails | tickets are not emailed, only shown on screen |
+
+That behaviour — throwing rather than defaulting — is deliberate. This codebase
+once had four different hardcoded fallback JWT secrets across six files. When the
+variable was missing, some routes broke loudly and others silently accepted tokens
+signed with a string published in the repository. That is fail-open on a security
+boundary, so `lib/env.ts` fails closed.
+
 Rotating `JWT_SECRET` logs everyone out, including staff mid-event. Rotate
 `DEVICE_PEPPER` and every sitting in progress fails its device check.
+
+### The two PINs are not one PIN
+
+`STAFF_PIN` opens the check-in desk. `ADMISSIONS_PIN` opens the grading panel.
+They are separate because the old design used one shared `STAFF_ACCESS_TOKEN` for
+both, which meant a check-in operator could award scholarships and an admissions
+officer could read attendance. That variable is now unused — if you find it in an
+old `.env`, delete it.
 
 ---
 
