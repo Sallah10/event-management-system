@@ -1,4 +1,4 @@
-﻿import { Sequelize, DataTypes } from "sequelize";
+import { Sequelize, DataTypes } from "sequelize";
 import "dotenv/config";
 
 const force = process.argv.includes("--force");

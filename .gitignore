@@ -40,6 +40,10 @@ yarn-error.log*
 # and it goes stale the moment the code moves.
 PROJECT_EXPLAINER.md
 
+# Same reasoning, same reason. Kept locally as working notes; the repository
+# documents itself in README.md and docs/ENV_SETUP.md instead.
+SYSTEM_DESIGN.md
+
 # vercel
 .vercel
 

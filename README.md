@@ -86,8 +86,8 @@ Stated here rather than discovered in production:
 - **Database:** PostgreSQL (Neon serverless in development), Sequelize 6
 - **Sessions:** `jose`, HS256, `httpOnly` cookies
 - **Cache and locks:** Upstash Redis, optional
-- **Email:** Resend
-- **AI:** OpenAI, essay observation only
+- **Email:** Brevo, Resend as a fallback
+- **AI:** Gemini, essay observation only
 - **Tests:** `node --test`, no test-framework dependency
 
 ---

@@ -1,5 +1,4 @@
 import { z } from "zod";
-import OpenAI from "openai";
 import { Op } from "sequelize";
 import { Registrant } from "@/lib/models/Registrant";
 import { requireStaff } from "@/lib/staff-guard";
@@ -8,12 +7,20 @@ import { recordGrades } from "@/lib/admissions";
 import { log } from "@/lib/logger";
 import { countWords } from "@/lib/validate";
 import { THEORY_MIN_WORDS } from "@/config/rules";
+import {
+  gradeAll,
+  isConfigured,
+  modelName,
+  providerName,
+  type GradingJob,
+} from "@/lib/grading-provider";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
 
 // ─── AI ESSAY GRADING ─────────────────────────────────────────────────────────
-// Six things were wrong with this route. All six are load-bearing.
+// Six things were wrong with this route. All six are load-bearing, and all six
+// still hold.
 //
 // 1. IT GRADED NOBODY.
 //    It selected `where: { status: "completed", theoryScore: 0 }`.
@@ -29,43 +36,45 @@ export const maxDuration = 300;
 //    `Registrant.update({ isFlagged: aiData.is_ai_suspected || false })` wrote
 //    the flag column unconditionally. Any candidate already flagged by the
 //    invigilation process had that flag silently ERASED, because the model said
-//    "not AI-generated". Now the AI's opinion is stored in its own column and
-//    only a human can set isFlagged.
+//    "not AI-generated". The model's opinion now goes in its own column and only
+//    a human can set isFlagged.
 //
 // 3. THE COST ESTIMATE WAS INVENTED.
-//    It hardcoded "1500 input tokens per candidate" and priced them at
-//    $0.075/M — which is the *synchronous* gpt-4o rate, while the default model
-//    was gpt-4o-*mini* via the Batch API (roughly 500x cheaper). The dashboard
-//    then displayed "~$0.18" as though it were a measurement. It was a guess
-//    presented as an invoice. We now report token counts and let the operator
-//    see a real number, and we don't quote a price we haven't measured.
+//    It hardcoded "1500 input tokens per candidate" and priced them against a
+//    rate that did not match the model actually in use, then the dashboard
+//    displayed the result as though it were a measurement. It was a guess
+//    presented as an invoice. We report counts and let the operator see a real
+//    number; we do not quote a price we have not measured.
 //
 // 4. IT WROTE TO process.cwd().
 //    `fs.appendFileSync(path.join(process.cwd(), "ai-usage.log"))`. On Vercel the
 //    project directory is read-only, so this throws EROFS — and because it ran
-//    AFTER `openai.batches.create()`, the batch was already submitted and paid
-//    for when the route 500'd. Nobody could retrieve the results. Appended to
-//    os.tmpdir() now, and the log line moved BEFORE the network call so a failure
-//    can't orphan a paid batch.
+//    AFTER the batch had been submitted and paid for, the route 500'd with the
+//    results unreachable. There is no usage log file here at all now.
 //
 // 5. 900 SEQUENTIAL UPDATES IN A 10-SECOND FUNCTION.
 //    The result collector looped `await Registrant.update(...)` per candidate
 //    while vercel.json capped every non-check-in route at maxDuration 10. With
 //    ~900 essays that could not finish, so the route died partway and half the
-//    grades were never written. Now: one bulk upsert, no per-row await.
+//    grades were never written. One bulk upsert, no per-row await.
 //
 // 6. THE MODEL OUTPUT WAS json.parse'd WITH NO VALIDATION.
 //    `JSON.parse(content)` straight into arithmetic, with the response cast to
 //    any. A model that returns prose, a truncated object, or a 0-1000 scale
-//    would either throw mid-loop (losing the rest of the batch) or write a
-//    nonsense score. zod validates and coerces, and a malformed row is skipped
-//    and counted rather than taking the run down with it.
+//    instead of 0-100 would take down the run or write a nonsense score. zod
+//    validates and coerces, and a malformed row is skipped and counted rather
+//    than taking the run down with it.
 //
-// WHAT THE AI IS AND ISN'T: it produces a *recommendation*. `isAiSuspected` is
-// recorded as an observation for a human to weigh. The route does not
-// disqualify, and it cannot.
-
-const GRADING_MODEL = process.env.AI_GRADING_MODEL ?? "gpt-4o-mini";
+// WHAT THE AI IS AND ISN'T: it produces a *recommendation*. `aiSuspected` is
+// recorded as an observation for a human to weigh. The route does not disqualify,
+// and it cannot.
+//
+// PROVIDER: Gemini. This used to drive the OpenAI Batch API — upload a JSONL file,
+// poll for up to 24 hours, download an output file. Gemini has no equivalent
+// shape, and a serverless function has nowhere to keep a job between requests
+// anyway, so grading is now a bounded concurrent loop inside one request. It
+// processes a capped number of candidates per call and is resumable: whatever it
+// does not reach is still pending and picked up by the next run.
 
 const GRADING_PROMPT = `You are an admissions assessor for a technology scholarship programme.
 
@@ -81,8 +90,6 @@ Judge only what is on the page. Do not reward confident phrasing over substance,
 Respond with JSON only, no commentary, using exactly this shape:
 {"authenticity":<int 0-100>,"passion":<int 0-100>,"clarity":<int 0-100>,"finalScore":<int 0-100>,"aiSuspected":<boolean>,"reason":<string under 40 words>,"confidence":"high"|"medium"|"low"}`;
 
-// zod IS earning its place here — this is the boundary where a language model's
-// free-text output becomes a database write.
 const gradeSchema = z.object({
   authenticity: z.coerce.number().int().min(0).max(100).catch(0),
   passion: z.coerce.number().int().min(0).max(100).catch(0),
@@ -95,15 +102,7 @@ const gradeSchema = z.object({
 
 type Grade = z.infer<typeof gradeSchema>;
 
-let client: OpenAI | null = null;
-function openai(): OpenAI {
-  if (!client) {
-    const apiKey = process.env.OPENAI_API_KEY;
-    if (!apiKey) throw new Error("OPENAI_API_KEY is not set");
-    client = new OpenAI({ apiKey });
-  }
-  return client;
-}
+const GRADING_LIMIT = Number(process.env.GRADING_CHUNK_SIZE ?? 40);
 
 interface CandidateRow {
   id: string;
@@ -132,26 +131,28 @@ function averageOf(grade: Grade): number {
   return Math.round((grade.authenticity + grade.passion + grade.clarity) / 3);
 }
 
-// ─── POST: QUEUE A GRADING BATCH ──────────────────────────────────────────────
+function promptFor(candidate: CandidateRow): string {
+  return `Question 1 — Why do you want to study this track?\n${candidate.theoryAnswer1 ?? "(no answer)"}\n\nQuestion 2 — What difference would this make in your community?\n${candidate.theoryAnswer2 ?? "(no answer)"}\n\nQuestion 3 — Where do you see yourself in five years?\n${candidate.theoryAnswer3 ?? "(no answer)"}`;
+}
+
+// ─── POST: GRADE THE PENDING QUEUE ─────────────────────────────────────────────
 export async function POST() {
   const { error } = await requireStaff("admissions");
   if (error) return error;
 
-  let batchFile: Awaited<ReturnType<OpenAI["files"]["create"]>> | null = null;
+  if (!isConfigured()) {
+    return Response.json(
+      { success: false, error: "NOT_CONFIGURED", message: "GEMINI_API_KEY is not set." },
+      { status: 503 },
+    );
+  }
 
   try {
-    if (!process.env.OPENAI_API_KEY) {
-      return Response.json(
-        { success: false, error: "NOT_CONFIGURED", message: "OPENAI_API_KEY is not set." },
-        { status: 503 },
-      );
-    }
-
     await ensureDatabase();
 
     // FIX 1. "completed" is what submit-theory now writes. This is the query
     // that was always intended.
-    const candidates = await Registrant.findAll({
+    const candidates = (await Registrant.findAll({
       where: {
         status: "completed",
         theoryScore: 0,
@@ -163,7 +164,7 @@ export async function POST() {
       },
       attributes: ["id", "email", "theoryAnswer1", "theoryAnswer2", "theoryAnswer3"],
       raw: true,
-    }) as unknown as CandidateRow[];
+    })) as unknown as CandidateRow[];
 
     // ─── FILTER, DON'T WASTE TOKENS ON UNGRADEABLE ANSWERS ──────────────────
     const gradeable: CandidateRow[] = [];
@@ -189,89 +190,8 @@ export async function POST() {
       gradeable.push(candidate);
     }
 
-    if (gradeable.length === 0) {
-      if (skipped.length > 0) {
-        await recordGrades(
-          skipped.map((s) => ({
-            id: s.id,
-            theoryScore: 0,
-            aiSuspected: false,
-            aiGradeReason: s.reason,
-            aiConfidence: "low",
-          })),
-        );
-      }
-      return Response.json({
-        success: true,
-        error: null,
-        data: {
-          queued: 0,
-          skipped: skipped.length,
-          message:
-            skipped.length > 0
-              ? `${skipped.length} submission(s) had no answer long enough to assess. They scored zero and are in the integrity queue.`
-              : "Nothing pending grading.",
-        },
-      });
-    }
-
-    // ─── BUILD THE BATCH FILE ────────────────────────────────────────────────
-    const lines = gradeable.map((candidate) =>
-      JSON.stringify({
-        custom_id: candidate.id,
-        method: "POST",
-        url: "/v1/chat/completions",
-        body: {
-          model: GRADING_MODEL,
-          messages: [
-            { role: "system", content: GRADING_PROMPT },
-            {
-              role: "user",
-              content: `Question 1 — Why do you want to study this track?\n${candidate.theoryAnswer1 ?? "(no answer)"}\n\nQuestion 2 — What difference would this make in your community?\n${candidate.theoryAnswer2 ?? "(no answer)"}\n\nQuestion 3 — Where do you see yourself in five years?\n${candidate.theoryAnswer3 ?? "(no answer)"}`,
-            },
-          ],
-          response_format: { type: "json_object" },
-          temperature: 0.2,
-          max_tokens: 400,
-        },
-      }),
-    ).join("\n");
-
-    // FIX 4. os.tmpdir() only — never process.cwd(), which is read-only on Vercel
-    const fs = await import("node:fs/promises");
-    const os = await import("node:os");
-    const path = await import("node:path");
-
-    const tmpFile = path.join(os.tmpdir(), `grading-${Date.now()}.jsonl`);
-    await fs.writeFile(tmpFile, lines, "utf8");
-
-    log.info("ai_audit.batch_queued", {
-      queued: gradeable.length,
-      skipped: skipped.length,
-      model: GRADING_MODEL,
-    });
-
-    try {
-      // A read stream, not an open file handle: this is what the SDK accepts, and
-      // it closes itself when the upload finishes.
-      batchFile = await openai().files.create({
-        file: (await import("node:fs")).createReadStream(tmpFile),
-        purpose: "batch",
-      });
-    } finally {
-      await fs.unlink(tmpFile).catch(() => {});
-    }
-
-    // FIX 3. Log before we spend money, so a later failure can't orphan the batch
-    log.info("ai_audit.file_uploaded", { fileId: batchFile.id, queued: gradeable.length });
-
-    const batch = await openai().batches.create({
-      input_file_id: batchFile.id,
-      endpoint: "/v1/chat/completions",
-      completion_window: "24h",
-      metadata: { description: `essay grading — ${gradeable.length} candidates` },
-    });
-
+    // Recording the skipped rows is not optional bookkeeping: leaving them at
+    // theoryScore 0 means every future run re-fetches them and re-reports them.
     if (skipped.length > 0) {
       await recordGrades(
         skipped.map((s) => ({
@@ -284,138 +204,81 @@ export async function POST() {
       );
     }
 
-    return Response.json({
-      success: true,
-      error: null,
-      data: {
-        batchId: batch.id,
-        status: batch.status,
-        queued: gradeable.length,
-        skipped: skipped.length,
-        model: GRADING_MODEL,
-        // FIX 3. We report what we know. We do not quote a price we haven't
-        // measured — check the batch on the OpenAI dashboard for real usage.
-        next: `Call GET /api/admin/ai-audit?batchId=${batch.id} to collect results.`,
-        warning:
-          "This sends candidate essays to OpenAI. Confirm your data-processing terms cover it before running on real data.",
-      },
-    });
-  } catch (err) {
-    log.error("ai_audit.queue_failed", {
-      message: (err as Error)?.message,
-      batchFileId: batchFile?.id ?? null,
-    });
-    return Response.json(
-      {
-        success: false,
-        error: "FAILED",
-        message: "Could not queue grading. Check the logs.",
-        // If we got as far as creating the batch, say so — otherwise the money
-        // is spent and nobody knows where the results are.
-        orphanedBatchInput: batchFile?.id ?? null,
-      },
-      { status: 500 },
-    );
-  }
-}
-
-// ─── GET: COLLECT RESULTS ─────────────────────────────────────────────────────
-export async function GET(request: Request) {
-  const { error } = await requireStaff("admissions");
-  if (error) return error;
-
-  const { searchParams } = new URL(request.url);
-  const batchId = searchParams.get("batchId");
-
-  try {
-    if (!process.env.OPENAI_API_KEY) {
-      return Response.json(
-        { success: false, error: "NOT_CONFIGURED", message: "OPENAI_API_KEY is not set." },
-        { status: 503 },
-      );
-    }
-
-    await ensureDatabase();
-
-    // No batchId → queue depth, so the portal can show work waiting
-    if (!batchId) {
-      const [pending, graded, aiSuspected] = await Promise.all([
-        Registrant.count({ where: { status: "completed", theoryScore: 0 } }),
-        Registrant.count({ where: { theoryScore: { [Op.gt]: 0 } } }),
-        Registrant.count({ where: { aiSuspected: true } }),
-      ]);
-      return Response.json({
-        success: true,
-        error: null,
-        data: { pending, graded, aiSuspected, model: GRADING_MODEL },
-      });
-    }
-
-    const batch = await openai().batches.retrieve(batchId);
-
-    if (batch.status !== "completed") {
+    const chunk = gradeable.slice(0, Math.max(1, GRADING_LIMIT));
+    if (chunk.length === 0) {
       return Response.json({
         success: true,
         error: null,
         data: {
-          batchId,
-          status: batch.status,
-          requestCounts: batch.request_counts,
-          message: `Batch is ${batch.status}. Check back shortly.`,
+          provider: providerName(),
+          model: modelName(),
+          graded: 0,
+          queued: 0,
+          skipped: skipped.length,
+          remaining: 0,
+          message:
+            skipped.length > 0
+              ? `${skipped.length} submission(s) had no answer long enough to assess. They scored zero and are in the integrity queue.`
+              : "Nothing pending grading.",
         },
       });
     }
 
-    if (!batch.output_file_id) {
-      return Response.json(
-        { success: false, error: "NO_OUTPUT", message: "Batch completed but produced no output file." },
-        { status: 502 },
-      );
-    }
+    const jobs: GradingJob[] = chunk.map((candidate) => ({
+      id: candidate.id,
+      prompt: promptFor(candidate),
+    }));
 
-    const fileContent = await openai().files.content(batch.output_file_id);
-    const raw = await fileContent.text();
+    log.info("ai_audit.started", {
+      queued: chunk.length,
+      skipped: skipped.length,
+      provider: providerName(),
+      model: modelName(),
+    });
 
-    const updates: { id: string; theoryScore: number; aiSuspected: boolean; aiGradeReason: string; aiConfidence: string }[] = [];
+    const outcomes = await gradeAll(GRADING_PROMPT, jobs);
+
+    const updates: {
+      id: string;
+      theoryScore: number;
+      aiSuspected: boolean;
+      aiGradeReason: string;
+      aiConfidence: string;
+    }[] = [];
     const failures: { id: string; reason: string }[] = [];
 
-    for (const line of raw.trim().split("\n").filter(Boolean)) {
-      try {
-        const row = JSON.parse(line);
-        const id = row.custom_id as string;
-        const choice = row.response?.body?.choices?.[0];
-
-        if (row.response?.status_code !== 200 || !choice?.message?.content) {
-          failures.push({ id, reason: "api_error" });
-          continue;
-        }
-
-        // FIX 6. Validate before we write. A malformed row is skipped, not fatal.
-        const parsed = gradeSchema.safeParse(extractJson(choice.message.content));
-        if (!parsed.success) {
-          failures.push({ id, reason: "unparseable_response" });
-          continue;
-        }
-
-        const grade = parsed.data;
-        updates.push({
-          id,
-          theoryScore: grade.finalScore ?? averageOf(grade),
-          // FIX 2. Separate column. isFlagged is a human decision, untouched here.
-          aiSuspected: grade.aiSuspected,
-          aiGradeReason: grade.reason,
-          aiConfidence: grade.confidence,
-        });
-      } catch {
-        failures.push({ id: "unknown", reason: "parse_error" });
+    for (const outcome of outcomes) {
+      if (!outcome.ok) {
+        failures.push({ id: outcome.id, reason: outcome.failure ?? "api_error" });
+        continue;
       }
+
+      // FIX 6. Validate before we write. A malformed row is skipped, not fatal.
+      const parsed = gradeSchema.safeParse(extractJson(outcome.content));
+      if (!parsed.success) {
+        failures.push({ id: outcome.id, reason: "unparseable_response" });
+        continue;
+      }
+
+      const grade = parsed.data;
+      updates.push({
+        id: outcome.id,
+        theoryScore: grade.finalScore ?? averageOf(grade),
+        // FIX 2. Separate column. isFlagged is a human decision, untouched here.
+        aiSuspected: grade.aiSuspected,
+        aiGradeReason: grade.reason,
+        aiConfidence: grade.confidence,
+      });
     }
 
-    // FIX 5. One bulk write instead of N sequential awaits inside a 10s budget
-    const written = await recordGrades(updates, `batch:${batchId}`);
+    // FIX 5. One bulk write instead of N sequential awaits inside a time budget.
+    const written = await recordGrades(updates, `run:${new Date().toISOString()}`);
 
-    log.info("ai_audit.collected", {
-      batchId,
+    const remaining = await Registrant.count({
+      where: { status: "completed", theoryScore: 0 },
+    });
+
+    log.info("ai_audit.graded", {
       graded: written,
       parsed: updates.length,
       failed: failures.length,
@@ -426,20 +289,62 @@ export async function GET(request: Request) {
       success: true,
       error: null,
       data: {
-        batchId,
-        status: batch.status,
+        provider: providerName(),
+        model: modelName(),
         graded: written,
         failed: failures.length,
+        skipped: skipped.length,
+        remaining,
         flaggedForReview: updates.filter((u) => u.aiSuspected).length,
         failures: failures.slice(0, 20),
-        // Say what happens next, because a flagged essay does NOT disqualify anyone
+        warning:
+          "This sends candidate essays to the configured model provider. Confirm your data-processing terms cover it before running on real data.",
         note: "AI-suspected essays are queued for human review in the integrity panel. Nobody was disqualified by this run.",
       },
     });
   } catch (err) {
-    log.error("ai_audit.collect_failed", { message: (err as Error)?.message, batchId });
+    log.error("ai_audit.failed", { message: (err as Error)?.message });
     return Response.json(
-      { success: false, error: "FAILED", message: "Could not collect results. Check the logs." },
+      { success: false, error: "FAILED", message: "Could not grade the queue. Check the logs." },
+      { status: 500 },
+    );
+  }
+}
+
+// ─── GET: QUEUE DEPTH ─────────────────────────────────────────────────────────
+// This used to collect a completed batch. Grading is synchronous now, so there is
+// no job to poll — the same route reports what is still outstanding instead, which
+// is the only thing an operator actually needs between runs.
+export async function GET() {
+  const { error } = await requireStaff("admissions");
+  if (error) return error;
+
+  try {
+    await ensureDatabase();
+
+    const [pending, graded, aiSuspected] = await Promise.all([
+      Registrant.count({ where: { status: "completed", theoryScore: 0 } }),
+      Registrant.count({ where: { theoryScore: { [Op.gt]: 0 } } }),
+      Registrant.count({ where: { aiSuspected: true } }),
+    ]);
+
+    return Response.json({
+      success: true,
+      error: null,
+      data: {
+        pending,
+        graded,
+        aiSuspected,
+        provider: providerName(),
+        model: modelName(),
+        configured: isConfigured(),
+        chunkSize: GRADING_LIMIT,
+      },
+    });
+  } catch (err) {
+    log.error("ai_audit.stats_failed", { message: (err as Error)?.message });
+    return Response.json(
+      { success: false, error: "FAILED", message: "Could not read queue depth." },
       { status: 500 },
     );
   }

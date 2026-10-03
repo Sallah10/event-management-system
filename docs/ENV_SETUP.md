@@ -146,18 +146,77 @@ So: one instance, or Redis. Not "Redis eventually".
 
 ## 6. Email
 
-`RESEND_API_KEY` is optional in the sense that registration does not fail without
-it — the ticket is written to the structured log instead. That is a deliberate
-trade, and it is a bad one to leave in place on the day.
+Set `MAIL_PROVIDER` to `brevo` or `resend`, then set that provider's key.
+Both are supported because both fail on a bad day, and it is useful not to be
+locked into whichever one you tried first.
+
+| Provider | Key | Notes |
+| --- | --- | --- |
+| Brevo | `BREVO_API_KEY` | Default when the key is present. Needs a **verified sender** |
+| Resend | `RESEND_API_KEY` | Works from more hosts, but needs a verified domain |
+
+Neither key is optional in the sense that registration does not fail without it —
+the ticket is written to the structured log instead. That is a deliberate trade,
+and it is a bad one to leave in place on the day.
 
 A candidate who never receives their ticket becomes a support queue, a phone
-number at the venue desk, and a manual check-in. Set the key, and set `MAIL_FROM`
-to a domain you can send from.
+number at the venue desk, and a manual check-in. Set the key, and set
+`BREVO_FROM_EMAIL` to an address Brevo has verified.
+
+On Brevo that means confirming the address in the Brevo dashboard first. Sending
+from an unverified address does not error helpfully — it fails at delivery, so
+the candidate's ticket is already in the void. `BREVO_FROM_NAME` is cosmetic.
+Both fall back to `EVENT_CONTACT_EMAIL`, which only helps if that address is
+verified too.
 
 The in-app form at `/register` does not depend on any of this — it prints the
 ticket on screen, and tells the person whether the email actually went out. That
 is what makes the app usable on a bad mail day, and usable in a venue with no
 reliable connectivity. Email is the backup channel, not the only one.
+
+---
+
+## 6c. Essay grading (Gemini)
+
+`GEMINI_API_KEY` is optional in the strongest sense: with it unset, `/api/admin/ai-audit`
+returns `503` and nothing else in the application notices. Admissions still works
+entirely by hand, which is the point.
+
+| Variable | Default | What it does |
+| --- | --- | --- |
+| `GEMINI_API_KEY` | — | Without it, grading refuses every request |
+| `GEMINI_MODEL` | `gemini-3.8-flash` | `gemini-2.5-flash` is closed to new accounts |
+| `GRADING_CHUNK_SIZE` | `40` | Candidates graded per request |
+| `GRADING_CONCURRENCY` | `6` | Simultaneous calls, capped at 12 |
+
+Three things are worth knowing before you rely on this, all of them learned by
+running it rather than by reading about it.
+
+**The free tier is unreliable, and the design assumes that.** While testing, calls
+returned `503 high demand` somewhere between one in five and one in two. Each
+candidate is therefore retried up to three times with a pause, and anything still
+failing is recorded as a failure against that candidate and left `theoryScore: 0`.
+Nothing is written wrong. It just means **a grading run usually needs more than
+one pass** — press it again until the queue is empty. If that is unacceptable for
+your deadline, a paid tier removes the problem rather than hiding it.
+
+**Grading is resumable by construction.** A run grades a capped number of
+candidates and stops. There is no batch job and no queue table, because a
+serverless function has nowhere to keep one. Whatever a pass does not reach is
+still pending on the next one, so an interrupted run resumes rather than restarts
+and never double-charges.
+
+**Never let it disqualify anyone.** `ai_suspected` is an observation with a
+reason attached. `isFlagged` is a human decision reached in the admissions panel.
+No code path sets one from the other. Verify that claim by reading
+`lib/admissions.ts` rather than taking it from here.
+
+Sending candidate essays to a model provider is a data-processing decision, not a
+technical one. Confirm the terms cover it, and tell candidates, before you run it
+on real submissions.
+
+`npm run check:gemini` sends one throwaway essay and reports what came back. Run
+it after setting the key; it costs one call.
 
 ---
 

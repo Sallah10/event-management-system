@@ -12,6 +12,7 @@
     "test": "node --import ./tests/setup.ts --import ./scripts/ts-alias.mjs --test tests/*.test.ts",
     "db:migrate": "node scripts/migrate.mjs",
     "db:seed": "node scripts/seed.mjs",
+    "check:gemini": "node scripts/check-gemini.mjs",
     "tickets:backfill": "node scripts/backfill-tickets.mjs",
     "fix:mojibake": "node scripts/fix-mojibake.mjs --check"
   },
@@ -35,7 +36,6 @@
     "next": "^16.1.4",
     "next-cloudinary": "^6.17.5",
     "node-fetch": "^3.3.2",
-    "openai": "^6.29.0",
     "pg": "^8.17.2",
     "pg-hstore": "^2.3.4",
     "qrcode": "^1.5.4",

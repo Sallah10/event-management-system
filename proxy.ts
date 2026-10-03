@@ -23,7 +23,7 @@ import {
 //
 //  2. Staff role separation. `/admin/*` needs `staff`, `/admissions/*` needs
 //     `admissions`. Previously one shared `STAFF_ACCESS_TOKEN` opened the
-//     check-in scanner, the PII search AND the OpenAI batch job.
+//     check-in scanner, the PII search AND the model grading job.
 //
 //  3. Rate limits keyed on a VERIFIED identity. The old code did
 //     `JSON.parse(atob(token.split(".")[1]))` with no signature check, so an

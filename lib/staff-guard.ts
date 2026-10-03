@@ -12,7 +12,7 @@ import { STAFF_COOKIE, verifyStaffSession, type StaffRole, type StaffSession } f
 // secret sitting in a browser cookie, never rotated, 24h maxAge, so one leaked
 // cookie and one leaked env var were the same compromise. Second, there was no
 // role separation, so the same cookie opened the check-in scanner, the PII
-// search over every registrant, and the endpoint that spends money on OpenAI.
+// search over every registrant, and the endpoint that spends money on grading.
 //
 // Now the cookie holds a signed, expiring, role-bearing token, and each route
 // declares the role it needs.

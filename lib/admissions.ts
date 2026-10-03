@@ -363,7 +363,7 @@ export async function saveHumanGrade(
  */
 export async function recordGrades(
   updates: GradeUpdate[],
-  gradedBy = "openai-batch",
+  gradedBy = "model-grading",
 ): Promise<number> {
   if (updates.length === 0) return 0;
   await ensureDatabase();
