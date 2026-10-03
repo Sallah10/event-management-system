@@ -6,6 +6,91 @@ import { log } from "@/lib/logger";
 import { TOTAL_SLOTS, QUALIFIED_POOL_SIZE, VENUE_CAPACITY, LIMIT_PER_COURSE } from "@/config/rules";
 import { COURSES } from "@/config/course-matrix";
 
+export interface TicketRecipient {
+  name: string;
+  email: string;
+  /** Must be the canonical ticket. There is no fallback — see FIX 2. */
+  barcodeId: string;
+}
+
+let resend: Resend | null = null;
+function mailer(): Resend {
+  if (!resend) {
+    const key = process.env.RESEND_API_KEY;
+    if (!key) throw new Error("RESEND_API_KEY is not set");
+    resend = new Resend(key);
+  }
+  return resend;
+}
+
+type MailProvider = "resend" | "brevo";
+
+function resolveProvider(): MailProvider {
+  const explicit = process.env.MAIL_PROVIDER?.trim().toLowerCase();
+  if (explicit === "resend" || explicit === "brevo") return explicit;
+  if (process.env.BREVO_API_KEY) return "brevo";
+  return "resend";
+}
+
+interface RenderedMail {
+  subject: string;
+  html: string;
+  qr: Buffer;
+  ticket: string;
+  to: string;
+}
+
+async function sendViaBrevo(m: RenderedMail) {
+  const key = process.env.BREVO_API_KEY;
+  if (!key) throw new Error("BREVO_API_KEY is not set");
+  const fromEmail =
+    process.env.BREVO_FROM_EMAIL ?? process.env.EVENT_CONTACT_EMAIL ?? BRAND.contactEmail;
+  const fromName = process.env.BREVO_FROM_NAME ?? BRAND.name;
+  const qrBase64 = m.qr.toString("base64");
+
+  const response = await fetch("https://api.brevo.com/v3/smtp/email", {
+    method: "POST",
+    headers: {
+      "api-key": key,
+      "Content-Type": "application/json",
+      Accept: "application/json",
+    },
+    body: JSON.stringify({
+      sender: { name: fromName, email: fromEmail },
+      to: [{ email: m.to }],
+      subject: m.subject,
+      htmlContent: m.html,
+      inlineAttachments: [{ name: "ticket-qr", content: qrBase64 }],
+      attachment: [
+        { name: "ticket-qr.png", content: qrBase64 },
+        { name: `entrance-pass-${m.ticket}.png`, content: qrBase64 },
+      ],
+    }),
+  });
+
+  if (!response.ok) {
+    const detail = await response.text().catch(() => "");
+    throw new Error(`Brevo rejected the message (${response.status}): ${detail.slice(0, 300)}`);
+  }
+  return { id: response.headers.get("x-message-id") ?? undefined };
+}
+
+async function sendViaResend(m: RenderedMail) {
+  const from = process.env.MAIL_FROM ?? `${BRAND.name} <${BRAND.contactEmail}>`;
+  const { data, error } = await mailer().emails.send({
+    from,
+    to: m.to,
+    subject: m.subject,
+    html: m.html,
+    attachments: [
+      { filename: "ticket-qr.png", content: m.qr, contentId: "ticket-qr" },
+      { filename: `entrance-pass-${m.ticket}.png`, content: m.qr },
+    ],
+  });
+  if (error) throw new Error(error.message);
+  return data;
+}
+
 // ─── ENTRANCE TICKET EMAIL ────────────────────────────────────────────────────
 // Sent once, at registration. It is the only thing standing between a person and
 // a QR code they need at the door, so it is worth being careful with in three
@@ -44,23 +129,6 @@ import { COURSES } from "@/config/course-matrix";
 // with a possibly-undefined key, and the entire organisation's name, venue and
 // scholarship figure hardcoded into the markup.
 
-export interface TicketRecipient {
-  name: string;
-  email: string;
-  /** Must be the canonical ticket. There is no fallback — see FIX 2. */
-  barcodeId: string;
-}
-
-let resend: Resend | null = null;
-function mailer(): Resend {
-  if (!resend) {
-    const key = process.env.RESEND_API_KEY;
-    if (!key) throw new Error("RESEND_API_KEY is not set");
-    resend = new Resend(key);
-  }
-  return resend;
-}
-
 function firstName(fullName: string): string {
   const trimmed = fullName.trim();
   const space = trimmed.indexOf(" ");
@@ -83,10 +151,11 @@ export async function sendEntranceTicket(registrant: TicketRecipient) {
 
   const subject = `You're in — your ${BRAND.shortName} ticket`;
 
-  const { data, error } = await mailer().emails.send({
-    from: process.env.MAIL_FROM ?? `${BRAND.name} <${BRAND.contactEmail}>`,
-    to: registrant.email,
+  const rendered: RenderedMail = {
     subject,
+    to: registrant.email,
+    qr: qrBuffer,
+    ticket,
     html: renderTicketHtml({
       name: firstName(registrant.name),
       ticket,
@@ -96,19 +165,13 @@ export async function sendEntranceTicket(registrant: TicketRecipient) {
       perTrack: LIMIT_PER_COURSE,
       trackCount: COURSES.length,
     }),
-    // Inline via content_id, plus a copy as a file attachment. The inline copy
-    // is what renders in the body; the attachment is what survives an email
-    // client that blocks remote images, which is most of them.
-    attachments: [
-      { filename: "ticket-qr.png", content: qrBuffer, contentId: "ticket-qr" },
-      { filename: `entrance-pass-${ticket}.png`, content: qrBuffer },
-    ],
-  });
+  };
 
-  if (error) throw new Error(error.message);
+  const provider = resolveProvider();
+  const result = provider === "brevo" ? await sendViaBrevo(rendered) : await sendViaResend(rendered);
 
-  log.info("email.ticket_sent", { subject, to: registrant.email, id: data?.id });
-  return data;
+  log.info("email.ticket_sent", { provider, subject, to: registrant.email, id: result?.id });
+  return result;
 }
 
 // ─── TEMPLATE ─────────────────────────────────────────────────────────────────

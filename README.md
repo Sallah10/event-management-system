@@ -94,13 +94,14 @@ Stated here rather than discovered in production:
 
 ## Setup
 
-Requires Node 20+. Full guide, including what each setting costs you, in
+Requires Node 20+. Full guide, including the cost of each setting, in
 [docs/ENV_SETUP.md](docs/ENV_SETUP.md).
 
 ```bash
 npm install
-cp .env.example .env.local    # fill in JWT_SECRET, DEVICE_PEPPER, WP_TO_APP_SECRET, DATABASE_URL
+cp .env.example .env.local
 npm run db:migrate
+npm run db:seed            # optional: synthetic candidates covering every state
 npm run dev
 ```
 
@@ -112,6 +113,7 @@ npm run dev
 | `npm run lint` | ESLint |
 | `npm test` | Unit tests. No database, no network |
 | `npm run db:migrate` | Apply migrations. Safe to re-run |
+| `npm run db:seed` | Insert synthetic candidates spanning the whole pipeline. Destructive; `--force` to overwrite |
 | `npm run tickets:backfill` | Issue tickets for registrants who predate the system. Dry run unless `--execute` |
 | `npm run fix:mojibake` | Report text encoding damage without changing anything |
 | `node scripts/fix-mojibake.mjs` | Repair it |

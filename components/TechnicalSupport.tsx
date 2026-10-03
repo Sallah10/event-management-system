@@ -27,8 +27,8 @@ import {
 //     `localStorage`, so the identity attached to a support report was whatever
 //     the browser claimed. The route now reads the signed session instead, and
 //     this component sends no identity at all.
-//   • The failure toast told the candidate to email `support@1techacdemy.com` —
-//     a real address, hardcoded in the UI, wrong domain from the route's real
+//   • The failure toast told the candidate to email an address that belonged to
+//     whoever ran the previous cohort — wrong domain from the route's real
 //     address, and unreachable in any deployment that isn't theirs. Now BRAND.
 //   • Raw `fetch` with no credentials, and the response read as `data.success`
 //     even on a 500.

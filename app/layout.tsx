@@ -41,12 +41,12 @@ const instrumentSerif = localFont({
   ],
 });
 
-// The title and description used to be the literal strings "Techshift Event
-// Portal" and "Event Portal For Techshift", which is what every tab in the
-// browser, every shared link preview and every search result for this
-// application said — including on the admissions side, where a reviewer opening
-// five tabs had no way to tell which was which. They are configuration now, and
-// default to something honest about what the thing is.
+// The title and description used to be hardcoded strings naming a previous
+// cohort, which is what every tab in the browser, every shared link preview and
+// every search result for this application said — including on the admissions
+// side, where a reviewer opening five tabs had no way to tell which was which.
+// They are configuration now, and default to something honest about what the
+// thing is.
 export const metadata: Metadata = {
   title: {
     default: BRAND.name,

@@ -30,12 +30,12 @@
 
 import { BRAND } from "@/config/branding";
 
-// "TS26" is two facts about one event baked into a regex: TS = TechShift, 26 =
-// 2026. The next cohort is a different prefix, and a repository that hardcodes
-// the current one has a `.env` change to make before it can be used for anything
-// else. The default is unchanged, so existing TS26 tickets keep validating — a
-// format change that silently invalidates a few thousand printed tickets is not
-// one to make as a side effect of tidying up a constant.
+// "TS26" is two facts about one cohort baked into a regex: a short programme
+// prefix and the year. The next cohort is a different prefix, and a repository
+// that hardcodes the current one has a `.env` change to make before it can be
+// used for anything else. The default is unchanged, so existing TS26 tickets keep
+// validating — a format change that silently invalidates a few thousand printed
+// tickets is not one to make as a side effect of tidying up a constant.
 export const TICKET_PREFIX = (process.env.TICKET_PREFIX ?? "TS26").toUpperCase();
 export const TICKET_BODY_LENGTH = Number(process.env.TICKET_BODY_LENGTH ?? 8);
 const TICKET_PATTERN = new RegExp(`^${TICKET_PREFIX}-?[0-9A-F]{${TICKET_BODY_LENGTH}}$`, "i");

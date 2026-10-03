@@ -1,602 +1,602 @@
 [
   {
     "id": "q1",
-    "question": "If all developers use computers, and Sarah is a developer, which is true?",
+    "question": "Twenty-five identical items are shared between two people in the ratio 2:3. How many does the first person receive?",
     "options": {
-      "A": "Sarah uses a computer",
-      "B": "Sarah is a computer",
-      "C": "Everyone uses computers",
-      "D": "Computers use Sarah"
+      "A": "10",
+      "B": "15",
+      "C": "5",
+      "D": "20"
     }
   },
   {
     "id": "q2",
-    "question": "Complete the sequence: 2, 6, 12, 20, 30, ___?",
+    "question": "Complete the sequence: 3, 6, 11, 18, 27, ___?",
     "options": {
-      "A": "10",
-      "B": "42",
-      "C": "15",
-      "D": "30"
+      "A": "36",
+      "B": "38",
+      "C": "40",
+      "D": "42"
     }
   },
   {
     "id": "q3",
-    "question": "A project is behind schedule. Adding more people makes it slower. This is because:",
+    "question": "What is the arithmetic mean of 4, 8, 10 and 14?",
     "options": {
-      "A": "People are lazy",
-      "B": "Communication overhead increases",
-      "C": "Computers get tired",
-      "D": "Office space runs out"
+      "A": "8",
+      "B": "10",
+      "C": "9",
+      "D": "11"
     }
   },
   {
     "id": "q4",
-    "question": "If 'SHIFT' is coded as 'Tijgu,' what is 'TECH' coded as? (Hint: +1 letter)",
+    "question": "What is 40% of 250?",
     "options": {
-      "A": "UFDI",
-      "B": "UGEJ",
-      "C": "VGEJ",
-      "D": "SGDI"
+      "A": "150",
+      "B": "125",
+      "C": "90",
+      "D": "100"
     }
   },
   {
     "id": "q5",
-    "question": "A bat and a ball cost ₦1,100. The bat costs ₦1,000 more than the ball. How much is the ball?",
+    "question": "An item priced at 200 is reduced by 20%. What is the final price?",
     "options": {
-      "A": "₦10",
-      "B": "₦100",
-      "C": "₦50",
-      "D": "₦15"
+      "A": "160",
+      "B": "150",
+      "C": "180",
+      "D": "140"
     }
   },
   {
     "id": "q6",
-    "question": "Which word does not belong?",
+    "question": "A clock takes 9 seconds to strike 4. How long does it take to strike 7?",
     "options": {
-      "A": "AI",
-      "B": "Cloud",
-      "C": "Blockchain",
-      "D": "Paper"
+      "A": "12 seconds",
+      "B": "18 seconds",
+      "C": "21 seconds",
+      "D": "15 seconds"
     }
   },
   {
     "id": "q7",
-    "question": "'If P then Q. Q is false.' What can we say about P?",
+    "question": "Four workers build four walls in four days. How long do eight workers need to build eight walls at the same rate?",
     "options": {
-      "A": "P is false",
-      "B": "P is true",
-      "C": "P is none of the above",
-      "D": "Q and P are the same"
+      "A": "2 days",
+      "B": "8 days",
+      "C": "4 days",
+      "D": "6 days"
     }
   },
   {
     "id": "q8",
-    "question": "Rearrange 'R-A-G-O-I-L-T-H-M' to form a math/tech word.",
+    "question": "All roses are flowers. Some flowers fade quickly. Which conclusion is justified?",
     "options": {
-      "A": "MAROTHM",
-      "B": "ALRITHIOM",
-      "C": "ALGORITHM",
-      "D": "MTHNORGAL"
+      "A": "All roses fade quickly",
+      "B": "No roses fade quickly",
+      "C": "Roses and fast-fading flowers are identical",
+      "D": "Cannot be determined from the information given"
     }
   },
   {
     "id": "q9",
-    "question": "If 5 machines take 5 minutes to make 5 gadgets, how long do 100 machines take to make 100 gadgets?",
+    "question": "If today is Monday, what day is the day after tomorrow?",
     "options": {
-      "A": "3 minutes",
-      "B": "5 minutes",
-      "C": "10 minutes",
-      "D": "1 hr"
+      "A": "Wednesday",
+      "B": "Thursday",
+      "C": "Tuesday",
+      "D": "Friday"
     }
   },
   {
     "id": "q10",
-    "question": "Solve for X: 2x + 10 = 30.",
+    "question": "Complete the sequence: 2, 3, 5, 7, 11, 13, ___?",
     "options": {
-      "A": "10",
-      "B": "5",
-      "C": "20",
-      "D": "2"
+      "A": "15",
+      "B": "17",
+      "C": "19",
+      "D": "21"
     }
   },
   {
     "id": "q11",
-    "question": "If you are running a race and you pass the person in second place, what place are you in?",
+    "question": "A price rises by 40% and then falls by 40%. What is the net change on the original price?",
     "options": {
-      "A": "First",
-      "B": "Second",
-      "C": "Last",
-      "D": "None of the above"
+      "A": "No net change",
+      "B": "A 40% decrease",
+      "C": "A 16% decrease",
+      "D": "An 80% decrease"
     }
   },
   {
     "id": "q12",
-    "question": "Find the odd one out: Python, Java, Microsoft, C++.",
+    "question": "Three quarters of a group of 60 is how many?",
     "options": {
-      "A": "Microsoft",
-      "B": "Java",
-      "C": "Python",
-      "D": "C++"
+      "A": "30",
+      "B": "40",
+      "C": "50",
+      "D": "45"
     }
   },
   {
     "id": "q13",
-    "question": "True or False: Every problem has a single, perfect solution in technology.",
+    "question": "Adult tickets cost 14 and child tickets cost 7. What is the total cost of two adult and three child tickets?",
     "options": {
-      "A": "True",
-      "B": "False",
-      "C": "Sometimes",
-      "D": "Only in AI"
+      "A": "49",
+      "B": "56",
+      "C": "42",
+      "D": "63"
     }
   },
   {
     "id": "q14",
-    "question": "Which is heavier: (A) A Gigabyte of data or (B) a Megabyte of data?",
+    "question": "How many times do the hands of an analogue clock overlap in a twelve-hour period?",
     "options": {
-      "A": "Gigabyte",
-      "B": "Megabyte",
-      "C": "Kilobyte",
-      "D": "Byte"
+      "A": "10",
+      "B": "11",
+      "C": "12",
+      "D": "22"
     }
   },
   {
     "id": "q15",
-    "question": "If a clock strikes 6 at 6 o'clock, how long does it take to strike 12? (Assume intervals)",
+    "question": "Complete the sequence: 1, 2, 6, 24, 120, ___?",
     "options": {
-      "A": "5hrs",
-      "B": "4hrs",
-      "C": "6hrs",
-      "D": "11 intervals of time"
+      "A": "240",
+      "B": "480",
+      "C": "720",
+      "D": "1440"
     }
   },
   {
     "id": "q16",
-    "question": "In a team of 5, everyone shakes hands once. How many handshakes total?",
+    "question": "What is one eighth of 480?",
     "options": {
-      "A": "5",
-      "B": "10",
-      "C": "15",
-      "D": "No handshake"
+      "A": "120",
+      "B": "80",
+      "C": "40",
+      "D": "60"
     }
   },
   {
     "id": "q17",
-    "question": "If North becomes South-East, what does West become?",
+    "question": "Three identical pens cost 9 in total. How much do five cost?",
     "options": {
-      "A": "North-West",
-      "B": "North-East",
-      "C": "South-West",
-      "D": "South"
+      "A": "15",
+      "B": "13",
+      "C": "18",
+      "D": "12"
     }
   },
   {
     "id": "q18",
-    "question": "A folder contains 3 files. Each file is 10MB. How much space is used?",
+    "question": "If five machines make five widgets in five minutes, how long do one hundred machines take to make one hundred widgets?",
     "options": {
-      "A": "10MB",
-      "B": "30MB",
-      "C": "300MB",
-      "D": "3MB"
+      "A": "1 minute",
+      "B": "5 minutes",
+      "C": "20 minutes",
+      "D": "100 minutes"
     }
   },
   {
     "id": "q19",
-    "question": "Which is faster?",
+    "question": "A family has two children. What is the probability that at least one of them is a boy?",
     "options": {
-      "A": "4G",
-      "B": "5G",
-      "C": "3G",
-      "D": "Edge"
+      "A": "One quarter",
+      "B": "One half",
+      "C": "Three quarters",
+      "D": "One"
     }
   },
   {
     "id": "q20",
-    "question": "If 'Input + Process = Output,' what happens if the Input is wrong?",
+    "question": "What is the perimeter of a rectangle measuring 5 by 8?",
     "options": {
-      "A": "Output is perfect",
-      "B": "Garbage out (Wrong output)",
-      "C": "Computer crashes",
-      "D": "Nothing happens"
+      "A": "13",
+      "B": "24",
+      "C": "40",
+      "D": "26"
     }
   },
   {
     "id": "q21",
-    "question": "What does 'URL' stand for?",
+    "question": "What is the average time complexity of a binary search on a sorted collection?",
     "options": {
-      "A": "Universal Resource Link",
-      "B": "Uniform Resource Locator",
-      "C": "United Resource Locator",
-      "D": "Uniform Record Link"
+      "A": "O(log n)",
+      "B": "O(n)",
+      "C": "O(1)",
+      "D": "O(n log n)"
     }
   },
   {
     "id": "q22",
-    "question": "Which of these is a 'Cloud' service provider?",
+    "question": "What is the four-bit binary representation of the decimal number 10?",
     "options": {
-      "A": "Toyota",
-      "B": "AWS",
-      "C": "Samsung",
-      "D": "McDonalds"
+      "A": "1001",
+      "B": "1010",
+      "C": "1100",
+      "D": "0110"
     }
   },
   {
     "id": "q23",
-    "question": "What is the main purpose of an Antivirus?",
+    "question": "Which data structure returns the most recently added item first?",
     "options": {
-      "A": "Speed up internet",
-      "B": "Protect against malware",
-      "C": "Clean keyboard",
-      "D": "Write code"
+      "A": "Queue",
+      "B": "Hash table",
+      "C": "Stack",
+      "D": "Binary search tree"
     }
   },
   {
     "id": "q24",
-    "question": "'Phishing' is a term used in which domain?",
+    "question": "How many megabytes are in one gigabyte, using the binary definition?",
     "options": {
-      "A": "Marine Biology",
-      "B": "Cybersecurity",
-      "C": "Database Management",
-      "D": "UI Design"
+      "A": "1000",
+      "B": "512",
+      "C": "2048",
+      "D": "1024"
     }
   },
   {
     "id": "q25",
-    "question": "What does AI stand for?",
+    "question": "Which HTTP status code means the server successfully created a new resource?",
     "options": {
-      "A": "Artificial Intelligence",
-      "B": "Automated Internet",
-      "C": "Advanced Interface",
-      "D": "Apple Inc"
+      "A": "201",
+      "B": "200",
+      "C": "204",
+      "D": "400"
     }
   },
   {
     "id": "q26",
-    "question": "Which of these is a web browser?",
+    "question": "What is the primary purpose of a unique constraint in a database?",
     "options": {
-      "A": "Windows",
-      "B": "Chrome",
-      "C": "Google",
-      "D": "MacOS"
+      "A": "To make queries run faster",
+      "B": "To prevent duplicate values in a column",
+      "C": "To encrypt stored values",
+      "D": "To reclaim disk space"
     }
   },
   {
     "id": "q27",
-    "question": "In 'Frontend Development,' what are you building?",
+    "question": "Which of these is NOT a relational database?",
     "options": {
-      "A": "Databases",
-      "B": "User Interfaces",
-      "C": "Server hardware",
-      "D": "Network cables"
+      "A": "PostgreSQL",
+      "B": "MySQL",
+      "C": "MongoDB",
+      "D": "SQLite"
     }
   },
   {
     "id": "q28",
-    "question": "What is a 'Bug' in tech?",
+    "question": "What is the time complexity of merge sort in the average case?",
     "options": {
-      "A": "An insect",
-      "B": "An error in code",
-      "C": "A new feature",
-      "D": "A type of mouse"
+      "A": "O(n)",
+      "B": "O(log n)",
+      "C": "O(n squared)",
+      "D": "O(n log n)"
     }
   },
   {
     "id": "q29",
-    "question": "Which technology uses a 'Ledger'?",
+    "question": "In a database transaction, what is a deadlock?",
     "options": {
-      "A": "Blockchain",
-      "B": "Photoshop",
-      "C": "Word",
-      "D": "HTML"
+      "A": "Two transactions each holding a lock the other needs, so neither can proceed",
+      "B": "A query that runs longer than expected",
+      "C": "A table that reaches its storage limit",
+      "D": "A connection dropped mid-transaction"
     }
   },
   {
     "id": "q30",
-    "question": "What does 'www' stand for?",
+    "question": "Which HTTP method is designed to be safe and idempotent for retrieving a resource?",
     "options": {
-      "A": "World Wide Web",
-      "B": "Web World Wide",
-      "C": "World Web Wrestling",
-      "D": "Wide Web World"
+      "A": "POST",
+      "B": "GET",
+      "C": "PUT",
+      "D": "DELETE"
     }
   },
   {
     "id": "q31",
-    "question": "What is the 'Brain' of a computer called?",
+    "question": "What is the average lookup complexity for a key in a well-distributed hash table?",
     "options": {
-      "A": "RAM",
-      "B": "CPU",
-      "C": "Hard Drive",
-      "D": "Monitor"
+      "A": "O(1)",
+      "B": "O(log n)",
+      "C": "O(n)",
+      "D": "O(n squared)"
     }
   },
   {
     "id": "q32",
-    "question": "Which of these is NOT a social media platform?",
+    "question": "What does HTTPS protect?",
     "options": {
-      "A": "X (Twitter)",
-      "B": "LinkedIn",
-      "C": "Python",
-      "D": "Instagram"
+      "A": "Server hardware from physical damage",
+      "B": "Passwords stored on disk",
+      "C": "The total size of a file",
+      "D": "Data as it travels between client and server"
     }
   },
   {
     "id": "q33",
-    "question": "Is 'Data Science' about...",
+    "question": "Which of these languages is normally compiled to native machine code before execution?",
     "options": {
-      "A": "Predicting the future with data",
-      "B": "Fixing hardware",
-      "C": "Typing fast",
-      "D": "Building monitors"
+      "A": "C",
+      "B": "Python",
+      "C": "Ruby",
+      "D": "JavaScript"
     }
   },
   {
     "id": "q34",
-    "question": "What is a 'Server'?",
+    "question": "Which statement about a primary key is correct?",
     "options": {
-      "A": "A waiter in a restaurant",
-      "B": "A computer providing data to others",
-      "C": "A keyboard type",
-      "D": "A mouse pad"
+      "A": "It exists only to improve index lookup speed",
+      "B": "No two rows may share the same value",
+      "C": "It is allowed to contain NULL in every row",
+      "D": "It is always the fastest column in the table"
     }
   },
   {
     "id": "q35",
-    "question": "What is the 'Internet of Things' (IoT)?",
+    "question": "In the CSS box model, which property creates space outside an element's border?",
     "options": {
-      "A": "Smart connected devices",
-      "B": "A website for buying things",
-      "C": "A type of internet cable",
-      "D": "A search engine"
+      "A": "padding",
+      "B": "border",
+      "C": "margin",
+      "D": "display"
     }
   },
   {
     "id": "q36",
-    "question": "You encounter a coding error that you can't solve for 3 hours. Do you:",
+    "question": "What does two-factor authentication require?",
     "options": {
-      "A": "Quit",
-      "B": "Ask a peer/Google",
-      "C": "Restart the computer",
-      "D": "Cry"
+      "A": "A longer password",
+      "B": "A password change every month",
+      "C": "More security questions",
+      "D": "Something you know plus something you have"
     }
   },
   {
     "id": "q37",
-    "question": "How many hours a week are you willing to commit to this scholarship?",
+    "question": "What does a DNS resolver do?",
     "options": {
-      "A": "0-2 hours",
-      "B": "5-10 hours",
-      "C": "20+ hours (Whatever it takes)",
-      "D": "None"
+      "A": "Translates a domain name into an IP address",
+      "B": "Translates an IP address into a MAC address",
+      "C": "Translates binary data into images",
+      "D": "Translates a password into a hash"
     }
   },
   {
     "id": "q38",
-    "question": "TechShift requires attendance on April 18th. If you have a party that day, what do you do?",
+    "question": "Which HTTP method is appropriate for reading a list of records from an API?",
     "options": {
-      "A": "Go to the party",
-      "B": "Attend TechShift",
-      "C": "Skip both",
-      "D": "Sleep"
+      "A": "POST",
+      "B": "GET",
+      "C": "PUT",
+      "D": "PATCH"
     }
   },
   {
     "id": "q39",
-    "question": "When a mentor gives you critical feedback, do you:",
+    "question": "Which command creates a new Git branch and switches to it?",
     "options": {
-      "A": "Get angry",
-      "B": "Improve and apply it",
-      "C": "Ignore it",
-      "D": "Argue"
+      "A": "git merge",
+      "B": "git push",
+      "C": "git checkout -b feature",
+      "D": "git init"
     }
   },
   {
     "id": "q40",
-    "question": "You are given a complex task with no instructions. What is your first step?",
+    "question": "What is the main goal of normalising a relational schema?",
     "options": {
-      "A": "Quit",
-      "B": "Break it down and research",
-      "C": "Wait for someone to do it",
-      "D": "Complain"
+      "A": "To increase network throughput",
+      "B": "To encrypt sensitive columns",
+      "C": "To guarantee that tables are never added",
+      "D": "To reduce duplicated data and redundancy"
     }
   },
   {
     "id": "q41",
-    "question": "True or False: Technology is a 'get rich quick' scheme.",
+    "question": "Which DNS record type identifies the mail servers for a domain?",
     "options": {
-      "A": "True",
-      "B": "False",
-      "C": "Sometimes",
-      "D": "Always"
+      "A": "MX",
+      "B": "A",
+      "C": "CNAME",
+      "D": "TXT"
     }
   },
   {
     "id": "q42",
-    "question": "What is more important in tech?",
+    "question": "In cloud computing, what does elastic scaling mean?",
     "options": {
-      "A": "Speed",
-      "B": "Accuracy & Logic",
-      "C": "Typing speed",
-      "D": "Memorization"
+      "A": "Paying only for what is consumed",
+      "B": "Adjusting allocated resources as demand changes",
+      "C": "Storing an unlimited amount of data",
+      "D": "Running exclusively on physical servers"
     }
   },
   {
     "id": "q43",
-    "question": "If a global certification exam is hard, do you:",
+    "question": "An attacker tries many common passwords against one account. What is this called?",
     "options": {
-      "A": "Complain",
-      "B": "Study harder",
-      "C": "Find an easier course",
-      "D": "Cheat"
+      "A": "Phishing",
+      "B": "Tailgating",
+      "C": "A dictionary attack",
+      "D": "Shoulder surfing"
     }
   },
   {
     "id": "q44",
-    "question": "How do you handle a team member who isn't working?",
+    "question": "Which port does HTTPS use by default?",
     "options": {
-      "A": "Yell at them",
-      "B": "Communicate and find out why",
-      "C": "Ignore them",
-      "D": "Do their work silently"
+      "A": "80",
+      "B": "22",
+      "C": "8080",
+      "D": "443"
     }
   },
   {
     "id": "q45",
-    "question": "Why do you want this scholarship?",
+    "question": "In Python, which of these is a mutable sequence?",
     "options": {
-      "A": "Money",
-      "B": "Impact & Career Growth",
-      "C": "Boredom",
-      "D": "For fun"
+      "A": "list",
+      "B": "str",
+      "C": "tuple",
+      "D": "All of these are immutable"
     }
   },
   {
     "id": "q46",
-    "question": "Can you work on a project for 3 months without seeing a 'paycheck' yet?",
+    "question": "What is the purpose of rate limiting on an API?",
     "options": {
-      "A": "Yes, for the experience/portfolio",
-      "B": "No, I need money immediately",
-      "C": "Maybe",
-      "D": "I don't know"
+      "A": "To reduce response latency",
+      "B": "To prevent abuse and overload",
+      "C": "To encrypt response payloads",
+      "D": "To compress response bodies"
     }
   },
   {
     "id": "q47",
-    "question": "How often do you check your email for professional updates?",
+    "question": "Which statement about JSON compared with XML is correct?",
     "options": {
-      "A": "Never",
-      "B": "Once a month",
-      "C": "Daily / Regularly",
-      "D": "Only when expecting a password reset"
+      "A": "JSON is always slower to parse",
+      "B": "XML is a binary format",
+      "C": "JSON does not require a declared schema",
+      "D": "XML cannot represent nested structures"
     }
   },
   {
     "id": "q48",
-    "question": "What is your reaction to constant change in tech tools?",
+    "question": "What does an object-relational mapper do?",
     "options": {
-      "A": "I hate learning new things",
-      "B": "I adapt and learn quickly",
-      "C": "I ignore them",
-      "D": "I complain to management"
+      "A": "Compiles source code to machine code",
+      "B": "Replaces the database entirely",
+      "C": "Builds indexes automatically",
+      "D": "Maps database rows to objects in code"
     }
   },
   {
     "id": "q49",
-    "question": "Do you prefer working:",
+    "question": "Which practice best describes continuous integration?",
     "options": {
-      "A": "Alone",
-      "B": "In a team",
-      "C": "Both, adaptable to the situation",
-      "D": "I don't like working"
+      "A": "Automated tests run on every change pushed",
+      "B": "Manual testing once per quarter",
+      "C": "Testing only against the live system",
+      "D": "Testing only after release"
     }
   },
   {
     "id": "q50",
-    "question": "What is your definition of 'Success' in TechShift?",
+    "question": "What distinguishes object storage such as S3 from a traditional file system?",
     "options": {
-      "A": "Just getting a certificate",
-      "B": "Gaining mastery, a career, and impacting society",
-      "C": "Getting free food at the event",
-      "D": "Showing off on social media"
+      "A": "Objects are addressed by a unique key rather than a folder path",
+      "B": "It requires a physical server for every file",
+      "C": "It cannot scale beyond a fixed size",
+      "D": "It only stores text files"
     }
   },
   {
     "id": "q51",
-    "question": "A company’s website is down. Who is the first person they call?",
+    "question": "What problem does OAuth primarily solve?",
     "options": {
-      "A": "Data Scientist",
-      "B": "Software Dev / Cloud Engineer",
-      "C": "UI Designer",
-      "D": "Marketer"
+      "A": "Encrypting stored passwords",
+      "B": "Compressing network traffic",
+      "C": "Delegating access to a third party without sharing a password",
+      "D": "Speeding up authentication"
     }
   },
   {
     "id": "q52",
-    "question": "You see a 'Suspicious Link' in your inbox. Do you click it?",
+    "question": "If f(x) = 2x + 3, what is f(4)?",
     "options": {
-      "A": "Yes, I am curious",
-      "B": "No, I report or delete it",
-      "C": "I forward it to friends",
-      "D": "I reply to the email"
+      "A": "8",
+      "B": "9",
+      "C": "10",
+      "D": "11"
     }
   },
   {
     "id": "q53",
-    "question": "If you want to build a 'Mobile App,' which domain do you study?",
+    "question": "A feature breaks in production during a busy period. What is the best first step?",
     "options": {
-      "A": "Data Analysis",
-      "B": "Frontend/Mobile Development",
-      "C": "Cybersecurity",
-      "D": "Cloud Computing"
+      "A": "Check the logs and the most recent changes",
+      "B": "Rewrite the module from scratch",
+      "C": "Delete the feature",
+      "D": "Wait for someone else to notice"
     }
   },
   {
     "id": "q54",
-    "question": "You have 1,000 customer records to organize. Which tool is better:",
+    "question": "Two stakeholders request conflicting features for the same release. What is the best response?",
     "options": {
-      "A": "Excel / Database",
-      "B": "Notepad",
-      "C": "Calculator",
-      "D": "Paint"
+      "A": "Implement whichever was asked for first",
+      "B": "Clarify the conflict with both stakeholders",
+      "C": "Ignore the second request",
+      "D": "Delay the release indefinitely"
     }
   },
   {
     "id": "q55",
-    "question": "A bank wants to secure its money from hackers. Which scholarship domain fits best?",
+    "question": "You find a security flaw in code you wrote. What should you do?",
     "options": {
-      "A": "UI/UX Design",
-      "B": "Cybersecurity",
-      "C": "Digital Marketing",
-      "D": "Python Beginners"
+      "A": "Leave it undocumented to avoid alarm",
+      "B": "Patch it privately without recording anything",
+      "C": "Report it so it is tracked and can be reviewed",
+      "D": "Publish the details to test the response"
     }
   },
   {
     "id": "q56",
-    "question": "An AI tells you 'Nigeria will have snow tomorrow.' Do you:",
+    "question": "You realise a deadline will be missed because the original brief was unclear. What should you do?",
     "options": {
-      "A": "Believe it completely",
-      "B": "Check the data source and verify",
-      "C": "Start buying winter coats",
-      "D": "Post it on social media"
+      "A": "Say nothing and hope it resolves itself",
+      "B": "Work overnight to cover the gap",
+      "C": "Wait until after the deadline to explain",
+      "D": "Raise the blocker as soon as it becomes clear"
     }
   },
   {
     "id": "q57",
-    "question": "You are building a website for a cake shop. Should the 'Buy' button be visible or hidden?",
+    "question": "A teammate's approach is workable but you believe a better one exists. What is the best approach?",
     "options": {
-      "A": "Highly Visible (Good UX)",
-      "B": "Hidden (Hard to find)",
-      "C": "Only at the bottom",
-      "D": "No button needed"
+      "A": "Suggest the alternative and explain the reasoning",
+      "B": "Overwrite their files while they are away",
+      "C": "Tell them to reread the documentation",
+      "D": "Leave it alone and rework it yourself later"
     }
   },
   {
     "id": "q58",
-    "question": "Your computer is slow. What is the first thing you check?",
+    "question": "You must learn an unfamiliar subject quickly. What approach works best?",
     "options": {
-      "A": "Buy a new one",
-      "B": "Check Task Manager / Running Processes",
-      "C": "Unplug the monitor",
-      "D": "Change the keyboard"
+      "A": "Read every document front to back first",
+      "B": "Break the subject into small steps and iterate",
+      "C": "Copy a complete solution without reading it",
+      "D": "Wait until a formal course becomes available"
     }
   },
   {
     "id": "q59",
-    "question": "If you want to work for a global company from Nigeria, what is the most important skill?",
+    "question": "You are asked something you do not know during an assessment. What is the strongest response?",
     "options": {
-      "A": "Fast typing",
-      "B": "Communication & Core Tech Skills",
-      "C": "Having a nice webcam",
-      "D": "Knowing the CEO"
+      "A": "Guess without saying anything",
+      "B": "Leave the answer blank",
+      "C": "Explain what you do know and how you would find the rest",
+      "D": "Ask a friend to answer"
     }
   },
   {
     "id": "q60",
-    "question": "What is the final goal of TechShift?",
+    "question": "What is the most reliable way to verify a claim made by an unfamiliar website?",
     "options": {
-      "A": "To give out certificates",
-      "B": "To create creators and industry leaders",
-      "C": "To host a party",
-      "D": "To sell laptops"
+      "A": "Trust the headline",
+      "B": "Share it so others can judge",
+      "C": "Reply to the article and debate it",
+      "D": "Locate and read the original source"
     }
   }
 ]

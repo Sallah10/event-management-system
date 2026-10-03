@@ -11,6 +11,7 @@
     "typecheck": "tsc --noEmit",
     "test": "node --import ./tests/setup.ts --import ./scripts/ts-alias.mjs --test tests/*.test.ts",
     "db:migrate": "node scripts/migrate.mjs",
+    "db:seed": "node scripts/seed.mjs",
     "tickets:backfill": "node scripts/backfill-tickets.mjs",
     "fix:mojibake": "node scripts/fix-mojibake.mjs --check"
   },
