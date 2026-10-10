@@ -49,11 +49,11 @@ const instrumentSerif = localFont({
 // thing is.
 //
 // The rest of this object is the social and crawler contract.
-// `metadataBase` turns every relative URL below (and the generated
-// `opengraph-image` / `icon` files) into an absolute one, which is what a link
-// preview needs - an OG image at a relative path is silently dropped by most
-// scrapers. It reads `NEXT_PUBLIC_APP_URL`, the same value the QR payloads and
-// the email links use, so a deployment sets its public URL once.
+// `metadataBase` turns every relative URL below (the `/og-image.jpg` card and
+// the canonical links) into an absolute one, which is what a link preview needs -
+// an OG image at a relative path is silently dropped by most scrapers. It reads
+// `NEXT_PUBLIC_APP_URL`, the same value the QR payloads and the email links use,
+// so a deployment sets its public URL once.
 export const metadata: Metadata = {
   metadataBase: new URL(BRAND.portalUrl),
   applicationName: BRAND.name,
