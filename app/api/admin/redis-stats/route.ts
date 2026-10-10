@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
 // Operational visibility into the rate limiter and the check-in counter.
 //
 // Was gated on the same INTERNAL_API_KEY that the dashboard was shipping to the
-// browser, and it called `redis.keys("flag:*")` — KEYS is O(N) over the entire
+// browser, and it called `redis.keys("flag:*")` - KEYS is O(N) over the entire
 // keyspace and blocks the single-threaded Redis server while it runs. On a busy
 // event day that is a self-inflicted outage caused by an admin clicking refresh.
 // It then fanned out one HTTP round-trip per key via Promise.all.
@@ -29,7 +29,13 @@ export async function GET() {
     const flagged: { key: string; count: number }[] = [];
     let cursor = "0";
     do {
-      const reply = (await redis.scan(cursor, "MATCH", "flag:*", "COUNT", 100)) as unknown as {
+      const reply = (await redis.scan(
+        cursor,
+        "MATCH",
+        "flag:*",
+        "COUNT",
+        100,
+      )) as unknown as {
         cursor: string;
         keys: string[];
       };
@@ -51,14 +57,19 @@ export async function GET() {
         remaining: Math.max(0, VENUE_CAPACITY - currentCapacity),
         capacity: VENUE_CAPACITY,
         // Stated plainly so nobody treats it as authoritative
-        advisory: "Redis counter, may drift from Postgres by a few on a hard restart.",
+        advisory:
+          "Redis counter, may drift from Postgres by a few on a hard restart.",
         flaggedObservations: flagged,
         truncated: flagged.length >= 200,
       },
     });
   } catch {
     return NextResponse.json(
-      { success: false, error: "UNAVAILABLE", message: "Redis diagnostics unavailable." },
+      {
+        success: false,
+        error: "UNAVAILABLE",
+        message: "Redis diagnostics unavailable.",
+      },
       { status: 503 },
     );
   }

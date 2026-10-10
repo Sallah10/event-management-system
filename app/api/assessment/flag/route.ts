@@ -12,13 +12,13 @@ export const dynamic = "force-dynamic";
 // This route let the CLIENT decide whether an academic-integrity violation
 // happened. There was no server-side detection of anything: the trigger was a
 // bare POST with a free-text `reason`, and three of them set
-// `isFlagged = true` — a permanent database write with no un-flag path anywhere
+// `isFlagged = true` - a permanent database write with no un-flag path anywhere
 // in the codebase. A candidate could also reset the 30-second grace window at
 // will by re-calling /api/assessment/start-exam before each flag, because the
 // window was read from a Redis key the client could rewrite.
 //
 // The deeper truth: everything this route was fed came from browser event
-// listeners (blur, visibilitychange, resize). Those are signals, not evidence —
+// listeners (blur, visibilitychange, resize). Those are signals, not evidence -
 // a candidate alt-tabbing to read a textbook and a candidate switching to a
 // second monitor to look at notes produce identical events.
 //
@@ -67,7 +67,11 @@ export async function POST(request: Request) {
     });
     if (!student) {
       return NextResponse.json(
-        { success: false, error: "INVALID_SESSION", message: "Invalid session." },
+        {
+          success: false,
+          error: "INVALID_SESSION",
+          message: "Invalid session.",
+        },
         { status: 403 },
       );
     }

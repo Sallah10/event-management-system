@@ -1,11 +1,17 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { cleanPhone, cleanText, countWords, escapeHtml, isValidEmail } from "@/lib/validate";
+import {
+  cleanPhone,
+  cleanText,
+  countWords,
+  escapeHtml,
+  isValidEmail,
+} from "@/lib/validate";
 
 // ─── VALIDATION ───────────────────────────────────────────────────────────────
-// lib/validate.ts replaced a blacklist — `sanitizeString` stripped `<>'";` from
-// everything on the way in — with shape checks and length caps. Two properties
+// lib/validate.ts replaced a blacklist - `sanitizeString` stripped `<>'";` from
+// everything on the way in - with shape checks and length caps. Two properties
 // are worth pinning down, because both were previously wrong in opposite
 // directions:
 //
@@ -23,7 +29,13 @@ describe("cleanText", () => {
   });
 
   it("keeps non-Latin scripts intact", () => {
-    for (const name of ["Amina Yusuf", "Chidinma Okafor", "José Álvarez", "李明", "Ольга"]) {
+    for (const name of [
+      "Amina Yusuf",
+      "Chidinma Okafor",
+      "José Álvarez",
+      "李明",
+      "Ольга",
+    ]) {
       assert.equal(cleanText(name), name);
     }
   });
@@ -63,7 +75,11 @@ describe("cleanText", () => {
 
 describe("isValidEmail", () => {
   it("accepts ordinary addresses", () => {
-    for (const value of ["a@b.co", "first.last@example.com", "a+tag@sub.example.org"]) {
+    for (const value of [
+      "a@b.co",
+      "first.last@example.com",
+      "a+tag@sub.example.org",
+    ]) {
       assert.equal(isValidEmail(value), true, `${value} should be accepted`);
     }
   });
@@ -87,7 +103,14 @@ describe("isValidEmail", () => {
   });
 
   it("rejects non-strings and over-long values", () => {
-    for (const value of [null, undefined, 42, {}, [], `${"a".repeat(250)}@example.com`]) {
+    for (const value of [
+      null,
+      undefined,
+      42,
+      {},
+      [],
+      `${"a".repeat(250)}@example.com`,
+    ]) {
       assert.equal(isValidEmail(value), false);
     }
   });
@@ -136,7 +159,10 @@ describe("countWords", () => {
 describe("escapeHtml", () => {
   it("escapes every character that can close a tag or an attribute", () => {
     // The hand-built email template is the one place user data becomes markup.
-    assert.equal(escapeHtml("<script>alert(1)</script>"), "&lt;script&gt;alert(1)&lt;/script&gt;");
+    assert.equal(
+      escapeHtml("<script>alert(1)</script>"),
+      "&lt;script&gt;alert(1)&lt;/script&gt;",
+    );
     assert.equal(escapeHtml('" onload="x'), "&quot; onload=&quot;x");
     assert.equal(escapeHtml("it's"), "it&#39;s");
   });

@@ -38,7 +38,7 @@ export const dynamic = "force-dynamic";
 //        selectedCourseSlug: cleanCourse
 //    straight from the request body, where cleanCourse defaulted to the string
 //    "General Admission". So the column that the course-slots endpoint GROUP BYs
-//    — and that the per-course cap counts — accumulated values that were never
+//    - and that the per-course cap counts - accumulated values that were never
 //    a course. A junk slug counts as a seat holder, or as a course nobody can
 //    ever be admitted to, depending on the query. It is now validated against
 //    the canonical list and stored as NULL when there isn't a real choice yet.
@@ -102,7 +102,10 @@ export async function POST(request: Request) {
     try {
       body = (await request.json()) as Record<string, unknown>;
     } catch {
-      return NextResponse.json({ message: "Invalid JSON body." }, { status: 400 });
+      return NextResponse.json(
+        { message: "Invalid JSON body." },
+        { status: 400 },
+      );
     }
 
     // Field names are configuration, not code. A form's field name is an
@@ -140,15 +143,17 @@ export async function POST(request: Request) {
     // "{{email}}". That is a CMS misconfiguration, not a user error, and it used
     // to be reported as "Registration failed" with the template printed in the
     // logs. Name the cause and say who has to fix it.
-    const looksLikePlaceholder = (value: string) => value.includes("{{") || value.includes("}}");
+    const looksLikePlaceholder = (value: string) =>
+      value.includes("{{") || value.includes("}}");
     if (looksLikePlaceholder(email) || looksLikePlaceholder(name)) {
       log.error("register.cms_placeholder", { fields: Object.keys(body) });
       return NextResponse.json(
         {
           success: false,
-          message: "The form sent unrendered template tags. This is a CMS configuration error.",
+          message:
+            "The form sent unrendered template tags. This is a CMS configuration error.",
         },
-      { status: 400 },
+        { status: 400 },
       );
     }
 
@@ -166,11 +171,18 @@ export async function POST(request: Request) {
     });
 
     if (!result.ok) {
-      return NextResponse.json({ message: result.message, error: result.code }, { status: result.status });
+      return NextResponse.json(
+        { message: result.message, error: result.code },
+        { status: result.status },
+      );
     }
 
     return NextResponse.json(
-      { success: true, ticketId: result.ticketId, ...(result.duplicate ? { duplicate: true } : {}) },
+      {
+        success: true,
+        ticketId: result.ticketId,
+        ...(result.duplicate ? { duplicate: true } : {}),
+      },
       { status: result.duplicate ? 200 : 201 },
     );
   } catch (error) {
@@ -179,7 +191,12 @@ export async function POST(request: Request) {
     if (err.name === "SequelizeUniqueConstraintError") {
       // Two requests raced past the existence check. The unique index caught it,
       // which is exactly what it is for. Return the winner's ticket.
-      const conflictEmail = maskEmail(cleanText((error as { params?: { value?: unknown } })?.params?.value, 254));
+      const conflictEmail = maskEmail(
+        cleanText(
+          (error as { params?: { value?: unknown } })?.params?.value,
+          254,
+        ),
+      );
       log.info("register.race_resolved", { conflictEmail });
       return NextResponse.json(
         { success: true, duplicate: true, message: "Already registered." },
@@ -187,7 +204,14 @@ export async function POST(request: Request) {
       );
     }
 
-    log.error("register.failed", { route, name: err.name, message: err.message });
-    return NextResponse.json({ message: "Registration failed. Try again shortly." }, { status: 500 });
+    log.error("register.failed", {
+      route,
+      name: err.name,
+      message: err.message,
+    });
+    return NextResponse.json(
+      { message: "Registration failed. Try again shortly." },
+      { status: 500 },
+    );
   }
 }

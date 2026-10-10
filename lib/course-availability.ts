@@ -10,7 +10,7 @@ import { LIMIT_PER_COURSE, SEAT_HOLDING_STATUSES } from "@/config/rules";
 // on the server.
 //
 // It used to be a client-side fetch, which cost a full round trip after a
-// spinner on a page whose whole purpose is a decision — "which of these 13
+// spinner on a page whose whole purpose is a decision - "which of these 13
 // tracks still has money in it?" A candidate on a bad connection saw an empty
 // list, and the "Full" styling is not a substitute for a real number.
 //
@@ -55,7 +55,7 @@ export async function getCourseAvailability(): Promise<CourseAvailability[]> {
       slug: course.slug,
       displayName: course.displayName,
       // `lmsId` is deliberately NOT in this payload. It is our internal handle
-      // in the third-party LMS — the thing the winners export maps onto — and the
+      // in the third-party LMS - the thing the winners export maps onto - and the
       // course picker has no use for it. The old course-slots route shipped it to
       // any caller, which turned an unauthenticated endpoint into a map of every
       // course in the LMS and how many of our seats each one had left.

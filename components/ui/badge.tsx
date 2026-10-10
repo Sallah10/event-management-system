@@ -5,7 +5,7 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 
 /**
- * Status chip. A full pill is correct here and only here — this is the one
+ * Status chip. A full pill is correct here and only here - this is the one
  * element in the system that is genuinely a pill, and reserving the shape for
  * it is what lets everything else keep tight corners.
  *

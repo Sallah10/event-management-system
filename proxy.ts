@@ -17,7 +17,7 @@ import {
 //  1. Real page gating. `/assessment/exam`, `/assessment/theory` and
 //     `/assessment/result` are now verified HERE, at the edge, from a signed
 //     httpOnly cookie. Previously their only gate was
-//     `localStorage.getItem("user_email")` in the client bundle — a value any
+//     `localStorage.getItem("user_email")` in the client bundle - a value any
 //     visitor can type into DevTools. The client-side check that was supposed
 //     to back it up called `/api/assessment/status`, which 404'd.
 //
@@ -28,7 +28,7 @@ import {
 //  3. Rate limits keyed on a VERIFIED identity. The old code did
 //     `JSON.parse(atob(token.split(".")[1]))` with no signature check, so an
 //     attacker set a random `email` claim per request and got a brand-new
-//     bucket every time — the limit was decorative.
+//     bucket every time - the limit was decorative.
 //
 //  4. Coverage. The previous matcher ran the function on every /api route but
 //     only rate-limited two of them. Admin, internal-sync, register and qr
@@ -52,9 +52,16 @@ function clientIp(request: NextRequest): string {
   );
 }
 
-function tooMany(ttl: number, message = "Too many requests. Please slow down."): NextResponse {
+function tooMany(
+  ttl: number,
+  message = "Too many requests. Please slow down.",
+): NextResponse {
   return NextResponse.json(
-    { success: false, error: "RATE_LIMITED", message: `${message} Try again in ${ttl}s.` },
+    {
+      success: false,
+      error: "RATE_LIMITED",
+      message: `${message} Try again in ${ttl}s.`,
+    },
     { status: 429, headers: { "Retry-After": String(Math.max(1, ttl)) } },
   );
 }
@@ -79,7 +86,8 @@ function localHit(key: string, max: number, window: number): number | null {
 
   entry.count += 1;
   if (localCounters.size > 5000) {
-    for (const [k, v] of localCounters) if (v.expiresAt <= now) localCounters.delete(k);
+    for (const [k, v] of localCounters)
+      if (v.expiresAt <= now) localCounters.delete(k);
   }
   return entry.count > max ? Math.ceil((entry.expiresAt - now) / 1000) : null;
 }
@@ -94,7 +102,11 @@ function localHit(key: string, max: number, window: number): number | null {
  * Production still fails closed - a rate limiter that silently stops limiting
  * is worse than one that refuses writes - but only in production.
  */
-async function hit(key: string, max: number, window: number): Promise<number | null> {
+async function hit(
+  key: string,
+  max: number,
+  window: number,
+): Promise<number | null> {
   try {
     const current = await redis.incr(key);
     if (current === 1) await redis.expire(key, window);
@@ -128,7 +140,9 @@ export async function proxy(request: NextRequest) {
     const isAdmissionsArea = path.startsWith("/admissions");
 
     if ((isAdminArea || isAdmissionsArea) && path !== "/admin/login") {
-      const session = await verifyStaffSession(request.cookies.get(STAFF_COOKIE)?.value);
+      const session = await verifyStaffSession(
+        request.cookies.get(STAFF_COOKIE)?.value,
+      );
 
       if (!session) {
         return NextResponse.redirect(new URL("/admin/login", request.url));
@@ -138,7 +152,7 @@ export async function proxy(request: NextRequest) {
       //
       // The old check was one-directional: it stopped `staff` from opening
       // /admissions, and did nothing at all to stop `admissions` from opening
-      // /admin. So the separation was half a separation — an admissions officer
+      // /admin. So the separation was half a separation - an admissions officer
       // could read the attendance dashboard, and the comment above it claimed a
       // rule that the code did not implement.
       //
@@ -162,8 +176,14 @@ export async function proxy(request: NextRequest) {
 
   // ─── CANDIDATE PAGE GATE ───────────────────────────────────────────────────
   try {
-    const guarded = ["/assessment/exam", "/assessment/theory", "/assessment/result"];
-    if (guarded.some((route) => path === route || path.startsWith(`${route}/`))) {
+    const guarded = [
+      "/assessment/exam",
+      "/assessment/theory",
+      "/assessment/result",
+    ];
+    if (
+      guarded.some((route) => path === route || path.startsWith(`${route}/`))
+    ) {
       const session = await verifyCandidateSession(
         request.cookies.get(CANDIDATE_COOKIE)?.value,
       );
@@ -212,15 +232,19 @@ export async function proxy(request: NextRequest) {
       }
 
       if (isApi && path.startsWith("/api/assessment/")) {
-        // Verified identity — this is what makes the limit actually mean something
+        // Verified identity - this is what makes the limit actually mean something
         const session = await verifyCandidateSession(
           request.cookies.get(CANDIDATE_COOKIE)?.value,
         );
         const identity = session?.barcodeId ?? `ip:${ip}`;
 
         const isHeavyWrite =
-          path.includes("/submit") || path.includes("/flag") || path.includes("/start-exam");
-        const limit = isHeavyWrite ? RATE_LIMITS.assessmentWrite : RATE_LIMITS.assessmentRead;
+          path.includes("/submit") ||
+          path.includes("/flag") ||
+          path.includes("/start-exam");
+        const limit = isHeavyWrite
+          ? RATE_LIMITS.assessmentWrite
+          : RATE_LIMITS.assessmentRead;
 
         const ttl = await hit(
           rateLimitKey("assessment", identity),
@@ -230,9 +254,15 @@ export async function proxy(request: NextRequest) {
         if (ttl !== null) return tooMany(ttl);
       }
 
-      if (isApi && (path.startsWith("/api/admin/") || path.startsWith("/api/internal/"))) {
-        const staff = await verifyStaffSession(request.cookies.get(STAFF_COOKIE)?.value);
-        const isExport = path.includes("export") || path.includes("candidate-answers");
+      if (
+        isApi &&
+        (path.startsWith("/api/admin/") || path.startsWith("/api/internal/"))
+      ) {
+        const staff = await verifyStaffSession(
+          request.cookies.get(STAFF_COOKIE)?.value,
+        );
+        const isExport =
+          path.includes("export") || path.includes("candidate-answers");
         const limit = isExport ? RATE_LIMITS.sensitive : RATE_LIMITS.staffWrite;
 
         const ttl = await hit(
@@ -252,7 +282,11 @@ export async function proxy(request: NextRequest) {
       // and should still surface.
       console.error("[proxy] rate limiter unavailable, blocking write", error);
       return NextResponse.json(
-        { success: false, error: "SERVICE_UNAVAILABLE", message: "Please try again in a moment." },
+        {
+          success: false,
+          error: "SERVICE_UNAVAILABLE",
+          message: "Please try again in a moment.",
+        },
         { status: 503 },
       );
     }

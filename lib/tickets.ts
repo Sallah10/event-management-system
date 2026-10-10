@@ -1,5 +1,5 @@
 // ─── TICKET FORMAT ────────────────────────────────────────────────────────────
-// Pure functions, no I/O — which is why they're unit-testable (see
+// Pure functions, no I/O - which is why they're unit-testable (see
 // `npm run test:unit`) and why the check-in route can be reasoned about without
 // a database.
 //
@@ -15,12 +15,12 @@
 //
 // Strategies 2 and 5 only stripped hyphens, so SQL wildcards survived into the
 // pattern. A scan of "TS26-%%%" is 8 characters, clears the `length < 8` guard,
-// and becomes `ILIKE '%TS26%%%'` — which matches the first TS26 registrant in the
+// and becomes `ILIKE '%TS26%%%'` - which matches the first TS26 registrant in the
 // table. Underscores work the same way. So the endpoint that was supposed to
 // prove a candidate physically attended could be used to check in an arbitrary
 // attendee, and every response leaked that person's full name.
 //
-// The fix is not "escape the wildcards" — it's to stop guessing. A ticket is
+// The fix is not "escape the wildcards" - it's to stop guessing. A ticket is
 // `TS26-` + 8 hex characters. We normalise the handful of real-world variations
 // (lowercase, missing or extra hyphen, stray whitespace) into that one canonical
 // shape and then do an exact match against a unique index. If it doesn't match,
@@ -34,11 +34,16 @@ import { BRAND } from "@/config/branding";
 // prefix and the year. The next cohort is a different prefix, and a repository
 // that hardcodes the current one has a `.env` change to make before it can be
 // used for anything else. The default is unchanged, so existing TS26 tickets keep
-// validating — a format change that silently invalidates a few thousand printed
+// validating - a format change that silently invalidates a few thousand printed
 // tickets is not one to make as a side effect of tidying up a constant.
-export const TICKET_PREFIX = (process.env.TICKET_PREFIX ?? "TS26").toUpperCase();
+export const TICKET_PREFIX = (
+  process.env.TICKET_PREFIX ?? "TS26"
+).toUpperCase();
 export const TICKET_BODY_LENGTH = Number(process.env.TICKET_BODY_LENGTH ?? 8);
-const TICKET_PATTERN = new RegExp(`^${TICKET_PREFIX}-?[0-9A-F]{${TICKET_BODY_LENGTH}}$`, "i");
+const TICKET_PATTERN = new RegExp(
+  `^${TICKET_PREFIX}-?[0-9A-F]{${TICKET_BODY_LENGTH}}$`,
+  "i",
+);
 
 export type TicketResult =
   | { ok: true; value: string }

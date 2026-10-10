@@ -5,7 +5,7 @@ import { requireEnv } from "@/lib/env";
 // Why `jose` and not `jsonwebtoken`: this module is imported by proxy.ts, which
 // runs on the Edge runtime. `jsonwebtoken` and `node:crypto` don't exist there,
 // which is exactly why the old proxy could only *base64-decode* the JWT and
-// never verify it — so anyone could hand-craft a token to get a fresh
+// never verify it - so anyone could hand-craft a token to get a fresh
 // rate-limit bucket per request. `jose` is WebCrypto-only, so the same
 // verification runs in the proxy AND in the route handlers, from one module.
 //
@@ -32,8 +32,8 @@ export interface StaffSession {
   name: string;
 }
 
-export const CANDIDATE_TTL_SECONDS = 2 * 60 * 60; // 2h — one exam sitting
-export const STAFF_TTL_SECONDS = 12 * 60 * 60; // 12h — one event day
+export const CANDIDATE_TTL_SECONDS = 2 * 60 * 60; // 2h - one exam sitting
+export const STAFF_TTL_SECONDS = 12 * 60 * 60; // 12h - one event day
 
 let cachedSecret: Uint8Array | null = null;
 function secret(): Uint8Array {
@@ -60,9 +60,14 @@ export async function verifyCandidateSession(
 ): Promise<CandidateSession | null> {
   if (!token) return null;
   try {
-    const { payload } = await jwtVerify(token, secret(), { algorithms: ["HS256"] });
+    const { payload } = await jwtVerify(token, secret(), {
+      algorithms: ["HS256"],
+    });
     if (payload.typ !== "candidate") return null;
-    if (typeof payload.email !== "string" || typeof payload.barcodeId !== "string") {
+    if (
+      typeof payload.email !== "string" ||
+      typeof payload.barcodeId !== "string"
+    ) {
       return null;
     }
     return {
@@ -79,7 +84,10 @@ export async function verifyCandidateSession(
 
 // ─── STAFF SESSIONS ───────────────────────────────────────────────────────────
 
-export async function signStaffSession(role: StaffRole, name: string): Promise<string> {
+export async function signStaffSession(
+  role: StaffRole,
+  name: string,
+): Promise<string> {
   return new SignJWT({ typ: "staff", role, name })
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
@@ -92,7 +100,9 @@ export async function verifyStaffSession(
 ): Promise<StaffSession | null> {
   if (!token) return null;
   try {
-    const { payload } = await jwtVerify(token, secret(), { algorithms: ["HS256"] });
+    const { payload } = await jwtVerify(token, secret(), {
+      algorithms: ["HS256"],
+    });
     if (payload.typ !== "staff") return null;
     if (payload.role !== "staff" && payload.role !== "admissions") return null;
     return {
@@ -126,7 +136,7 @@ export const staffCookieOptions = {
 };
 
 // ─── DEVICE BINDING ───────────────────────────────────────────────────────────
-// HONEST VERSION OF WHAT THIS DOES — the old code called a hash of
+// HONEST VERSION OF WHAT THIS DOES - the old code called a hash of
 // (User-Agent | Accept | Accept-Language | x-forwarded-for) "device
 // fingerprinting". Two problems: every header is attacker-controlled, and
 // because the caller's IP was in the hash, a candidate walking from Wi-Fi to
@@ -140,7 +150,7 @@ export const staffCookieOptions = {
 //
 // What this does NOT buy you (say this out loud in an interview): it is not
 // DRM. Clearing site data or opening a private window mints a new key, and the
-// previous key is then orphaned. Treat it as friction, not a security boundary —
+// previous key is then orphaned. Treat it as friction, not a security boundary -
 // the real boundary is the checked-in gate plus the invigilator process.
 
 const DEVICE_KEY_HEADER = "x-device-key";
@@ -167,7 +177,7 @@ export async function hashDeviceKey(deviceKey: string): Promise<string> {
 // 12 secret comparisons in the original used `===` / `!==`, which
 // short-circuits on the first differing byte and leaks length + prefix
 // through timing. Most were high-entropy tokens where that is theoretical, but
-// one of them was the 6-digit staff PIN — a 10^6 search space.
+// one of them was the 6-digit staff PIN - a 10^6 search space.
 //
 // Implemented by hand rather than via node:crypto so it also runs on the Edge.
 

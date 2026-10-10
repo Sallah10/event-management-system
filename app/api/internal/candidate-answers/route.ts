@@ -13,7 +13,7 @@ export const dynamic = "force-dynamic";
 // ─── SINGLE CANDIDATE RECORD ──────────────────────────────────────────────────
 // "Show me this person's file." One row of PII and three free-text essays.
 //
-// It was gated on `authorization: Bearer ${INTERNAL_SYNC_TOKEN}` — a single
+// It was gated on `authorization: Bearer ${INTERNAL_SYNC_TOKEN}` - a single
 // static bearer token, in a header, with no expiry, no audience and no
 // revocation. Any machine holding it could read any candidate's entire
 // application, by email, forever, and there was no audit of who looked. The
@@ -24,7 +24,7 @@ export const dynamic = "force-dynamic";
 // Now it requires a staff session, it requires the admissions role (this is not
 // a check-in-desk function), it takes the candidate's barcode rather than their
 // email address, and every read is logged. An endpoint that hands out personal
-// data should be annoying to use and obvious in the logs — that is the whole
+// data should be annoying to use and obvious in the logs - that is the whole
 // control.
 
 export async function GET(request: Request) {
@@ -44,7 +44,11 @@ export async function GET(request: Request) {
 
   if (!id && !lookup) {
     return NextResponse.json(
-      { success: false, error: "BAD_REQUEST", message: "Provide a ticket code or email." },
+      {
+        success: false,
+        error: "BAD_REQUEST",
+        message: "Provide a ticket code or email.",
+      },
       { status: 400 },
     );
   }
@@ -55,7 +59,11 @@ export async function GET(request: Request) {
     const byEmail = lookup.includes("@") && isValidEmail(lookup.toLowerCase());
     if (lookup.includes("@") && !byEmail) {
       return NextResponse.json(
-        { success: false, error: "BAD_REQUEST", message: "That is not a valid email address." },
+        {
+          success: false,
+          error: "BAD_REQUEST",
+          message: "That is not a valid email address.",
+        },
         { status: 400 },
       );
     }
@@ -103,7 +111,11 @@ export async function GET(request: Request) {
     if (!registrant) {
       // 404, not 403: the caller is authorised, the record just isn't there.
       return NextResponse.json(
-        { success: false, error: "NOT_FOUND", message: "No candidate with that identifier." },
+        {
+          success: false,
+          error: "NOT_FOUND",
+          message: "No candidate with that identifier.",
+        },
         { status: 404 },
       );
     }
@@ -126,7 +138,10 @@ export async function GET(request: Request) {
     // past the minimum is visible as such rather than looking like a short but
     // considered response.
     const answers = THEORY_QUESTIONS.map((question) => {
-      const text = typeof row[question.column] === "string" ? (row[question.column] as string) : "";
+      const text =
+        typeof row[question.column] === "string"
+          ? (row[question.column] as string)
+          : "";
       return {
         q: Number(question.id.slice(1)),
         column: question.column,

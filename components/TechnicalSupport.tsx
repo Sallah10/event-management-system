@@ -28,7 +28,7 @@ import {
 //     the browser claimed. The route now reads the signed session instead, and
 //     this component sends no identity at all.
 //   • The failure toast told the candidate to email an address that belonged to
-//     whoever ran the previous cohort — wrong domain from the route's real
+//     whoever ran the previous cohort - wrong domain from the route's real
 //     address, and unreachable in any deployment that isn't theirs. Now BRAND.
 //   • Raw `fetch` with no credentials, and the response read as `data.success`
 //     even on a 500.
@@ -80,7 +80,7 @@ export default function TechnicalSupport() {
     );
 
     if (result.ok) {
-      setMessage(result.data.emailed ? "Reported — we'll be in touch." : "Recorded.");
+      setMessage(result.data.emailed ? "Reported - we'll be in touch." : "Recorded.");
       setIssue("");
       setDescription("");
       // Leave the panel open on success so the confirmation is actually read.
@@ -94,7 +94,7 @@ export default function TechnicalSupport() {
   return (
     <>
       {/* Sits above the exam footer rather than over it, and carries a visible
-          label — a 48px circle with a lone lifebuoy is a control nobody can
+          label - a 48px circle with a lone lifebuoy is a control nobody can
           name. */}
       <button
         type="button"

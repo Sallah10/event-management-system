@@ -19,7 +19,7 @@ export const dynamic = "force-dynamic";
 // • The identity was browser state. Anything the browser asserts about who you
 //   are, the browser can be made to assert differently. The session cookie is
 //   httpOnly and signed, so it is the only thing here that the candidate cannot
-//   edit. Every gate below reads it, and the submit route re-reads it — the page
+//   edit. Every gate below reads it, and the submit route re-reads it - the page
 //   check is convenience, not security.
 //
 // • The clock started at mount. See lib/exam-sitting.ts.

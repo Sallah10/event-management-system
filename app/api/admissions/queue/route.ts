@@ -18,7 +18,7 @@ export const dynamic = "force-dynamic";
 // 1. ESSAY TEXT. A queue is a list of people. Every essay in one response is
 //    megabytes of PII for a screen that shows a name, a score and three buttons.
 //    Essays come from /api/internal/candidate-answers, per candidate, so a
-//    reviewer has to ask for the ones they are actually reading — and each of
+//    reviewer has to ask for the ones they are actually reading - and each of
 //    those reads is logged, which is what makes the access defensible.
 //
 // 2. EMAILS. The queue is a working list, not an export. Email is on the detail
@@ -26,7 +26,7 @@ export const dynamic = "force-dynamic";
 //
 // BUG: the column was selected anyway. The comment above said the queue does not
 // return email addresses, and `SELECT r.email` returned every email address in
-// the filtered set to anyone who could load the list — so the control described
+// the filtered set to anyone who could load the list - so the control described
 // here existed only in a comment, and the one screen a reviewer looks at all day
 // was the one that handed out the whole cohort's contact details in a single
 // response. Email now comes from the per-candidate detail call, which is logged.
@@ -65,8 +65,9 @@ export async function GET(request: Request) {
       .split(",")
       .map((value) => value.trim())
       .filter(Boolean);
-    const statuses = requested.filter((value): value is (typeof KNOWN_STATUSES)[number] =>
-      (KNOWN_STATUSES as readonly string[]).includes(value),
+    const statuses = requested.filter(
+      (value): value is (typeof KNOWN_STATUSES)[number] =>
+        (KNOWN_STATUSES as readonly string[]).includes(value),
     );
 
     // An entirely unrecognised filter returns nothing rather than everything. A
@@ -76,7 +77,13 @@ export async function GET(request: Request) {
       return NextResponse.json({
         success: true,
         error: null,
-        data: { rows: [], total: 0, page: 1, pageSize: PAGE_SIZE, unknownStatus: true },
+        data: {
+          rows: [],
+          total: 0,
+          page: 1,
+          pageSize: PAGE_SIZE,
+          unknownStatus: true,
+        },
       });
     }
 
@@ -116,7 +123,7 @@ export async function GET(request: Request) {
     // the total comes from the same round trip as the page.
     //
     // BUG: it wasn't there. The response was typed `{ rows, total: number }` and
-    // the value was read as `const { rows, total } = result` — but no column
+    // the value was read as `const { rows, total } = result` - but no column
     // supplied it, so `total` was `undefined` on every response and the queue
     // header read "50 of undefined". The `as` cast is what hid it: it asserted a
     // shape the query did not produce, and the type checker had no way to know.
@@ -151,7 +158,12 @@ export async function GET(request: Request) {
           r.created_at ASC
         LIMIT :limit OFFSET :offset`,
       {
-        replacements: { statuses, like, limit: pageSize, offset: (page - 1) * pageSize },
+        replacements: {
+          statuses,
+          like,
+          limit: pageSize,
+          offset: (page - 1) * pageSize,
+        },
         type: QueryTypes.SELECT,
       },
     )) as [{ rows: Record<string, unknown>[]; total: number | null }, unknown];
@@ -186,7 +198,9 @@ export async function GET(request: Request) {
         rows: rows.map((row) => ({
           ...row,
           // Slug -> label, so the UI never has to carry the course matrix.
-          course: COURSES.find((c) => c.slug === row.selectedCourseSlug)?.displayName ?? null,
+          course:
+            COURSES.find((c) => c.slug === row.selectedCourseSlug)
+              ?.displayName ?? null,
           courseSlug: row.selectedCourseSlug ?? null,
         })),
         total,

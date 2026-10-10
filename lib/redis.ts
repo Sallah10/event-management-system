@@ -2,9 +2,9 @@ import { Redis } from "@upstash/redis";
 
 // ─── REDIS CLIENT ─────────────────────────────────────────────────────────────
 // Two modes:
-//   1. Upstash  — used whenever UPSTASH_REDIS_REST_URL + _TOKEN are present
+//   1. Upstash  - used whenever UPSTASH_REDIS_REST_URL + _TOKEN are present
 //                 (production, and your own machine if you paste them in).
-//   2. Memory   — a tiny in-process stand-in so `npm run dev` works with zero
+//   2. Memory   - a tiny in-process stand-in so `npm run dev` works with zero
 //                 credentials. Refuses to engage in production, because a
 //                 silently-degraded rate limiter is worse than no rate limiter.
 //
@@ -21,7 +21,7 @@ export interface RedisLike {
   expire(key: string, seconds: number): Promise<number>;
   ttl(key: string): Promise<number>;
   keys(pattern: string): Promise<string[]>;
-  /** Cursor iteration. Preferred over keys() — never blocks the server. */
+  /** Cursor iteration. Preferred over keys() - never blocks the server. */
   scan(
     cursor: string,
     matchToken: "MATCH",
@@ -55,7 +55,8 @@ function createMemoryRedis(): RedisLike {
     const sweeper = setInterval(() => {
       const now = Date.now();
       for (const [key, entry] of store) {
-        if (entry.expiresAt !== null && now > entry.expiresAt) store.delete(key);
+        if (entry.expiresAt !== null && now > entry.expiresAt)
+          store.delete(key);
       }
     }, 30_000);
     sweeper.unref?.();
@@ -140,7 +141,7 @@ function createRedis(): RedisLike {
   }
 
   console.warn(
-    "[redis] No Upstash credentials — using in-memory store. " +
+    "[redis] No Upstash credentials - using in-memory store. " +
       "Rate limits and capacity counters reset on restart and are not shared " +
       "across instances. Fine for local dev, never for a real event.",
   );
@@ -158,10 +159,11 @@ export const flagKey = (barcodeId: string) => `flag:${barcodeId}`;
 export const checkinKey = (barcodeId: string) => `checkin:${barcodeId}`;
 export const capacityKey = () => "event:capacity";
 // `start:<barcode>` is deliberately absent. It used to be the exam clock, kept in
-// Redis while the paper counted down from a Postgres column — two clocks for one
+// Redis while the paper counted down from a Postgres column - two clocks for one
 // sitting, which agreed right up until the key expired or was evicted and the
 // candidate was handed a fresh full-length timer. The clock now lives only in
 // `registrants.objective_started_at`, read through lib/exam-sitting.ts. Nothing
 // writes a start time to Redis.
 export const backButtonKey = (barcodeId: string) => `backnav:${barcodeId}`;
-export const rateLimitKey = (scope: string, id: string) => `rate_limit:${scope}:${id}`;
+export const rateLimitKey = (scope: string, id: string) =>
+  `rate_limit:${scope}:${id}`;

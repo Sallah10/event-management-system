@@ -11,7 +11,7 @@ import { BRAND, CURRENT_COHORT } from "@/config/branding";
    It is now an index, which is what an entry page with three doors actually
    is. A masthead, a rule, and three numbered rows. Depth comes from a grain
    overlay and hairline separators rather than from glow, and the whole thing is
-   a server component — framer-motion was imported to animate a hover that
+   a server component - framer-motion was imported to animate a hover that
    should not have been animated, which cost a client bundle for nothing.
    ─────────────────────────────────────────────────────────────────────────── */
 

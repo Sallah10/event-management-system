@@ -22,7 +22,9 @@ export type { CandidateSession };
 export function getCandidateToken(request: Request): string | null {
   const header = request.headers.get("cookie");
   if (!header) return null;
-  const match = header.match(new RegExp(`(?:^|;\\s*)${CANDIDATE_COOKIE}=([^;]+)`));
+  const match = header.match(
+    new RegExp(`(?:^|;\\s*)${CANDIDATE_COOKIE}=([^;]+)`),
+  );
   return match ? decodeURIComponent(match[1]) : null;
 }
 
@@ -33,13 +35,16 @@ export async function getCandidateSession(
 }
 
 /**
- * Route guard. Returns either a session or a ready-to-return 401 — so no route
+ * Route guard. Returns either a session or a ready-to-return 401 - so no route
  * can forget to handle the null case, which is how the old flag/status routes
  * ended up with three different secret fallbacks.
  */
 export async function requireCandidate(
   request: Request,
-): Promise<{ session: CandidateSession; error?: never } | { session?: never; error: NextResponse }> {
+): Promise<
+  | { session: CandidateSession; error?: never }
+  | { session?: never; error: NextResponse }
+> {
   const session = await getCandidateSession(request);
   if (!session) {
     return {
@@ -80,5 +85,8 @@ export function routeError(
   publicMessage = "Something went wrong. Please try again.",
 ): NextResponse {
   logMetrics.routeError(route, error);
-  return NextResponse.json({ success: false, message: publicMessage }, { status });
+  return NextResponse.json(
+    { success: false, message: publicMessage },
+    { status },
+  );
 }

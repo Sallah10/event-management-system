@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 
 // ─── OBJECTIVE RESULT (SERVER) ────────────────────────────────────────────────
 // The score on this page used to come from `localStorage.getItem("latest_result")`
-// — a JSON blob the previous page wrote. Two things wrong with that:
+// - a JSON blob the previous page wrote. Two things wrong with that:
 //
 // 1. It is the candidate's own browser telling them their result. Editing one
 //    character in devtools turns "below the pass mark" into "Congratulations".
@@ -19,12 +19,12 @@ import { Button } from "@/components/ui/button";
 //    read from the server, which is the only place it was ever true.
 //
 // 2. The page also linked to a real, private Google Form for the "next stream
-//    waitlist" — an external URL, in a public repository, pointing at somebody's
+//    waitlist" - an external URL, in a public repository, pointing at somebody's
 //    private document. Removed. The contact address now comes from BRAND.
 //
 // It also renders a "REMEMBER!" overlay with a rules list and a "START THEORY
 // NOW" button that was dead code, commented-out score panels, and a claim in the
-// body — "Ranking is FIRST COME, FIRST SERVE not based on scores" — which is the
+// body - "Ranking is FIRST COME, FIRST SERVE not based on scores" - which is the
 // exact opposite of how lib/ranking.ts ranks. It ranks by score first, then by
 // finish time. So the page was stating a falsehood about the one rule candidates
 // care about most, in the place they were most likely to read carefully.
@@ -74,7 +74,7 @@ export default async function ResultPage() {
   const body = qualified
     ? "Your score put you inside the qualifying pool. The theory section is open to you now."
     : metPassMark
-      ? `You scored ${score}%, which meets the ${PASS_MARK_PERCENT}% pass mark. The pool of ${QUALIFIED_POOL_SIZE} places filled before your turn, so you've been added to the waitlist rather than the shortlist. Your score and finish time are on record, and both are kept — that matters if places are released later.`
+      ? `You scored ${score}%, which meets the ${PASS_MARK_PERCENT}% pass mark. The pool of ${QUALIFIED_POOL_SIZE} places filled before your turn, so you've been added to the waitlist rather than the shortlist. Your score and finish time are on record, and both are kept - that matters if places are released later.`
       : `You scored ${score}%, below the ${PASS_MARK_PERCENT}% needed to continue. Your score has been recorded.`;
 
   return (
@@ -115,7 +115,7 @@ export default async function ResultPage() {
                 data-numeric
                 className="font-display text-h2 leading-none tabular-nums text-ink"
               >
-                {rank ? `#${rank}` : "—"}
+                {rank ? `#${rank}` : "-"}
               </span>
               <span className="mt-1.5 block text-small text-ink-soft">
                 of {QUALIFIED_POOL_SIZE} places

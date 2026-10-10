@@ -21,7 +21,7 @@ import { getDeviceKey } from "@/lib/client/device";
 //    failure, and it was the third separate warning system saying the same thing.
 //
 // 3. `localStorage.clear()` + "DISQUALIFIED" on flag count >= 3.
-//    The server never disqualified anyone for tab switching — it recorded a
+//    The server never disqualified anyone for tab switching - it recorded a
 //    count. So the client destroyed the local session and showed the word
 //    DISQUALIFIED while the candidate's database row was untouched and still
 //    open. Telling someone they are disqualified, when nothing has been decided,
@@ -54,7 +54,7 @@ export default function IntegrityObserver({
 
     const report = async (kind: string) => {
       // One report per kind per mount. A candidate who alt-tabs thirty times in
-      // a row is one person who left, not thirty separate incidents — and a
+      // a row is one person who left, not thirty separate incidents - and a
       // burst of thirty POSTs is a way to flood our own rate limiter.
       if (sent.current.has(kind)) return;
       sent.current.add(kind);
@@ -84,7 +84,7 @@ export default function IntegrityObserver({
 
     document.addEventListener("visibilitychange", onVisibility);
 
-    // Pagehide catches the tab being closed or the device being powered off —
+    // Pagehide catches the tab being closed or the device being powered off -
     // the two cases where visibilitychange has already fired, or won't get the
     // chance to. keepalive on the fetch above is what makes it land.
     const onPageHide = () => void report("Paper closed or unloaded");

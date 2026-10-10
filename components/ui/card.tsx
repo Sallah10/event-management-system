@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils"
 
 /**
  * A panel. Depth comes from a hairline border and a background step, not from a
- * shadow — on a page that is mostly paper, a drop shadow on every panel is the
+ * shadow - on a page that is mostly paper, a drop shadow on every panel is the
  * thing that makes a layout feel like a stack of floating chips. `shadow-rest`
  * is available as an opt-in for panels that genuinely sit above the page.
  */

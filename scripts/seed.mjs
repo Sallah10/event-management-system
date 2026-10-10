@@ -3,10 +3,14 @@ import "dotenv/config";
 
 const force = process.argv.includes("--force");
 const isTs = new Date("2026-04-18T09:00:00Z");
-const at = (minutesFromStart) => new Date(isTs.getTime() + minutesFromStart * 60_000);
+const at = (minutesFromStart) =>
+  new Date(isTs.getTime() + minutesFromStart * 60_000);
 
 const COHORT_YEAR = 2026;
-const PREFIX = "EVT";
+// Must match TICKET_PREFIX in lib/tickets.ts, or every seeded candidate is
+// rejected at login for having a ticket the validator does not recognise - which
+// is exactly what "EVT-" did while the app expected "TS26-".
+const PREFIX = (process.env.TICKET_PREFIX ?? "TS26").toUpperCase();
 const ticket = (n) =>
   `${PREFIX}-${(((n + 1) * 2654435761) >>> 0).toString(16).padStart(8, "0").toUpperCase()}`;
 
@@ -137,10 +141,14 @@ const CANDIDATES = [
     objectiveRank: 1,
     theoryStartedAt: at(-40),
     theoryFinishedAt: at(-4),
-    theoryAnswer: ANSWER["microsoft-power-bi-certification-training-course-52"][1],
-    theoryAnswer1: ANSWER["microsoft-power-bi-certification-training-course-52"][1],
-    theoryAnswer2: ANSWER["microsoft-power-bi-certification-training-course-52"][2],
-    theoryAnswer3: ANSWER["microsoft-power-bi-certification-training-course-52"][3],
+    theoryAnswer:
+      ANSWER["microsoft-power-bi-certification-training-course-52"][1],
+    theoryAnswer1:
+      ANSWER["microsoft-power-bi-certification-training-course-52"][1],
+    theoryAnswer2:
+      ANSWER["microsoft-power-bi-certification-training-course-52"][2],
+    theoryAnswer3:
+      ANSWER["microsoft-power-bi-certification-training-course-52"][3],
     tabSwitches: 2,
   },
   {
@@ -158,10 +166,14 @@ const CANDIDATES = [
     objectiveRank: 1,
     theoryStartedAt: at(-180),
     theoryFinishedAt: at(-150),
-    theoryAnswer: ANSWER["artificial-intelligence-and-machine-learning-fundamentals-74"][1],
-    theoryAnswer1: ANSWER["artificial-intelligence-and-machine-learning-fundamentals-74"][1],
-    theoryAnswer2: ANSWER["artificial-intelligence-and-machine-learning-fundamentals-74"][2],
-    theoryAnswer3: ANSWER["artificial-intelligence-and-machine-learning-fundamentals-74"][3],
+    theoryAnswer:
+      ANSWER["artificial-intelligence-and-machine-learning-fundamentals-74"][1],
+    theoryAnswer1:
+      ANSWER["artificial-intelligence-and-machine-learning-fundamentals-74"][1],
+    theoryAnswer2:
+      ANSWER["artificial-intelligence-and-machine-learning-fundamentals-74"][2],
+    theoryAnswer3:
+      ANSWER["artificial-intelligence-and-machine-learning-fundamentals-74"][3],
     theoryScore: 84,
     theoryGradedAt: at(-120),
     theoryGradedBy: "seed@script",
@@ -220,7 +232,8 @@ const CANDIDATES = [
     theoryGradedBy: "seed@script",
     careerStatus: "final_year",
     aiConfidence: "0.88",
-    decisionNote: "Highest aggregate on the day, scholarship offered and accepted.",
+    decisionNote:
+      "Highest aggregate on the day, scholarship offered and accepted.",
     decidedAt: at(-90),
     decidedBy: "seed@script",
     tabSwitches: 0,
@@ -228,10 +241,30 @@ const CANDIDATES = [
 ];
 
 const DECISIONS = [
-  ["chiara.bellini@example.com", "qualified", "shortlisted", "Theory scored well above the cohort median."],
-  ["bilal.chaudhry@example.com", "qualified", "waitlisted", "Cohort seats were filled by higher aggregates."],
-  ["nadia.petrova@example.com", "qualified", "awarded", "Top aggregate, funded place awarded."],
-  ["sofia.novak@example.com", "qualified", "qualified", "Flagged for review before grading."],
+  [
+    "chiara.bellini@example.com",
+    "qualified",
+    "shortlisted",
+    "Theory scored well above the cohort median.",
+  ],
+  [
+    "bilal.chaudhry@example.com",
+    "qualified",
+    "waitlisted",
+    "Cohort seats were filled by higher aggregates.",
+  ],
+  [
+    "nadia.petrova@example.com",
+    "qualified",
+    "awarded",
+    "Top aggregate, funded place awarded.",
+  ],
+  [
+    "sofia.novak@example.com",
+    "qualified",
+    "qualified",
+    "Flagged for review before grading.",
+  ],
 ];
 
 const sequelize = new Sequelize(process.env.DATABASE_URL, { logging: false });
@@ -271,7 +304,7 @@ const Registrant = sequelize.define(
     decidedAt: DataTypes.DATE,
     decidedBy: DataTypes.STRING,
   },
-  { tableName: "registrants", underscored: true, timestamps: true }
+  { tableName: "registrants", underscored: true, timestamps: true },
 );
 
 const AdmissionDecision = sequelize.define(
@@ -285,13 +318,22 @@ const AdmissionDecision = sequelize.define(
     note: DataTypes.TEXT,
     context: DataTypes.JSONB,
   },
-  { tableName: "admission_decisions", underscored: true, timestamps: true, updatedAt: false }
+  {
+    tableName: "admission_decisions",
+    underscored: true,
+    timestamps: true,
+    updatedAt: false,
+  },
 );
 
-const [[existing]] = await sequelize.query("select count(*)::int as n from registrants");
+const [[existing]] = await sequelize.query(
+  "select count(*)::int as n from registrants",
+);
 
 if (existing.n > 0 && !force) {
-  console.log(`registrants already present (${existing.n}). Re-run with --force to replace them.`);
+  console.log(
+    `registrants already present (${existing.n}). Re-run with --force to replace them.`,
+  );
   await sequelize.close();
   process.exit(0);
 }
@@ -344,9 +386,13 @@ for (const [email, fromStatus, toStatus, note] of DECISIONS) {
 console.log(`inserted ${DECISIONS.length} admission decisions\n`);
 
 for (const [i, c] of CANDIDATES.entries()) {
-  console.log(`  ${String(i + 1).padStart(2)}. ${c.stage.padEnd(38)} ${c.name}  ${ticket(i)}`);
+  console.log(
+    `  ${String(i + 1).padStart(2)}. ${c.stage.padEnd(38)} ${c.name}  ${ticket(i)}`,
+  );
 }
 
 console.log(`\ncohort year ${COHORT_YEAR}, event ${isTs.toISOString()}`);
-console.log("synthetic data only - no real candidates, email addresses use example.com");
+console.log(
+  "synthetic data only - no real candidates, email addresses use example.com",
+);
 await sequelize.close();

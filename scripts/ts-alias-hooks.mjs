@@ -42,7 +42,8 @@ export async function resolve(specifier, context, nextResolve) {
 function firstFileWithExtension(base) {
   for (const extension of EXTENSIONS) {
     const candidate = `${base}${extension}`;
-    if (fs.existsSync(candidate) && fs.statSync(candidate).isFile()) return candidate;
+    if (fs.existsSync(candidate) && fs.statSync(candidate).isFile())
+      return candidate;
   }
 
   if (fs.existsSync(base) && fs.statSync(base).isDirectory()) {
@@ -58,7 +59,7 @@ function firstFileWithExtension(base) {
 /**
  * Serve `.json` imports as modules.
  *
- * Webpack — and therefore Next.js — resolves `import data from "./x.json"` with no
+ * Webpack - and therefore Next.js - resolves `import data from "./x.json"` with no
  * import attribute. Node's ESM loader requires `with { type: "json" }` and throws
  * ERR_IMPORT_ATTRIBUTE_MISSING without it. Adding the attribute to application
  * source to satisfy the test runner would mean changing working, bundled code for

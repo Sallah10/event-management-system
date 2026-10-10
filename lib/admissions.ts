@@ -37,7 +37,10 @@ export interface DecisionOutcome {
 }
 
 /** Legal moves, and who may make them. */
-export const TRANSITIONS: Record<string, { from: readonly string[]; role: "staff" | "admissions" }> = {
+export const TRANSITIONS: Record<
+  string,
+  { from: readonly string[]; role: "staff" | "admissions" }
+> = {
   // A human reviews a candidate the invigilation process or the AI flagged.
   flag: {
     from: ["registered", "attended", "qualified", "completed", "waitlisted"],
@@ -45,7 +48,7 @@ export const TRANSITIONS: Record<string, { from: readonly string[]; role: "staff
   },
 
   // Lifting a flag. Added because flagging is now a person's decision rather than
-  // an automatic punishment — and a decision a person makes wrongly is a decision
+  // an automatic punishment - and a decision a person makes wrongly is a decision
   // they have to be able to take back. The old client-only "flag" was cleared by
   // clearing localStorage, which changed nothing on the server, so a candidate
   // wrongly accused of cheating stayed accused for the rest of the event with no
@@ -70,19 +73,22 @@ export const TRANSITIONS: Record<string, { from: readonly string[]; role: "staff
   },
 
   // Moving a course allocation on an already-decided candidate.
-  allocate: { from: ["shortlisted", "awarded", "completed"], role: "admissions" },
+  allocate: {
+    from: ["shortlisted", "awarded", "completed"],
+    role: "admissions",
+  },
 };
 
 // The table is exported so it can be asserted against (tests/rules.test.ts) and
 // read in one place. It is a statement of policy: exporting it does not export
-// `decide`, so nothing can act on it — it can only be inspected.
+// `decide`, so nothing can act on it - it can only be inspected.
 export type DecisionAction = keyof typeof TRANSITIONS;
 
 /**
  * Statuses a person may put a candidate into with `release`.
  *
  * The list itself is in config/rules.ts, because the review panel renders the
- * same options and cannot import this module — see the note there.
+ * same options and cannot import this module - see the note there.
  */
 const RELEASABLE: readonly string[] = RELEASABLE_STATUSES;
 
@@ -125,7 +131,10 @@ export async function decide(
     // Promotions must come from a legal state. Corrections (`release`,
     // `allocate`) may land on a status the candidate already holds, because their
     // whole job is to fix a status that was set wrongly.
-    if ((action === "shortlist" || action === "award") && !rule.from.includes(fromStatus)) {
+    if (
+      (action === "shortlist" || action === "award") &&
+      !rule.from.includes(fromStatus)
+    ) {
       return {
         ok: false,
         error: "ILLEGAL_TRANSITION",
@@ -133,14 +142,18 @@ export async function decide(
       };
     }
 
-    if (action === "release" && options.status && !RELEASABLE.includes(options.status)) {
+    if (
+      action === "release" &&
+      options.status &&
+      !RELEASABLE.includes(options.status)
+    ) {
       return { ok: false, error: "INVALID_TARGET_STATUS" };
     }
 
     // ─── SEAT CAP ────────────────────────────────────────────────────────────
     // Enforced here, at the only place a seat is created. The theory submit route
-    // also checks it, and it has to — that route takes a seat from the public
-    // internet — but a check in the UI is a check someone can forget.
+    // also checks it, and it has to - that route takes a seat from the public
+    // internet - but a check in the UI is a check someone can forget.
     let nextCourse = student.selectedCourseSlug;
     if (options.courseSlug) {
       if (!isValidCourseSlug(options.courseSlug)) {
@@ -207,7 +220,10 @@ export async function decide(
     );
 
     if (action === "flag" || action === "unflag") {
-      await student.update({ isFlagged: action === "flag" }, { transaction: t });
+      await student.update(
+        { isFlagged: action === "flag" },
+        { transaction: t },
+      );
     }
 
     // The record of the decision, in the same transaction as the decision.
@@ -240,7 +256,7 @@ export async function decide(
  * This lives here, not in each route that needs it, because a duplicated lock-key
  * function is a silent failure: if the two copies ever diverge, the locks stop
  * colliding, both routes believe they are serialised, and the seat cap is
- * oversold again — with no error anywhere.
+ * oversold again - with no error anywhere.
  */
 export function courseLockKey(slug: string): string {
   const digest = createHash("sha256").update(slug).digest();
@@ -285,7 +301,11 @@ export async function saveHumanGrade(
   actor: DecisionActor,
   note?: string,
 ): Promise<DecisionOutcome & { previousScore?: number }> {
-  if (!Number.isInteger(theoryScore) || theoryScore < 0 || theoryScore > THEORY_SCORE_MAX) {
+  if (
+    !Number.isInteger(theoryScore) ||
+    theoryScore < 0 ||
+    theoryScore > THEORY_SCORE_MAX
+  ) {
     return { ok: false, error: "INVALID_SCORE" };
   }
 
@@ -340,7 +360,11 @@ export async function saveHumanGrade(
       theoryScore,
     });
 
-    return { ok: true, status: fromStatus, previousScore: previousScore ?? undefined };
+    return {
+      ok: true,
+      status: fromStatus,
+      previousScore: previousScore ?? undefined,
+    };
   });
 }
 
@@ -350,7 +374,7 @@ export async function saveHumanGrade(
  * The old collector looped `await Registrant.update(...)` per candidate while
  * vercel.json capped the function at 10 seconds. At 900 essays that could not
  * finish, so the route died partway and a random fraction of the grades was
- * silently never written — the batch was marked complete on OpenAI's side, so
+ * silently never written - the batch was marked complete on OpenAI's side, so
  * there was nothing to retry from.
  *
  * `unnest` turns four parallel arrays into a virtual table, so Postgres does the
@@ -371,7 +395,7 @@ export async function recordGrades(
   // ─── THE UNPACKING ─────────────────────────────────────────────────────────
   // FIX: THIS ALWAYS RETURNED ZERO.
   //
-  // node-postgres + QueryTypes.UPDATE resolves to `[instance, rowCount]` — see
+  // node-postgres + QueryTypes.UPDATE resolves to `[instance, rowCount]` - see
   // dialect/postgres/query.js, which returns
   //     [this.instance || rows, rowCount]
   // The old line destructured the FIRST element and looked for `rowCount` on it,
@@ -415,7 +439,7 @@ export async function recordGrades(
   if (written !== updates.length) {
     // A short write means some registrants were not in the table any more, or a
     // duplicate id appeared in the batch. Either way it is worth a line in the
-    // log rather than a shrug — the operator decides whether to re-run.
+    // log rather than a shrug - the operator decides whether to re-run.
     log.warn("admissions.grades_partial", {
       submitted: updates.length,
       written,

@@ -54,26 +54,26 @@ openssl rand -base64 32   # DEVICE_PEPPER - must differ from JWT_SECRET
 openssl rand -base64 32   # WP_TO_APP_SECRET
 ```
 
-Pick the two staff PINs yourself — six digits each, different from each other:
+Pick the two staff PINs yourself - six digits each, different from each other:
 
 ```bash
 echo $((100000 + RANDOM % 900000))   # STAFF_PIN
 echo $((100000 + RANDOM % 900000))   # ADMISSIONS_PIN
 ```
 
-| Variable | Needed for | If missing |
-| --- | --- | --- |
-| `JWT_SECRET` | every session cookie | app throws at startup |
-| `DEVICE_PEPPER` | device binding | app throws at startup |
-| `DATABASE_URL` | everything | app throws at startup |
-| `WP_TO_APP_SECRET` | WordPress only | `/api/register` fails closed — fine if retired |
-| `STAFF_PIN` | check-in staff login | that role cannot sign in |
-| `ADMISSIONS_PIN` | admissions panel | that role cannot sign in |
-| `UPSTASH_REDIS_*` | multi-instance correctness | **throws in production** |
-| `TURNSTILE_SECRET_KEY` | the public form | `/api/apply` refuses every request in production |
-| `RESEND_API_KEY` | ticket + report emails | tickets are not emailed, only shown on screen |
+| Variable               | Needed for                 | If missing                                       |
+| ---------------------- | -------------------------- | ------------------------------------------------ |
+| `JWT_SECRET`           | every session cookie       | app throws at startup                            |
+| `DEVICE_PEPPER`        | device binding             | app throws at startup                            |
+| `DATABASE_URL`         | everything                 | app throws at startup                            |
+| `WP_TO_APP_SECRET`     | WordPress only             | `/api/register` fails closed - fine if retired   |
+| `STAFF_PIN`            | check-in staff login       | that role cannot sign in                         |
+| `ADMISSIONS_PIN`       | admissions panel           | that role cannot sign in                         |
+| `UPSTASH_REDIS_*`      | multi-instance correctness | **throws in production**                         |
+| `TURNSTILE_SECRET_KEY` | the public form            | `/api/apply` refuses every request in production |
+| `RESEND_API_KEY`       | ticket + report emails     | tickets are not emailed, only shown on screen    |
 
-That behaviour — throwing rather than defaulting — is deliberate. This codebase
+That behaviour - throwing rather than defaulting - is deliberate. This codebase
 once had four different hardcoded fallback JWT secrets across six files. When the
 variable was missing, some routes broke loudly and others silently accepted tokens
 signed with a string published in the repository. That is fail-open on a security
@@ -87,7 +87,7 @@ Rotating `JWT_SECRET` logs everyone out, including staff mid-event. Rotate
 `STAFF_PIN` opens the check-in desk. `ADMISSIONS_PIN` opens the grading panel.
 They are separate because the old design used one shared `STAFF_ACCESS_TOKEN` for
 both, which meant a check-in operator could award scholarships and an admissions
-officer could read attendance. That variable is now unused — if you find it in an
+officer could read attendance. That variable is now unused - if you find it in an
 old `.env`, delete it.
 
 ---
@@ -123,7 +123,7 @@ npm run db:migrate
 ```
 
 The runner keeps a `schema_migrations` table and is safe to re-run; applied
-migrations are skipped. Migrations are forward-only — there is no `down`.
+migrations are skipped. Migrations are forward-only - there is no `down`.
 
 Read what it is about to do before running it against anything you care about.
 
@@ -150,12 +150,12 @@ Set `MAIL_PROVIDER` to `brevo` or `resend`, then set that provider's key.
 Both are supported because both fail on a bad day, and it is useful not to be
 locked into whichever one you tried first.
 
-| Provider | Key | Notes |
-| --- | --- | --- |
-| Brevo | `BREVO_API_KEY` | Default when the key is present. Needs a **verified sender** |
-| Resend | `RESEND_API_KEY` | Works from more hosts, but needs a verified domain |
+| Provider | Key              | Notes                                                        |
+| -------- | ---------------- | ------------------------------------------------------------ |
+| Brevo    | `BREVO_API_KEY`  | Default when the key is present. Needs a **verified sender** |
+| Resend   | `RESEND_API_KEY` | Works from more hosts, but needs a verified domain           |
 
-Neither key is optional in the sense that registration does not fail without it —
+Neither key is optional in the sense that registration does not fail without it -
 the ticket is written to the structured log instead. That is a deliberate trade,
 and it is a bad one to leave in place on the day.
 
@@ -164,12 +164,12 @@ number at the venue desk, and a manual check-in. Set the key, and set
 `BREVO_FROM_EMAIL` to an address Brevo has verified.
 
 On Brevo that means confirming the address in the Brevo dashboard first. Sending
-from an unverified address does not error helpfully — it fails at delivery, so
+from an unverified address does not error helpfully - it fails at delivery, so
 the candidate's ticket is already in the void. `BREVO_FROM_NAME` is cosmetic.
 Both fall back to `EVENT_CONTACT_EMAIL`, which only helps if that address is
 verified too.
 
-The in-app form at `/register` does not depend on any of this — it prints the
+The in-app form at `/register` does not depend on any of this - it prints the
 ticket on screen, and tells the person whether the email actually went out. That
 is what makes the app usable on a bad mail day, and usable in a venue with no
 reliable connectivity. Email is the backup channel, not the only one.
@@ -182,12 +182,12 @@ reliable connectivity. Email is the backup channel, not the only one.
 returns `503` and nothing else in the application notices. Admissions still works
 entirely by hand, which is the point.
 
-| Variable | Default | What it does |
-| --- | --- | --- |
-| `GEMINI_API_KEY` | — | Without it, grading refuses every request |
-| `GEMINI_MODEL` | `gemini-3.8-flash` | `gemini-2.5-flash` is closed to new accounts |
-| `GRADING_CHUNK_SIZE` | `40` | Candidates graded per request |
-| `GRADING_CONCURRENCY` | `6` | Simultaneous calls, capped at 12 |
+| Variable              | Default            | What it does                                 |
+| --------------------- | ------------------ | -------------------------------------------- |
+| `GEMINI_API_KEY`      | -                  | Without it, grading refuses every request    |
+| `GEMINI_MODEL`        | `gemini-3.8-flash` | `gemini-2.5-flash` is closed to new accounts |
+| `GRADING_CHUNK_SIZE`  | `40`               | Candidates graded per request                |
+| `GRADING_CONCURRENCY` | `6`                | Simultaneous calls, capped at 12             |
 
 Three things are worth knowing before you rely on this, all of them learned by
 running it rather than by reading about it.
@@ -197,7 +197,7 @@ returned `503 high demand` somewhere between one in five and one in two. Each
 candidate is therefore retried up to three times with a pause, and anything still
 failing is recorded as a failure against that candidate and left `theoryScore: 0`.
 Nothing is written wrong. It just means **a grading run usually needs more than
-one pass** — press it again until the queue is empty. If that is unacceptable for
+one pass** - press it again until the queue is empty. If that is unacceptable for
 your deadline, a paid tier removes the problem rather than hiding it.
 
 **Grading is resumable by construction.** A run grades a capped number of
@@ -225,15 +225,15 @@ it after setting the key; it costs one call.
 There are two ways to register, and both end up in the same place
 (`lib/registration.ts`):
 
-| Path | Gate | Who calls it |
-| --- | --- | --- |
-| `POST /api/register` | `x-api-key` shared secret | The WordPress form |
-| `POST /api/apply` | Cloudflare Turnstile | Anyone, via `/register` |
+| Path                 | Gate                      | Who calls it            |
+| -------------------- | ------------------------- | ----------------------- |
+| `POST /api/register` | `x-api-key` shared secret | The WordPress form      |
+| `POST /api/apply`    | Cloudflare Turnstile      | Anyone, via `/register` |
 
 The second endpoint is **public**. That is the point of it, but it means anything
 on the internet can call it, and every row it creates is a real registrant that
 later counts toward the ranking, the per-course seat totals and the scholarship
-allocation. A bot flood does not just cost database rows — it quietly corrupts the
+allocation. A bot flood does not just cost database rows - it quietly corrupts the
 one number this programme exists to produce. The rate limit is per-IP, so it caps
 speed, not volume.
 
@@ -246,9 +246,9 @@ TURNSTILE_SECRET_KEY=0x4AAAA...             # server only, never ship it
 
 Behaviour when they are missing, which is deliberate:
 
-- **Development** — the form works, the server logs a loud warning on every page
+- **Development** - the form works, the server logs a loud warning on every page
   that says so in the UI. You can build and test without signing up for anything.
-- **Production** — `/api/apply` returns `503` and refuses every request. Failing
+- **Production** - `/api/apply` returns `503` and refuses every request. Failing
   open here would mean shipping a public write endpoint with the protection
   silently absent, which is the exact failure the check was added to prevent.
 
@@ -256,7 +256,7 @@ If Cloudflare is unreachable, registration is refused rather than waved through,
 for the same reason: their downtime should not become an open sign-up window.
 
 A honeypot field would also work and needs no account with anyone. It stops naive
-bots only, so if you would rather not manage keys, that is a reasonable choice —
+bots only, so if you would rather not manage keys, that is a reasonable choice -
 just do not ship the endpoint with no protection at all.
 
 ---
@@ -271,7 +271,7 @@ pool size, venue capacity, section lengths, minimum essay length, pass mark.
 
 Two of them need setting in two places. The candidate's rules page has to state
 the pass mark the server enforces, and a client bundle cannot read a server
-variable — so `OBJECTIVE_PASS_MARK` and `NEXT_PUBLIC_OBJECTIVE_PASS_MARK` must
+variable - so `OBJECTIVE_PASS_MARK` and `NEXT_PUBLIC_OBJECTIVE_PASS_MARK` must
 agree. Set only the first and the rules page will quote a number that is not the
 one being applied. The server re-checks everything regardless; this only affects
 what the candidate is told in advance.
@@ -284,12 +284,12 @@ pointing somewhere unconfigured.
 **The content** is not configuration, and is meant to differ per event, exactly as
 the course list does:
 
-| File | What to change |
-| --- | --- |
-| `config/course-matrix.ts` | Which courses are on offer, and their LMS ids |
-| `config/questions.json` | The objective paper. Public — must never contain a `correct` field |
-| `config/answer-key.json` | The answers. Server-only, never import from a client component |
-| `config/theory-questions.ts` | The essay prompts |
+| File                         | What to change                                                     |
+| ---------------------------- | ------------------------------------------------------------------ |
+| `config/course-matrix.ts`    | Which courses are on offer, and their LMS ids                      |
+| `config/questions.json`      | The objective paper. Public - must never contain a `correct` field |
+| `config/answer-key.json`     | The answers. Server-only, never import from a client component     |
+| `config/theory-questions.ts` | The essay prompts                                                  |
 
 The paper is three coupled files: `questions.json`, `answer-key.json`, and
 `TOTAL_QUESTIONS` in `config/rules.ts`. If the counts disagree the process throws

@@ -12,7 +12,7 @@ export const dynamic = "force-dynamic";
 // Used by the manual check-in desk to find a candidate who can't scan.
 //
 // `Op.iLike: '%' + q + '%'` with a 2-character minimum, unescaped, and no rate
-// limit — so a staff session holder could walk the entire registrant table two
+// limit - so a staff session holder could walk the entire registrant table two
 // characters at a time and harvest every name, email and barcode. Fixed by
 // escaping the LIKE metacharacters the user actually typed, raising the floor to
 // 3 characters, and leaning on the proxy's staff rate limit.
@@ -29,7 +29,11 @@ export async function GET(request: Request) {
 
   if (q.length < 3) {
     return NextResponse.json(
-      { success: false, error: "QUERY_TOO_SHORT", message: "Enter at least 3 characters." },
+      {
+        success: false,
+        error: "QUERY_TOO_SHORT",
+        message: "Enter at least 3 characters.",
+      },
       { status: 400 },
     );
   }
@@ -49,7 +53,15 @@ export async function GET(request: Request) {
           { barcodeId: { [Op.iLike]: pattern } },
         ],
       },
-      attributes: ["id", "name", "email", "barcodeId", "checkedIn", "status", "selectedCourseSlug"],
+      attributes: [
+        "id",
+        "name",
+        "email",
+        "barcodeId",
+        "checkedIn",
+        "status",
+        "selectedCourseSlug",
+      ],
       limit: 10,
       raw: true,
     });

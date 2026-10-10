@@ -10,7 +10,7 @@
  * It also runs implicitly on serverless cold starts if any code path calls it.
  * This script only ever ADDs, and running it twice is a no-op.
  *
- * Written against `pg` directly so it doesn't have to import the models — the
+ * Written against `pg` directly so it doesn't have to import the models - the
  * models import `lib/db`, which would open a connection before we're ready.
  *
  * It reads DATABASE_URL from the environment. It never writes to .env.
@@ -26,7 +26,7 @@ try {
   const { config } = await import("dotenv");
   config({ path: resolve(process.cwd(), ".env"), quiet: true });
 } catch {
-  // dotenv is a dependency, but a missing module must not be fatal — the
+  // dotenv is a dependency, but a missing module must not be fatal - the
   // variable may already be exported in the shell.
 }
 
@@ -34,17 +34,22 @@ const { default: pg } = await import("pg");
 const { Pool } = pg;
 
 if (!process.env.DATABASE_URL) {
-  console.error("DATABASE_URL is not set. Add it to .env (or export it) and re-run.");
+  console.error(
+    "DATABASE_URL is not set. Add it to .env (or export it) and re-run.",
+  );
   process.exit(1);
 }
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: process.env.DATABASE_SSL === "false" ? false : { rejectUnauthorized: false },
+  ssl:
+    process.env.DATABASE_SSL === "false"
+      ? false
+      : { rejectUnauthorized: false },
   max: 1,
 });
 
-/** Additive migrations, in order. Never edit a shipped one — append a new entry. */
+/** Additive migrations, in order. Never edit a shipped one - append a new entry. */
 const MIGRATIONS = [
   {
     id: "001-create-registrants",
@@ -83,7 +88,7 @@ const MIGRATIONS = [
         `CREATE UNIQUE INDEX IF NOT EXISTS registrants_barcode_id_key ON registrants (barcode_id)`,
       );
       // The check-in desk queries by barcode constantly, and the admin queue
-      // filters by status — both were unindexed full scans.
+      // filters by status - both were unindexed full scans.
       await client.query(
         `CREATE INDEX IF NOT EXISTS registrants_status_idx ON registrants (status)`,
       );
@@ -107,7 +112,7 @@ const MIGRATIONS = [
         ["decision_note", "TEXT"],
         ["decided_at", "TIMESTAMPTZ"],
         ["decided_by", "VARCHAR(255)"],
-        // Client-reported focus losses — recorded, never decisive.
+        // Client-reported focus losses - recorded, never decisive.
         ["tab_switches", "INTEGER NOT NULL DEFAULT 0"],
       ];
       for (const [name, definition] of columns) {
@@ -128,7 +133,7 @@ const MIGRATIONS = [
     // by the theory route). The AI grader selects on it, so one class of
     // candidates who never wrote an essay would have been sent for grading. The
     // enum needs two more values, and `ALTER TYPE ... ADD VALUE` cannot run
-    // inside a transaction block on older Postgres — and on newer versions the
+    // inside a transaction block on older Postgres - and on newer versions the
     // new value is not usable until the transaction commits. So it runs alone,
     // committed, before the transactional migrations.
     pre: async (client) => {
@@ -140,12 +145,12 @@ const MIGRATIONS = [
       const typeName = rows[0]?.udt_name;
       const typeSchema = rows[0]?.udt_schema;
 
-      // A fresh install has VARCHAR(32) — there is no enum to extend. Postgres
+      // A fresh install has VARCHAR(32) - there is no enum to extend. Postgres
       // names enum types after the column, so Sequelize's `status` column gives
       // you `enum_registrants_status`, NOT any of the labels inside it.
       //
       // The check here used to be `["registered", "attended"].includes(typeName)`
-      // — comparing enum LABELS against the enum TYPE NAME. Those two sets have
+      // - comparing enum LABELS against the enum TYPE NAME. Those two sets have
       // no members in common, so this always bailed out early, and any database
       // created by sequelize.sync() silently kept its 4-value enum forever: the
       // app would happily write status="waitlisted" and Postgres would reject it
@@ -193,7 +198,7 @@ const MIGRATIONS = [
     id: "004-sitting-timings",
     up: async (client) => {
       // The countdown used to live in React state, initialised to a hardcoded
-      // 1800/3600. Reload the page and the timer reset to full — so the "30
+      // 1800/3600. Reload the page and the timer reset to full - so the "30
       // minute" limit was a suggestion, not a limit, and the honest description
       // of this system was "a timer that resets on refresh".
       //

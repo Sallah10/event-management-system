@@ -60,7 +60,7 @@ export async function apiFetch<T = unknown>(
     try {
       payload = (await response.json()) as Record<string, unknown>;
     } catch {
-      // A route that answered with HTML — a 500 page, a proxy error, a timeout.
+      // A route that answered with HTML - a 500 page, a proxy error, a timeout.
       return {
         ok: false,
         code: "BAD_RESPONSE",
@@ -73,10 +73,14 @@ export async function apiFetch<T = unknown>(
       return {
         ok: false,
         code: String(payload.error ?? "UNKNOWN"),
-        message: String(payload.message ?? "Something went wrong. Please try again."),
-        details: typeof payload.details === "string" ? payload.details : undefined,
+        message: String(
+          payload.message ?? "Something went wrong. Please try again.",
+        ),
+        details:
+          typeof payload.details === "string" ? payload.details : undefined,
         status: response.status,
-        redirect: typeof payload.redirect === "string" ? payload.redirect : undefined,
+        redirect:
+          typeof payload.redirect === "string" ? payload.redirect : undefined,
       };
     }
 

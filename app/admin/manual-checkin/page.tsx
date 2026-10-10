@@ -82,9 +82,9 @@ export default function ManualCheckinPage() {
         // a volunteer at the desk was looking at a blank name.
         const hits: SearchHit[] = Array.isArray(data.results)
           ? data.results.filter(
-              (hit: unknown): hit is SearchHit =>
-                !!hit && typeof (hit as SearchHit).id === "string",
-            )
+            (hit: unknown): hit is SearchHit =>
+              !!hit && typeof (hit as SearchHit).id === "string",
+          )
           : [];
         setResults(hits);
         setError("");
@@ -100,7 +100,7 @@ export default function ManualCheckinPage() {
     setSearching(false);
   }, []);
 
-  // Debounce — waits 400ms after user stops typing before searching
+  // Debounce - waits 400ms after user stops typing before searching
   useEffect(() => {
     const timer = setTimeout(() => {
       search(query);
@@ -138,7 +138,7 @@ export default function ManualCheckinPage() {
         lede="Search by name, email, or ticket ID"
       />
 
-      {/* Search input — no button needed, live search */}
+      {/* Search input - no button needed, live search */}
       <Field label="Search">
         {({ id }) => (
           <div className="relative">

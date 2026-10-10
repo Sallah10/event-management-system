@@ -1,7 +1,12 @@
 import { NextResponse } from "next/server";
 import { Registrant } from "@/lib/models/Registrant";
 import { ensureDatabase } from "@/lib/db";
-import { setCandidateCookie, hashDeviceKey, readDeviceKey, routeError } from "@/lib/auth";
+import {
+  setCandidateCookie,
+  hashDeviceKey,
+  readDeviceKey,
+  routeError,
+} from "@/lib/auth";
 import { isValidEmail } from "@/lib/validate";
 import { log } from "@/lib/logger";
 import { normaliseTicket } from "@/lib/tickets";
@@ -24,12 +29,12 @@ export const dynamic = "force-dynamic";
 //
 // 2. LOGS NO LONGER CONTAIN PII.
 //    This route used to console.log the submitted email, the ticket, 50 of the 64
-//    fingerprint characters, AND — on a near-miss — the *stored* email for the
+//    fingerprint characters, AND - on a near-miss - the *stored* email for the
 //    ticket that was submitted, which is a registration-enumeration oracle sitting
 //    in your log aggregator. All of it now goes through the redacting logger.
 //
 // The old code also called `sequelize.authenticate()` at the top of every login
-// to "test the connection" — a wasted TCP round-trip per candidate, on the one
+// to "test the connection" - a wasted TCP round-trip per candidate, on the one
 // route that 3,500 people hit at once. `ensureDatabase()` caches the warmup.
 
 export async function POST(request: Request) {
@@ -48,18 +53,20 @@ export async function POST(request: Request) {
       );
     }
 
-    const email = typeof body.email === "string" ? body.email.toLowerCase().trim() : "";
+    const email =
+      typeof body.email === "string" ? body.email.toLowerCase().trim() : "";
     const ticket = normaliseTicket(body.ticketId);
 
     // One generic failure for every credential problem. The original returned
     // "Ticket ID not found" vs "Email does not match this Ticket ID", which
-    // confirms whether a given ticket exists — enough to enumerate who is
+    // confirms whether a given ticket exists - enough to enumerate who is
     // registered.
     const INVALID = NextResponse.json(
       {
         success: false,
         error: "INVALID_CREDENTIALS",
-        message: "That email and ticket ID don't match our records. Check both and try again.",
+        message:
+          "That email and ticket ID don't match our records. Check both and try again.",
       },
       { status: 401 },
     );
@@ -80,7 +87,7 @@ export async function POST(request: Request) {
 
     // ─── STAGE GATES ─────────────────────────────────────────────────────────
     // "qualified" is checked FIRST because it is the one status in this set that
-    // still has work attached to it — they have earned a place on the theory
+    // still has work attached to it - they have earned a place on the theory
     // paper. Getting the order wrong here is how a qualified candidate is told
     // they've already finished.
     //
@@ -95,7 +102,8 @@ export async function POST(request: Request) {
         {
           success: false,
           error: "THEORY_READY",
-          message: "You're through to the theory section. Pick it up where you left off.",
+          message:
+            "You're through to the theory section. Pick it up where you left off.",
           redirect: "/assessment/theory",
         },
         { status: 403 },
@@ -139,12 +147,16 @@ export async function POST(request: Request) {
     }
 
     if (!student.checkedIn) {
-      log.info("assessment.login.rejected", { barcodeId: student.barcodeId, reason: "not_checked_in" });
+      log.info("assessment.login.rejected", {
+        barcodeId: student.barcodeId,
+        reason: "not_checked_in",
+      });
       return NextResponse.json(
         {
           success: false,
           error: "NOT_CHECKED_IN",
-          message: "You need to be checked in at the venue before you can sit the assessment.",
+          message:
+            "You need to be checked in at the venue before you can sit the assessment.",
         },
         { status: 403 },
       );
@@ -168,7 +180,8 @@ export async function POST(request: Request) {
         {
           success: false,
           error: "NO_DEVICE_KEY",
-          message: "Your browser blocked a required request. Enable cookies and reload.",
+          message:
+            "Your browser blocked a required request. Enable cookies and reload.",
         },
         { status: 400 },
       );
@@ -177,7 +190,9 @@ export async function POST(request: Request) {
     const deviceKey = await hashDeviceKey(rawDeviceKey);
 
     if (student.deviceId && student.deviceId !== deviceKey) {
-      log.warn("assessment.login.device_conflict", { barcodeId: student.barcodeId });
+      log.warn("assessment.login.device_conflict", {
+        barcodeId: student.barcodeId,
+      });
       return NextResponse.json(
         {
           success: false,
@@ -200,7 +215,10 @@ export async function POST(request: Request) {
       status: student.status,
     });
 
-    log.info("assessment.login.success", { barcodeId: student.barcodeId, status: student.status });
+    log.info("assessment.login.success", {
+      barcodeId: student.barcodeId,
+      status: student.status,
+    });
 
     return NextResponse.json({
       success: true,
@@ -213,7 +231,7 @@ export async function POST(request: Request) {
         // Unconditional, and that is now provable rather than hopeful: the
         // "qualified" case returned 30 lines above, so TypeScript narrows the
         // type and would reject a redundant check here. It rejected one once
-        // already — a leftover ternary that could only ever be false.
+        // already - a leftover ternary that could only ever be false.
         next: "/assessment/exam",
       },
     });

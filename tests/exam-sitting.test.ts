@@ -2,13 +2,18 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
 import { OBJECTIVE_TTL_MINUTES, THEORY_TTL_MINUTES } from "@/config/rules";
-import { computeDeadline, isLate, sittingStartedAtMs, sittingTtlMs } from "@/lib/exam-sitting";
+import {
+  computeDeadline,
+  isLate,
+  sittingStartedAtMs,
+  sittingTtlMs,
+} from "@/lib/exam-sitting";
 import type { Registrant } from "@/lib/models/Registrant";
 
 // ─── SITTING CLOCKS ───────────────────────────────────────────────────────────
 // Both papers used to open with `useState(1800)` and `useState(3600)`. The
 // countdown began when React mounted, not when the candidate started working, so
-// every refresh, crash, sleep or second device handed back a full sitting — and
+// every refresh, crash, sleep or second device handed back a full sitting - and
 // because the client held the only clock, `POST /submit` accepted a paper at any
 // hour of any day.
 //
@@ -18,7 +23,9 @@ import type { Registrant } from "@/lib/models/Registrant";
 
 /** The smallest thing `isLate` and `sittingStartedAtMs` need: a `.get()`. */
 function candidate(values: Partial<Record<string, Date | null>>): Registrant {
-  return { get: (field: string) => values[field] ?? null } as unknown as Registrant;
+  return {
+    get: (field: string) => values[field] ?? null,
+  } as unknown as Registrant;
 }
 
 const START = new Date("2026-04-18T09:00:00.000Z");
@@ -48,14 +55,26 @@ describe("computeDeadline", () => {
   it("does not depend on when it is asked", () => {
     // The whole point of the rewrite: the deadline is a property of the sitting,
     // not of the request. Asking twice must give the same answer.
-    const early = computeDeadline(START, "objective", new Date("2026-04-18T09:05:00Z"));
-    const late = computeDeadline(START, "objective", new Date("2026-04-18T11:55:00Z"));
+    const early = computeDeadline(
+      START,
+      "objective",
+      new Date("2026-04-18T09:05:00Z"),
+    );
+    const late = computeDeadline(
+      START,
+      "objective",
+      new Date("2026-04-18T11:55:00Z"),
+    );
     assert.equal(early.deadline, late.deadline);
   });
 
   it("counts down, and reports time remaining", () => {
     const fiveMinutesIn = new Date(START.getTime() + 5 * 60_000);
-    const { remainingMs, expired } = computeDeadline(START, "objective", fiveMinutesIn);
+    const { remainingMs, expired } = computeDeadline(
+      START,
+      "objective",
+      fiveMinutesIn,
+    );
 
     assert.equal(remainingMs, (OBJECTIVE_TTL_MINUTES - 5) * 60_000);
     assert.equal(expired, false);
@@ -65,7 +84,10 @@ describe("computeDeadline", () => {
     const onTime = new Date(START.getTime() + OBJECTIVE_TTL_MINUTES * 60_000);
     const oneMsEarly = new Date(onTime.getTime() - 1);
 
-    assert.equal(computeDeadline(START, "objective", oneMsEarly).expired, false);
+    assert.equal(
+      computeDeadline(START, "objective", oneMsEarly).expired,
+      false,
+    );
     assert.equal(computeDeadline(START, "objective", onTime).expired, true);
   });
 
@@ -73,7 +95,11 @@ describe("computeDeadline", () => {
     // The client renders a countdown from this. A negative value would show
     // "-0:04:31" and, depending on the formatting, could read as time remaining.
     const longAfter = new Date(START.getTime() + 24 * 60 * 60_000);
-    const { remainingMs, expired } = computeDeadline(START, "objective", longAfter);
+    const { remainingMs, expired } = computeDeadline(
+      START,
+      "objective",
+      longAfter,
+    );
 
     assert.equal(remainingMs, 0);
     assert.equal(expired, true);
@@ -93,7 +119,9 @@ describe("isLate", () => {
   });
 
   it("is true once the limit has passed", () => {
-    const startedAt = new Date(Date.now() - (OBJECTIVE_TTL_MINUTES + 1) * 60_000);
+    const startedAt = new Date(
+      Date.now() - (OBJECTIVE_TTL_MINUTES + 1) * 60_000,
+    );
     const student = candidate({ objectiveStartedAt: startedAt });
     assert.equal(isLate(student, "objective"), true);
   });
@@ -102,7 +130,10 @@ describe("isLate", () => {
     // A finished objective section must not make a theory paper late, and vice
     // versa: they are two sittings, started at two different times.
     const longAgo = new Date(Date.now() - 10 * 60 * 60_000);
-    const student = candidate({ objectiveStartedAt: longAgo, theoryStartedAt: new Date() });
+    const student = candidate({
+      objectiveStartedAt: longAgo,
+      theoryStartedAt: new Date(),
+    });
 
     assert.equal(isLate(student, "objective"), true);
     assert.equal(isLate(student, "theory"), false);

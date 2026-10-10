@@ -42,8 +42,8 @@ const RULES = [
     <strong>{OBJECTIVE_TTL_MINUTES} minutes</strong>.
   </>,
   <>
-    The top <strong>{QUALIFIED_POOL_SIZE}</strong> by score — ties broken by who
-    finished first — go through to <strong>{THEORY_TTL_MINUTES} minutes</strong>{" "}
+    The top <strong>{QUALIFIED_POOL_SIZE}</strong> by score - ties broken by who
+    finished first - go through to <strong>{THEORY_TTL_MINUTES} minutes</strong>{" "}
     of written questions.
   </>,
   <>
@@ -73,7 +73,7 @@ export default function LoginForm() {
   // ─── WHY YOU WERE SENT BACK HERE ────────────────────────────────────────────
   // The old version fired one hardcoded red toast reading "You have been
   // disqualified due to multiple violations" whenever the URL had
-  // ?reason=disqualified — a string the redirect could produce for several very
+  // ?reason=disqualified - a string the redirect could produce for several very
   // different reasons, so a candidate whose session merely expired was told they
   // had been disqualified. A disqualification is a serious thing to tell
   // someone on the strength of a query parameter. Each reason now says what
@@ -81,7 +81,7 @@ export default function LoginForm() {
   //
   // Derived during render rather than pushed into state by an effect. `reason`
   // is already available here, so an effect that copies it into `error` was a
-  // second render pass for a value we already had — and it meant the message
+  // second render pass for a value we already had - and it meant the message
   // flashed in after the form appeared.
   const reasonMessage = REASON_COPY[reason ?? ""] ?? "";
   const message = error || reasonMessage;

@@ -15,7 +15,7 @@ const nextConfig: NextConfig = {
       {
         source: "/:path*",
         headers: [
-          // Prevent clickjacking — stops your site being loaded in an iframe
+          // Prevent clickjacking - stops your site being loaded in an iframe
           { key: "X-Frame-Options", value: "DENY" },
 
           // Prevent MIME type sniffing
@@ -24,7 +24,7 @@ const nextConfig: NextConfig = {
           // Control referrer info sent to other sites
           { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
 
-          // Restrict browser features — camera only needed on /checkin
+          // Restrict browser features - camera only needed on /checkin
           {
             key: "Permissions-Policy",
             value: "camera=(self), microphone=(), geolocation=()",
@@ -41,7 +41,7 @@ const nextConfig: NextConfig = {
         ],
       },
       {
-        // API routes — prevent caching of sensitive responses
+        // API routes - prevent caching of sensitive responses
         source: "/api/:path*",
         headers: [
           {

@@ -20,7 +20,7 @@ export const dynamic = "force-dynamic";
 //
 //   * Redis keys expire, and Upstash evicts under memory pressure. The moment the
 //     key was gone, this route treated the exam as unstarted and returned a FRESH
-//     `startedAt` — a candidate who refreshed after an hour got a new full-length
+//     `startedAt` - a candidate who refreshed after an hour got a new full-length
 //     timer on screen while the server, reading the column, was already counting
 //     them as late.
 //   * `POST /api/assessment/submit` priced lateness from the column. So the client
@@ -31,7 +31,7 @@ export const dynamic = "force-dynamic";
 //
 // Now the database column is the only clock. This route calls the same
 // `resolveSitting` the page does, which stamps conditionally (`WHERE started_at IS
-// NULL`), so the first call wins and the timestamp is never rewritten — the
+// NULL`), so the first call wins and the timestamp is never rewritten - the
 // original fix for renewable grace periods still holds, and it holds in the place
 // that survives a Redis eviction.
 //
@@ -55,14 +55,22 @@ export async function POST(request: Request) {
 
     if (!student) {
       return NextResponse.json(
-        { success: false, error: "INVALID_SESSION", message: "Invalid session." },
+        {
+          success: false,
+          error: "INVALID_SESSION",
+          message: "Invalid session.",
+        },
         { status: 403 },
       );
     }
 
     if (student.isFlagged) {
       return NextResponse.json(
-        { success: false, error: "DISQUALIFIED", message: "This account is suspended." },
+        {
+          success: false,
+          error: "DISQUALIFIED",
+          message: "This account is suspended.",
+        },
         { status: 403 },
       );
     }

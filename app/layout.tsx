@@ -7,7 +7,7 @@ import { SpeedInsights } from "@vercel/speed-insights/next";
 import { BRAND } from "@/config/branding";
 
 // FIX: self-hosted instead of next/font/google. The Google CDN fetch made
-// `next build` depend on network access to fonts.gstatic.com — it failed
+// `next build` depend on network access to fonts.gstatic.com - it failed
 // ~50% of builds here. Now the build is hermetic and works offline.
 const geistSans = localFont({
   variable: "--font-geist-sans",
@@ -23,7 +23,7 @@ const geistMono = localFont({
   weight: "100 900",
 });
 
-// Display face. Serif for headlines, grotesk for everything functional — the
+// Display face. Serif for headlines, grotesk for everything functional - the
 // oldest combination in editorial design and the reason the product stopped
 // reading as a generated template.
 //
@@ -43,7 +43,7 @@ const instrumentSerif = localFont({
 
 // The title and description used to be hardcoded strings naming a previous
 // cohort, which is what every tab in the browser, every shared link preview and
-// every search result for this application said — including on the admissions
+// every search result for this application said - including on the admissions
 // side, where a reviewer opening five tabs had no way to tell which was which.
 // They are configuration now, and default to something honest about what the
 // thing is.

@@ -1,10 +1,14 @@
 // `InferAttributes`, `InferCreationAttributes` and `CreationOptional` are types,
 // not values. Saying so with `import type` is not a style preference: without it
 // the import survives to runtime, where `sequelize` has no such export, and
-// anything loading this module outside the bundler — the test runner, a script —
+// anything loading this module outside the bundler - the test runner, a script -
 // fails on a name that only ever existed in a type position.
 import { DataTypes, Model } from "sequelize";
-import type { CreationOptional, InferAttributes, InferCreationAttributes } from "sequelize";
+import type {
+  CreationOptional,
+  InferAttributes,
+  InferCreationAttributes,
+} from "sequelize";
 import sequelize from "../db";
 
 export class Registrant extends Model<
@@ -18,7 +22,7 @@ export class Registrant extends Model<
   declare barcodeId: string; // Maps to barcode_id
   /**
    * The pipeline. "waitlisted" and "eliminated" did not exist, and the enum had
-   * no way to say "sat the paper and didn't make the cut" — so the objective
+   * no way to say "sat the paper and didn't make the cut" - so the objective
    * submit route reused "completed" for both outcomes:
    *
    *     status: rank.hasSeat ? "qualified" : "completed"
@@ -35,7 +39,7 @@ export class Registrant extends Model<
    *
    * Creation-optional: the database supplies the default (see the migration), so
    * a caller that only knows a name, an email and a ticket shouldn't have to
-   * restate "0" and "false" — and shouldn't be able to get them wrong. Declaring
+   * restate "0" and "false" - and shouldn't be able to get them wrong. Declaring
    * them required here made every create() site invent those values, which is how
    * `objectiveScore: 0` ended up copy-pasted into a dozen files.
    */
@@ -56,7 +60,7 @@ export class Registrant extends Model<
    *
    * This column is the only reason the time limit is real. Both the exam and the
    * theory pages used to hold the countdown in React state initialised to 1800 /
-   * 3600 — so a refresh, a crash, a closed tab or a second device handed the
+   * 3600 - so a refresh, a crash, a closed tab or a second device handed the
    * candidate a full new sitting. The deadline is now issued by the server from
    * this timestamp and never travels in client state.
    */
@@ -66,7 +70,7 @@ export class Registrant extends Model<
   // When the theory paper was handed in. Added with theoryStartedAt: without a
   // finish time there is no way to record that an essay arrived late, and no way
   // to rank two papers of equal quality by who finished first. theory_graded_at
-  // is not a substitute — that is when a marker looked at it, which can be days
+  // is not a substitute - that is when a marker looked at it, which can be days
   // later and tells you nothing about the candidate.
   declare theoryFinishedAt: Date | null; // Maps to theory_finished_at
   /** Legacy single-answer column, kept so old rows still read. See migration 001. */
@@ -81,11 +85,11 @@ export class Registrant extends Model<
   declare deviceId: string | null; // Maps to device_id
   declare careerStatus: string | null;
 
-  // ─── AI GRADING (observation only — never a verdict) ──────────────────────
+  // ─── AI GRADING (observation only - never a verdict) ──────────────────────
   // These columns did not exist, which is why the old AI audit route had to
   // squeeze its output into isFlagged. It wrote
   //     isFlagged: aiData.is_ai_suspected || false
-  // on every graded row, unconditionally — so a candidate the invigilation team
+  // on every graded row, unconditionally - so a candidate the invigilation team
   // had already flagged had that flag erased the moment a model reported
   // "not AI-generated". The model's opinion now lands in its own column where
   // it can be weighed, argued with, and ignored, and only a human moves
@@ -107,7 +111,7 @@ export class Registrant extends Model<
 
   /**
    * Client-reported focus losses during the objective section. Stored so the
-   * integrity queue can triage on it — never used to disqualify anyone, because
+   * integrity queue can triage on it - never used to disqualify anyone, because
    * the client is the one sending this number and could send zero.
    */
   declare tabSwitches: CreationOptional<number | null>; // Maps to tab_switches
@@ -146,11 +150,17 @@ if (!sequelize.models.Registrant) {
       objectiveStartedAt: { type: DataTypes.DATE, allowNull: true },
       theoryStartedAt: { type: DataTypes.DATE, allowNull: true },
       objectiveFinishedAt: { type: DataTypes.DATE },
-  theoryFinishedAt: { type: DataTypes.DATE, allowNull: true },
+      theoryFinishedAt: { type: DataTypes.DATE, allowNull: true },
       theoryAnswer: { type: DataTypes.TEXT },
-      theoryAnswer1: { type: DataTypes.TEXT },
-      theoryAnswer2: { type: DataTypes.TEXT },
-      theoryAnswer3: { type: DataTypes.TEXT },
+      // `underscored: true` converts camelCase to snake_case but does not insert a
+      // separator before a digit, so it turned `theoryAnswer1` into
+      // `theory_answer1`. The migration builds `theory_answer_1`. Sequelize
+      // generated SELECTs naming a column that does not exist, so every query on
+      // this model failed - which surfaced as "sign-in failed" on a login route
+      // that never mentions theory answers. Spelled out rather than inferred.
+      theoryAnswer1: { type: DataTypes.TEXT, field: "theory_answer_1" },
+      theoryAnswer2: { type: DataTypes.TEXT, field: "theory_answer_2" },
+      theoryAnswer3: { type: DataTypes.TEXT, field: "theory_answer_3" },
       theoryScore: { type: DataTypes.INTEGER, defaultValue: 0 },
       selectedCourseSlug: { type: DataTypes.STRING },
       cohortYear: { type: DataTypes.INTEGER, defaultValue: 2026 },

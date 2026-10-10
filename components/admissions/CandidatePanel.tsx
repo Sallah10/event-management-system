@@ -33,14 +33,14 @@ import { Alert, EmptyState, Spinner, Stat } from "@/components/ui/display";
 // note means a model has an opinion and nobody has checked it. The old code
 // collapsed them into `isFlagged`, so a model's suspicion became an accusation
 // with no reviewer attached, and the only way to clear it was to clear
-// localStorage — which did nothing on the server.
+// localStorage - which did nothing on the server.
 //
 // ON FETCHING ESSAYS
 // The essays arrive from /api/internal/candidate-answers when the panel opens,
 // not with the queue. Loading 900 sets of essays to render a list of names would
 // put every applicant's PII in one response and in the browser's memory for the
 // whole session. Fetching per candidate also means each read is logged, so "who
-// read this applicant's work" is answerable — which is the question a candidate
+// read this applicant's work" is answerable - which is the question a candidate
 // has a right to ask.
 //
 // PRESENTATION ONLY. Nothing in the decision path below changed: the human grade
@@ -52,7 +52,7 @@ import { Alert, EmptyState, Spinner, Stat } from "@/components/ui/display";
 // holding two more rounded-2xl cards, a hand-rolled `Stat` and a hand-rolled
 // `ActionButton`, five controls with `outline-none` and a hand-rolled
 // `focus:border-ink/50` instead of a focus ring, a `text-[11px]` essay in a tight
-// box, and a person's name as an <h2> under the page's <h1> — so the heading
+// box, and a person's name as an <h2> under the page's <h1> - so the heading
 // outline said "Decisions › Priya Raman › Essays", which is a document structure
 // nobody chose. It is now `Card` for the frame, `Stat` for the figures, `Field`
 // for the three inputs (so none of them can lose its label), `Button` for all
@@ -116,14 +116,14 @@ type Action = "shortlist" | "award" | "release" | "flag" | "unflag" | "allocate"
 /**
  * What each button says afterwards.
  *
- * Every decision here is irreversible in the interface — the list refreshes and
+ * Every decision here is irreversible in the interface - the list refreshes and
  * the panel closes, so nobody gets a "are you sure" they can cancel after seeing
  * that the seat counter moved. The confirmation therefore has to say what
  * happened, not just "OK". "Shortlisted" is a fact about a real person holding a
  * real place; a generic toast gives them nothing to check their work against.
  */
 const DECISION_COPY: Record<Action, string> = {
-  shortlist: "Shortlisted — a seat is now held for this candidate.",
+  shortlist: "Shortlisted - a seat is now held for this candidate.",
   award: "Awarded. The seat is confirmed.",
   allocate: "Course track updated.",
   release: "Stood down. The reason is on the record.",
@@ -256,7 +256,7 @@ export default function CandidatePanel({ candidate, onClose, onDecided }: Props)
             <p className="mt-1 font-mono text-micro text-ink-soft">
               {/* Ticket is enough to identify the row and is in the list response.
                   The email address arrives with the per-candidate record, which is
-                  a logged read — the queue deliberately does not carry the whole
+                  a logged read - the queue deliberately does not carry the whole
                   cohort's addresses, so this line fills in a moment after the
                   panel opens rather than being there on first paint. */}
               {candidate.barcodeId}
@@ -303,17 +303,17 @@ export default function CandidatePanel({ candidate, onClose, onDecided }: Props)
             value={
               candidate.objectiveScore !== null
                 ? `${candidate.objectiveScore}%`
-                : "—"
+                : "-"
             }
           />
           <Stat
             label="Rank"
-            value={candidate.objectiveRank ? `#${candidate.objectiveRank}` : "—"}
+            value={candidate.objectiveRank ? `#${candidate.objectiveRank}` : "-"}
           />
           <Stat
             label="Theory"
             value={
-              candidate.theoryGradedAt ? String(candidate.theoryScore) : "—"
+              candidate.theoryGradedAt ? String(candidate.theoryScore) : "-"
             }
             hint={candidate.theoryGradedAt ? undefined : "ungraded"}
           />
@@ -397,7 +397,7 @@ export default function CandidatePanel({ candidate, onClose, onDecided }: Props)
                   </p>
                   {thin && (
                     <p className="mt-1.5 text-small font-medium text-amber-deep">
-                      Short answer — read this one closely.
+                      Short answer - read this one closely.
                     </p>
                   )}
                   {/* Long-form PII, and the one block on this panel a human
@@ -405,7 +405,7 @@ export default function CandidatePanel({ candidate, onClose, onDecided }: Props)
                       box; it is now body size at the editorial measure, which is
                       the difference between grading a paper and squinting at it. */}
                   <p className="measure mt-3 whitespace-pre-wrap text-body text-ink">
-                    {essay.answer || "— no answer —"}
+                    {essay.answer || "- no answer -"}
                   </p>
                 </article>
               );
@@ -425,7 +425,7 @@ export default function CandidatePanel({ candidate, onClose, onDecided }: Props)
                   }
                   inputMode="numeric"
                   maxLength={3}
-                  placeholder="—"
+                  placeholder="-"
                   className="w-28 shrink-0 tabular-nums"
                 />
                 <Button
@@ -489,7 +489,7 @@ export default function CandidatePanel({ candidate, onClose, onDecided }: Props)
         {/* One named group, so a screen reader announces these as the decisions
             available on this candidate rather than as five unlabelled buttons
             sitting under a text field. The one amber button in the panel is the
-            action that creates a seat — the reserved action the design system
+            action that creates a seat - the reserved action the design system
             rations. */}
         <div className="flex flex-col gap-2.5 border-t border-line pt-5">
           <p className="eyebrow">Decision</p>
@@ -576,14 +576,14 @@ export default function CandidatePanel({ candidate, onClose, onDecided }: Props)
                 {/* Options come from RELEASABLE_STATUSES, the same list the decision
                     route validates against, labelled from PIPELINE. This used to be
                     three hand-written <option>s that had already fallen out of step
-                    with the server's four — an option the API rejects is worse than
+                    with the server's four - an option the API rejects is worse than
                     one that is not there, because the reviewer only finds out after
                     the click. */}
                 {RELEASABLE_STATUSES.map((status) => {
                   const stage = PIPELINE.find((entry) => entry.key === status);
                   return (
                     <option key={status} value={status}>
-                      {stage ? `${stage.label} — ${stage.blurb.toLowerCase()}` : status}
+                      {stage ? `${stage.label} - ${stage.blurb.toLowerCase()}` : status}
                     </option>
                   );
                 })}
@@ -604,7 +604,7 @@ export default function CandidatePanel({ candidate, onClose, onDecided }: Props)
               </>
             ) : null}
             .
-            {candidate.decisionNote ? ` — “${candidate.decisionNote}”` : ""}
+            {candidate.decisionNote ? ` - “${candidate.decisionNote}”` : ""}
           </p>
         )}
       </section>

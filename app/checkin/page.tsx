@@ -23,19 +23,19 @@ import { Page, PageHeader, Stack } from "@/components/ui/shell";
 // 1. THE KEYBOARD HANDLER WAS WRITTEN TWICE. Lines 194-247 and 262-303 of the
 //    old file were the same ~50 lines, differing only in what the 500ms timeout
 //    did (discard the buffer, or submit it). A `useEffect` assigned the second
-//    over the first, so the first version was unreachable — a live edit that
+//    over the first, so the first version was unreachable - a live edit that
 //    looked like a fix and was silently reverted by the line below it. It is one
 //    handler now, and it submits on timeout, which is the behaviour that helps a
 //    candidate whose gun is slow.
 //
 // 2. SUCCESS WAS PARSED OUT OF A PROSE STRING.
-//    `info.message?.split(": ")[1] || info.message` — the greeting is built as
+//    `info.message?.split(": ")[1] || info.message` - the greeting is built as
 //    `Welcome, ${name}!` and then taken apart again to recover the name the
 //    server already sent in its own field. One copy-edit of that template and
 //    the door displays "Welcome," with nothing after it.
 //
 // 3. `info.course` is a slug. The screen showed the candidate their raw
-//    registration slug — "aws-certified-cloud-practitioner-13" — on the one
+//    registration slug - "aws-certified-cloud-practitioner-13" - on the one
 //    display a human reads out loud.
 //
 // 4. Raw `fetch` for an authenticated endpoint, and `console.log` of every
@@ -51,7 +51,7 @@ import { Page, PageHeader, Stack } from "@/components/ui/shell";
 // amber dot and three hand-rolled result cards in Tailwind green/red. It is now
 // the shared page frame: one hairline, one h1 from `PageHeader`, `Button` for
 // the mode switch, and `Alert` for the three outcomes. The two states that used
-// to be visually loudest — accepted and denied — now differ by tone and wording
+// to be visually loudest - accepted and denied - now differ by tone and wording
 // rather than by three separate sets of palette colours, and the candidate's
 // name is set in the display serif because it is the one thing on the screen
 // read aloud.
@@ -89,14 +89,14 @@ export default function CheckinPage() {
   const buffer = useRef("");
   const bufferTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const modeRef = useRef<"camera" | "gun">("camera");
-  const verifyRef = useRef<(ticket: string) => void>(() => {});
+  const verifyRef = useRef<(ticket: string) => void>(() => { });
 
   useEffect(() => {
     modeRef.current = inputMode;
   }, [inputMode]);
 
   const stopScanning = useCallback(() => {
-    // pause() and resume() are synchronous in html5-qrcode — only start() and
+    // pause() and resume() are synchronous in html5-qrcode - only start() and
     // stop() return promises. The original code .catch()ed all four.
     if (scanner.current?.isScanning) scanner.current.pause();
   }, []);
@@ -199,7 +199,7 @@ export default function CheckinPage() {
         (decoded) => {
           if (!busy.current) void verify(decoded);
         },
-        () => {},
+        () => { },
       );
     } catch {
       // No camera permission, no camera, or a secure-context problem. The gun and
@@ -211,7 +211,7 @@ export default function CheckinPage() {
   // ─── GUN / KEYBOARD CAPTURE ────────────────────────────────────────────────
   // One handler. A hardware scanner types a code and presses Enter, so the only
   // thing this has to do is accumulate printable keys, swallow the modifiers and
-  // function keys that arrive as noise, and submit on Enter — or on the idle
+  // function keys that arrive as noise, and submit on Enter - or on the idle
   // timeout, for the guns that never send one.
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -272,7 +272,7 @@ export default function CheckinPage() {
       clearTimeout(camera);
       if (bufferTimer.current) clearTimeout(bufferTimer.current);
       if (scanner.current?.isScanning) {
-        scanner.current.stop().catch(() => {});
+        scanner.current.stop().catch(() => { });
       }
     };
     // Mount only. startCamera is stable enough and re-running it would fight the
@@ -283,7 +283,7 @@ export default function CheckinPage() {
   const toggleMode = async () => {
     if (inputMode === "camera") {
       if (scanner.current?.isScanning) {
-        await scanner.current.stop().catch(() => {});
+        await scanner.current.stop().catch(() => { });
       }
       setInputMode("gun");
     } else {
@@ -300,8 +300,8 @@ export default function CheckinPage() {
     >
       {/* Focus sink for the gun. Invisible but real: without a focused element
           the browser window may not be the keyboard target at a kiosk.
-          Deliberately outside the accessibility tree and the tab order — nothing
-          fills it in, the gun types into it — so it gets no <label>. If that ever
+          Deliberately outside the accessibility tree and the tab order - nothing
+          fills it in, the gun types into it - so it gets no <label>. If that ever
           changes, it needs a real one like every other control. */}
       <input
         ref={hardwareInput}

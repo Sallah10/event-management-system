@@ -8,7 +8,7 @@ import { turnstileSiteKey } from "@/lib/turnstile";
 
 export const metadata = {
   title: `Register · ${BRAND.name}`,
-  description: `Apply for ${BRAND.name}. No account needed — you get a ticket ID straight away.`,
+  description: `Apply for ${BRAND.name}. No account needed - you get a ticket ID straight away.`,
 };
 
 // The course list is configuration, read from the same source the seat counters
@@ -21,7 +21,7 @@ export default function RegisterPage() {
         <PageHeader
           eyebrow="Registration"
           title="Register for the programme"
-          lede="Fill this in and you'll get a ticket ID immediately. You sign in on the day with that ID and your email address — there's no account to remember."
+          lede="Fill this in and you'll get a ticket ID immediately. You sign in on the day with that ID and your email address - there's no account to remember."
         />
 
         <RegisterForm courses={courseOptions()} siteKey={turnstileSiteKey()} />

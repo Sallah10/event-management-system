@@ -2,7 +2,11 @@
 // erases them either way, but a runtime import of a type-only name fails in every
 // other loader, including the test runner.
 import { DataTypes, Model } from "sequelize";
-import type { CreationOptional, InferAttributes, InferCreationAttributes } from "sequelize";
+import type {
+  CreationOptional,
+  InferAttributes,
+  InferCreationAttributes,
+} from "sequelize";
 import sequelize from "../db";
 
 /**
@@ -10,7 +14,7 @@ import sequelize from "../db";
  *
  * This exists because a scholarship is a decision with consequences. When a
  * candidate asks "why did I not get a seat", the honest answer must be
- * reconstructable months later — which of the three criteria were scored, who
+ * reconstructable months later - which of the three criteria were scored, who
  * made the call, when, and what they wrote at the time.
  *
  * Without it, status is a bare enum column: a row can move from "registered" to

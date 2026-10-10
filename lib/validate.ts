@@ -23,9 +23,10 @@
  * that version accepted `a@-b.com`. A label may not begin or end with a hyphen:
  * it is not a legal hostname, and an address that reads like a real domain while
  * being unroutable is exactly the shape worth refusing. Nothing legitimate is
- * lost — no provider issues addresses at a hyphen-leading domain.
+ * lost - no provider issues addresses at a hyphen-leading domain.
  */
-const EMAIL = /^[^\s@,;:<>()[\]\\]+@(?:[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?\.)+[A-Za-z]{2,}$/;
+const EMAIL =
+  /^[^\s@,;:<>()[\]\\]+@(?:[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?\.)+[A-Za-z]{2,}$/;
 
 export function isValidEmail(value: unknown): value is string {
   if (typeof value !== "string") return false;
@@ -36,7 +37,7 @@ export function isValidEmail(value: unknown): value is string {
 
 /**
  * Clean a human-entered string. Trims, collapses whitespace, strips control
- * characters, and caps length. Does NOT mangle punctuation — a name is allowed
+ * characters, and caps length. Does NOT mangle punctuation - a name is allowed
  * to contain an apostrophe, a hyphen or a non-Latin script.
  */
 export function cleanText(value: unknown, maxLength = 200): string {
@@ -57,20 +58,21 @@ export function cleanPhone(value: unknown): string | null {
 }
 
 /**
- * Words in a free-text answer — the gate on whether an essay reaches a marker.
+ * Words in a free-text answer - the gate on whether an essay reaches a marker.
  *
  * A token counts only if it contains at least one letter or digit, in any script.
  *
  * The previous version counted whitespace-separated tokens, so "--- ... ***" was
  * three words. Padded to the minimum, that is a page of punctuation and dots
  * passing a check described to candidates as "a one-line answer can't be assessed
- * fairly" — the gate existed to stop exactly that, and it did not. `config/rules`
+ * fairly" - the gate existed to stop exactly that, and it did not. `config/rules`
  * counts words the same way, so the client-side counter and this agreed with each
  * other and both agreed on the wrong number.
  */
 export function countWords(value: unknown): number {
   if (typeof value !== "string") return 0;
-  return value.split(/\s+/).filter((token) => /[\p{L}\p{N}]/u.test(token)).length;
+  return value.split(/\s+/).filter((token) => /[\p{L}\p{N}]/u.test(token))
+    .length;
 }
 
 const HTML_ESCAPES: Record<string, string> = {

@@ -43,7 +43,10 @@ describe("the pipeline", () => {
       "shortlisted",
       "awarded",
     ]) {
-      assert.ok(keys.includes(status as (typeof keys)[number]), `${status} is not in PIPELINE`);
+      assert.ok(
+        keys.includes(status as (typeof keys)[number]),
+        `${status} is not in PIPELINE`,
+      );
     }
   });
 
@@ -57,7 +60,9 @@ describe("the pipeline", () => {
   it("puts the happy path in order, with the two outs at the end", () => {
     // waitlisted and eliminated are outcomes rather than stages, so they are
     // listed last and no transition may lead *into* them except `release`.
-    const path = keys.filter((key) => !["waitlisted", "eliminated"].includes(key));
+    const path = keys.filter(
+      (key) => !["waitlisted", "eliminated"].includes(key),
+    );
     assert.deepEqual(path, [
       "registered",
       "attended",
@@ -85,7 +90,10 @@ describe("seat accounting", () => {
 
   it("treats the two outs as terminal", () => {
     for (const status of TERMINAL_STATUSES) {
-      assert.ok(keys.includes(status), `${status} is terminal but not a pipeline status`);
+      assert.ok(
+        keys.includes(status),
+        `${status} is terminal but not a pipeline status`,
+      );
     }
     for (const status of ["waitlisted", "eliminated"]) {
       assert.ok(
@@ -99,7 +107,10 @@ describe("seat accounting", () => {
 describe("the pass mark", () => {
   it("is a real percentage of a real paper", () => {
     assert.ok(PASS_MARK_PERCENT > 0, "nobody passes at zero");
-    assert.ok(PASS_MARK_PERCENT <= 100, "every paper passes, including a blank one");
+    assert.ok(
+      PASS_MARK_PERCENT <= 100,
+      "every paper passes, including a blank one",
+    );
     assert.ok(TOTAL_QUESTIONS > 0);
   });
 
@@ -132,7 +143,11 @@ describe("isValidCourseSlug", () => {
       {},
       ["aws-certified-cloud-practitioner-13"],
     ]) {
-      assert.equal(isValidCourseSlug(value), false, `${String(value)} should be rejected`);
+      assert.equal(
+        isValidCourseSlug(value),
+        false,
+        `${String(value)} should be rejected`,
+      );
     }
   });
 });
@@ -143,14 +158,17 @@ describe("the decision table", () => {
     // status never matches, so the button always fails.
     for (const [action, rule] of Object.entries(TRANSITIONS)) {
       for (const status of rule.from) {
-        assert.ok(keys.includes(status as (typeof keys)[number]), `${action} allows unknown "${status}"`);
+        assert.ok(
+          keys.includes(status as (typeof keys)[number]),
+          `${action} allows unknown "${status}"`,
+        );
       }
     }
   });
 
   it("reaches a seat only from a graded paper", () => {
     // shortlist and award are the only actions that create a seat, and neither
-    // may start from a status where no essay exists — the original bug was
+    // may start from a status where no essay exists - the original bug was
     // `registered` being shortlistable, so a candidate who never sat the theory
     // paper was offered a place with theoryScore 0 as the only evidence.
     assert.deepEqual([...TRANSITIONS.shortlist.from], ["completed"]);
@@ -177,8 +195,19 @@ describe("the decision table", () => {
   it("reserves every seat-creating and integrity action to admissions", () => {
     // Check-in staff run the door. They have no business shortlisting, awarding,
     // or deciding whether somebody cheated.
-    for (const action of ["shortlist", "award", "release", "flag", "unflag", "allocate"]) {
-      assert.equal(TRANSITIONS[action].role, "admissions", `${action} is not admissions-only`);
+    for (const action of [
+      "shortlist",
+      "award",
+      "release",
+      "flag",
+      "unflag",
+      "allocate",
+    ]) {
+      assert.equal(
+        TRANSITIONS[action].role,
+        "admissions",
+        `${action} is not admissions-only`,
+      );
     }
   });
 

@@ -1,7 +1,10 @@
 import "server-only";
 
 import answerKey from "@/config/answer-key.json";
-import { PASS_MARK_PERCENT, TOTAL_QUESTIONS as PUBLIC_TOTAL } from "@/config/rules";
+import {
+  PASS_MARK_PERCENT,
+  TOTAL_QUESTIONS as PUBLIC_TOTAL,
+} from "@/config/rules";
 
 // ─── SCORING (SERVER ONLY) ────────────────────────────────────────────────────
 // `import "server-only"` is the important line. The Next.js build replaces that
@@ -10,7 +13,7 @@ import { PASS_MARK_PERCENT, TOTAL_QUESTIONS as PUBLIC_TOTAL } from "@/config/rul
 //
 // The original bug: config/questions.json carried a `correct` field per question
 // and app/assessment/exam/page.tsx was "use client" and imported it directly.
-// Every correct answer for all 60 questions shipped in the JS bundle — a
+// Every correct answer for all 60 questions shipped in the JS bundle - a
 // candidate only had to open DevTools and score 100% on the objective section,
 // which is the exact section that decides whether they reach the theory paper.
 //
@@ -37,7 +40,7 @@ export interface ScoreResult {
   total: number;
   percent: number;
   passed: boolean;
-  /** False when the client didn't answer every question — counted, not trusted. */
+  /** False when the client didn't answer every question - counted, not trusted. */
   complete: boolean;
 }
 

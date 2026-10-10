@@ -6,6 +6,7 @@ import { log } from "@/lib/logger";
 import { cleanText, cleanPhone, isValidEmail } from "@/lib/validate";
 import { isValidCourseSlug } from "@/config/rules";
 import { CURRENT_COHORT } from "@/config/branding";
+import { TICKET_PREFIX } from "@/lib/tickets";
 
 // ─── REGISTRATION CORE ────────────────────────────────────────────────────────
 //
@@ -62,7 +63,10 @@ export type RegistrationResult = RegistrationSuccess | RegistrationFailure;
 
 /** 4 random bytes = 2^32 codes, with a unique index behind them. */
 function mintTicket(): string {
-  return `TS26-${randomBytes(4).toString("hex").toUpperCase()}`;
+  // Was hardcoded to `TS26-`, which meant changing TICKET_PREFIX moved the
+  // validator and left the generator behind: every newly minted ticket would then
+  // fail the very check it was built for. Both ends read the same prefix now.
+  return `${TICKET_PREFIX}-${randomBytes(4).toString("hex").toUpperCase()}`;
 }
 
 function asString(value: unknown): string {

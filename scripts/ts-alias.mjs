@@ -13,7 +13,7 @@
 // client component. It works by resolving to a module that throws, under the
 // `react-server` condition only. Under plain Node there is no such condition, so
 // `import "server-only"` throws "This module cannot be imported from a Client
-// Component module" — from a test, on Node, where the thing being guarded cannot
+// Component module" - from a test, on Node, where the thing being guarded cannot
 // happen. Stubbing it lets the scoring and timing logic be tested directly
 // instead of being skipped for being untestable.
 

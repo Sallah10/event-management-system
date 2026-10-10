@@ -12,14 +12,14 @@ import { useCallback, useSyncExternalStore } from "react";
 // The three ways to do this and why two of them are wrong here:
 //
 //   useState(() => localStorage.getItem(key))   WRONG. Runs during render, on the
-//     server too, where localStorage does not exist — and even guarded, the
+//     server too, where localStorage does not exist - and even guarded, the
 //     server would still render an empty paper, so the client's first render
 //     (with answers) would not match the HTML React is hydrating. That mismatch
 //     is a hydration error, not a warning.
 //
 //   useEffect(() => setState(read()), [])       WRONG, and this is what the
 //     codebase had. A second render pass, and the candidate sees their own
-//     answers appear a frame late — on a paper with a running clock, that is a
+//     answers appear a frame late - on a paper with a running clock, that is a
 //     flicker of "everything I typed is gone" right at the moment they start.
 //
 //   useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot)  CORRECT.

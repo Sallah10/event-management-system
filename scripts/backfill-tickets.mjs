@@ -15,7 +15,7 @@ import process from "node:process";
  *  2. THE SECRET NAME WAS WRONG. It sent `x-api-key: process.env.WP_API_KEY`.
  *     app/api/register/route.ts compares that header against WP_TO_APP_SECRET.
  *     WP_API_KEY is a WordPress-side variable, not this app's. Every single
- *     request would have been rejected with 401 — silently, one line per person,
+ *     request would have been rejected with 401 - silently, one line per person,
  *     in a console nobody reads. A migration that reports 900 failures and 900
  *     successes-because-it-looks-like-it-worked is worse than one that refuses to
  *     start.
@@ -53,7 +53,7 @@ const DELAY_MS = 250;
  * Hand-rolled rather than pulled in as a dependency because this script is the
  * only thing in the project that needs one, and a one-shot migration tool is a
  * poor reason to add a package to the tree. Handles quoted fields, escaped
- * double quotes and embedded newlines — WordPress exports contain all three once
+ * double quotes and embedded newlines - WordPress exports contain all three once
  * somebody has put a line break in a "job title" field.
  */
 function parseCsv(text) {
@@ -142,9 +142,11 @@ async function main() {
   }
 
   const header = rows[0].map((h) => h.trim().toLowerCase());
-  const records = rows.slice(1).map((cells) =>
-    Object.fromEntries(header.map((key, i) => [key, cells[i] ?? ""])),
-  );
+  const records = rows
+    .slice(1)
+    .map((cells) =>
+      Object.fromEntries(header.map((key, i) => [key, cells[i] ?? ""])),
+    );
 
   // Validate everything BEFORE sending anything, so a bad column name is caught
   // on a dry run rather than after 400 emails have gone out.
@@ -156,16 +158,24 @@ async function main() {
     const name = pick(record, "full_name", "name");
     const email = pick(record, "user_email", "email").toLowerCase();
     const phone = pick(record, "user_phone", "phone");
-    const courseInterest = pick(record, "selected_course", "courseinterest", "course");
+    const courseInterest = pick(
+      record,
+      "selected_course",
+      "courseinterest",
+      "course",
+    );
 
     if (!name) {
       rejected.push({ line, why: "no name" });
     } else if (!isEmail(email)) {
-      rejected.push({ line, why: `bad or missing email (${email || "empty"})` });
+      rejected.push({
+        line,
+        why: `bad or missing email (${email || "empty"})`,
+      });
     } else if (courseInterest) {
       rejected.push({
         line,
-        why: `"${courseInterest}" is not a course slug — map it to one of the slugs in config/course-matrix.ts first`,
+        why: `"${courseInterest}" is not a course slug - map it to one of the slugs in config/course-matrix.ts first`,
       });
     } else {
       usable.push({ line, name, email, phone });
@@ -214,12 +224,12 @@ async function main() {
       } else {
         const why = payload.message ?? `HTTP ${response.status}`;
         failed.push({ ...person, why });
-        console.log(`  FAIL  line ${person.line}  ${person.email}  — ${why}`);
+        console.log(`  FAIL  line ${person.line}  ${person.email}  - ${why}`);
       }
     } catch (error) {
       const why = error instanceof Error ? error.message : "unknown error";
       failed.push({ ...person, why });
-      console.log(`  FAIL  line ${person.line}  ${person.email}  — ${why}`);
+      console.log(`  FAIL  line ${person.line}  ${person.email}  - ${why}`);
     }
 
     await sleep(DELAY_MS);
@@ -229,7 +239,7 @@ async function main() {
   if (failed.length > 0) {
     console.log(`${failed.length} failed:`);
     for (const { line, email, why } of failed) {
-      console.log(`  line ${line}  ${email}  — ${why}`);
+      console.log(`  line ${line}  ${email}  - ${why}`);
     }
     // Non-zero exit so a CI step or a shell `&&` chain notices.
     process.exitCode = 1;

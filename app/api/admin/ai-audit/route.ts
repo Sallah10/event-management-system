@@ -26,7 +26,7 @@ export const maxDuration = 300;
 //    It selected `where: { status: "completed", theoryScore: 0 }`.
 //    submit-theory wrote `status: "awarded"` on submission.
 //    "completed" and "awarded" are disjoint sets, so the query matched zero rows
-//    and the endpoint cheerfully reported "No candidates pending grading" —
+//    and the endpoint cheerfully reported "No candidates pending grading" -
 //    forever. Two files disagreeing on what a status means, and nothing caught
 //    it because there was no test. submit-theory now writes "completed" for
 //    "submitted, awaiting grading", which is what this route was already asking
@@ -48,7 +48,7 @@ export const maxDuration = 300;
 //
 // 4. IT WROTE TO process.cwd().
 //    `fs.appendFileSync(path.join(process.cwd(), "ai-usage.log"))`. On Vercel the
-//    project directory is read-only, so this throws EROFS — and because it ran
+//    project directory is read-only, so this throws EROFS - and because it ran
 //    AFTER the batch had been submitted and paid for, the route 500'd with the
 //    results unreachable. There is no usage log file here at all now.
 //
@@ -69,7 +69,7 @@ export const maxDuration = 300;
 // recorded as an observation for a human to weigh. The route does not disqualify,
 // and it cannot.
 //
-// PROVIDER: Gemini. This used to drive the OpenAI Batch API — upload a JSONL file,
+// PROVIDER: Gemini. This used to drive the OpenAI Batch API - upload a JSONL file,
 // poll for up to 24 hours, download an output file. Gemini has no equivalent
 // shape, and a serverless function has nowhere to keep a job between requests
 // anyway, so grading is now a bounded concurrent loop inside one request. It
@@ -85,7 +85,7 @@ Score each criterion from 0 to 100:
 - passion: is there a specific, concrete reason this person wants this specific track?
 - clarity: are the answers specific enough to judge, rather than generalities?
 
-Judge only what is on the page. Do not reward confident phrasing over substance, and do not penalise a candidate for grammar, spelling, or dialect — many applicants are writing in a second language and that is not a merit signal.
+Judge only what is on the page. Do not reward confident phrasing over substance, and do not penalise a candidate for grammar, spelling, or dialect - many applicants are writing in a second language and that is not a merit signal.
 
 Respond with JSON only, no commentary, using exactly this shape:
 {"authenticity":<int 0-100>,"passion":<int 0-100>,"clarity":<int 0-100>,"finalScore":<int 0-100>,"aiSuspected":<boolean>,"reason":<string under 40 words>,"confidence":"high"|"medium"|"low"}`;
@@ -122,7 +122,8 @@ function extractJson(content: string): unknown {
     // Fall back to the first balanced object in the string
     const start = body.indexOf("{");
     const end = body.lastIndexOf("}");
-    if (start === -1 || end <= start) throw new Error("no JSON object in response");
+    if (start === -1 || end <= start)
+      throw new Error("no JSON object in response");
     return JSON.parse(body.slice(start, end + 1));
   }
 }
@@ -132,7 +133,7 @@ function averageOf(grade: Grade): number {
 }
 
 function promptFor(candidate: CandidateRow): string {
-  return `Question 1 — Why do you want to study this track?\n${candidate.theoryAnswer1 ?? "(no answer)"}\n\nQuestion 2 — What difference would this make in your community?\n${candidate.theoryAnswer2 ?? "(no answer)"}\n\nQuestion 3 — Where do you see yourself in five years?\n${candidate.theoryAnswer3 ?? "(no answer)"}`;
+  return `Question 1 - Why do you want to study this track?\n${candidate.theoryAnswer1 ?? "(no answer)"}\n\nQuestion 2 - What difference would this make in your community?\n${candidate.theoryAnswer2 ?? "(no answer)"}\n\nQuestion 3 - Where do you see yourself in five years?\n${candidate.theoryAnswer3 ?? "(no answer)"}`;
 }
 
 // ─── POST: GRADE THE PENDING QUEUE ─────────────────────────────────────────────
@@ -142,7 +143,11 @@ export async function POST() {
 
   if (!isConfigured()) {
     return Response.json(
-      { success: false, error: "NOT_CONFIGURED", message: "GEMINI_API_KEY is not set." },
+      {
+        success: false,
+        error: "NOT_CONFIGURED",
+        message: "GEMINI_API_KEY is not set.",
+      },
       { status: 503 },
     );
   }
@@ -162,7 +167,13 @@ export async function POST() {
           { theoryAnswer3: { [Op.ne]: null } },
         ],
       },
-      attributes: ["id", "email", "theoryAnswer1", "theoryAnswer2", "theoryAnswer3"],
+      attributes: [
+        "id",
+        "email",
+        "theoryAnswer1",
+        "theoryAnswer2",
+        "theoryAnswer3",
+      ],
       raw: true,
     })) as unknown as CandidateRow[];
 
@@ -175,16 +186,23 @@ export async function POST() {
         candidate.theoryAnswer1,
         candidate.theoryAnswer2,
         candidate.theoryAnswer3,
-      ].filter((a): a is string => typeof a === "string" && a.trim().length > 0);
+      ].filter(
+        (a): a is string => typeof a === "string" && a.trim().length > 0,
+      );
 
-      const longEnough = answers.filter((a) => countWords(a) >= THEORY_MIN_WORDS).length;
+      const longEnough = answers.filter(
+        (a) => countWords(a) >= THEORY_MIN_WORDS,
+      ).length;
 
       if (longEnough === 0) {
         // Previously this did `student.update({ theoryScore: 1, isFlagged: true })`
-        // — a silent auto-disqualification with no log and no human in the loop.
+        // - a silent auto-disqualification with no log and no human in the loop.
         // Now it's recorded as a grade of 0 with an explicit note, and isFlagged
         // is not touched.
-        skipped.push({ id: candidate.id, reason: "no_answer_met_minimum_length" });
+        skipped.push({
+          id: candidate.id,
+          reason: "no_answer_met_minimum_length",
+        });
         continue;
       }
       gradeable.push(candidate);
@@ -249,7 +267,10 @@ export async function POST() {
 
     for (const outcome of outcomes) {
       if (!outcome.ok) {
-        failures.push({ id: outcome.id, reason: outcome.failure ?? "api_error" });
+        failures.push({
+          id: outcome.id,
+          reason: outcome.failure ?? "api_error",
+        });
         continue;
       }
 
@@ -272,7 +293,10 @@ export async function POST() {
     }
 
     // FIX 5. One bulk write instead of N sequential awaits inside a time budget.
-    const written = await recordGrades(updates, `run:${new Date().toISOString()}`);
+    const written = await recordGrades(
+      updates,
+      `run:${new Date().toISOString()}`,
+    );
 
     const remaining = await Registrant.count({
       where: { status: "completed", theoryScore: 0 },
@@ -305,7 +329,11 @@ export async function POST() {
   } catch (err) {
     log.error("ai_audit.failed", { message: (err as Error)?.message });
     return Response.json(
-      { success: false, error: "FAILED", message: "Could not grade the queue. Check the logs." },
+      {
+        success: false,
+        error: "FAILED",
+        message: "Could not grade the queue. Check the logs.",
+      },
       { status: 500 },
     );
   }
@@ -313,7 +341,7 @@ export async function POST() {
 
 // ─── GET: QUEUE DEPTH ─────────────────────────────────────────────────────────
 // This used to collect a completed batch. Grading is synchronous now, so there is
-// no job to poll — the same route reports what is still outstanding instead, which
+// no job to poll - the same route reports what is still outstanding instead, which
 // is the only thing an operator actually needs between runs.
 export async function GET() {
   const { error } = await requireStaff("admissions");
@@ -344,7 +372,11 @@ export async function GET() {
   } catch (err) {
     log.error("ai_audit.stats_failed", { message: (err as Error)?.message });
     return Response.json(
-      { success: false, error: "FAILED", message: "Could not read queue depth." },
+      {
+        success: false,
+        error: "FAILED",
+        message: "Could not read queue depth.",
+      },
       { status: 500 },
     );
   }

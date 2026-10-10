@@ -15,7 +15,7 @@ export const dynamic = "force-dynamic";
 // 1. IT HAD NO AUTHENTICATION AT ALL.
 //    The proxy gated the /checkin *page*, but this route lives under /api, and
 //    the proxy's staff check tested `path.startsWith("/admin")`. So anyone could
-//    POST a barcode and check a real person into the venue — and the response
+//    POST a barcode and check a real person into the venue - and the response
 //    handed back their full name, which made the endpoint a name-enumeration
 //    oracle for the whole attendee list.
 //
@@ -29,7 +29,7 @@ export const dynamic = "force-dynamic";
 //
 // 3. A DATABASE TRANSACTION WAS OPENED BEFORE ANY VALIDATION.
 //    `sequelize.transaction()` ran first thing, then up to 5 sequential SELECTs
-//    inside it, then a rollback on every early return — against a pool capped at
+//    inside it, then a rollback on every early return - against a pool capped at
 //    5 connections, with 3,500 people queuing at a door. The transaction bought
 //    us nothing: the only write is a single conditional UPDATE, which is already
 //    atomic. It's gone.
@@ -55,7 +55,7 @@ export async function POST(request: Request) {
 
   try {
     // ─── 1. AUTH ─────────────────────────────────────────────────────────────
-    // Read from the cookie jar via next/headers, not `request.cookies` — this
+    // Read from the cookie jar via next/headers, not `request.cookies` - this
     // handler takes a plain `Request`, and NextRequest.cookies only exists on
     // NextRequest. The original `request.cookies.get(...)` would have thrown a
     // TypeError on every call, which the catch turned into a 500.
@@ -83,7 +83,7 @@ export async function POST(request: Request) {
 
     await ensureDatabase();
 
-    // ─── 3. FAST PATH — already checked in (cached) ─────────────────────────
+    // ─── 3. FAST PATH - already checked in (cached) ─────────────────────────
     if (await redis.get(checkinKey(ticket.value))) {
       logMetrics.checkin(ticket.value, "duplicate_cached");
       return NextResponse.json(
@@ -126,7 +126,13 @@ export async function POST(request: Request) {
     // the old five-strategy ILIKE search was removed rather than patched.
     const student = await Registrant.findOne({
       where: { barcodeId: ticket.value },
-      attributes: ["id", "name", "barcodeId", "checkedIn", "selectedCourseSlug"],
+      attributes: [
+        "id",
+        "name",
+        "barcodeId",
+        "checkedIn",
+        "selectedCourseSlug",
+      ],
     });
 
     if (!student) {
@@ -137,7 +143,8 @@ export async function POST(request: Request) {
           success: false,
           error: "TICKET_NOT_FOUND",
           message: "TICKET NOT FOUND",
-          details: "This code is not registered. Send the candidate to the manual desk.",
+          details:
+            "This code is not registered. Send the candidate to the manual desk.",
         },
         { status: 404 },
       );
@@ -145,7 +152,7 @@ export async function POST(request: Request) {
 
     if (student.checkedIn) {
       await releaseSlot();
-      // Cache under the CANONICAL ticket, not the scanned string — the old code
+      // Cache under the CANONICAL ticket, not the scanned string - the old code
       // cached under the scan, so a second scan in a different format missed the
       // cache and hit the database every time.
       await redis.set(checkinKey(student.barcodeId), true, { ex: 86_400 });
@@ -163,7 +170,7 @@ export async function POST(request: Request) {
 
     // ─── 6. ATOMIC CLAIM ─────────────────────────────────────────────────────
     // Single conditional UPDATE. `checkedIn: false` in the WHERE clause means two
-    // scanners firing at the same instant cannot both win — the loser gets
+    // scanners firing at the same instant cannot both win - the loser gets
     // updatedCount 0. No transaction, no SELECT-then-UPDATE race.
     const [claimedRows] = await Registrant.update(
       { checkedIn: true, status: "attended" },
@@ -208,7 +215,11 @@ export async function POST(request: Request) {
   } catch (error) {
     logMetrics.routeError(route, error);
     return NextResponse.json(
-      { success: false, error: "SERVER_ERROR", message: "Server error. Please try again." },
+      {
+        success: false,
+        error: "SERVER_ERROR",
+        message: "Server error. Please try again.",
+      },
       { status: 500 },
     );
   }

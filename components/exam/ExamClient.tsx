@@ -46,7 +46,7 @@ import { cn } from "@/lib/utils";
 //   connections. The draft is keyed by ticket and cleared on submit.
 //
 // • NO FAKE DISQUALIFICATION. See components/exam/IntegrityObserver.tsx for the
-//   three false-positive paths that were removed — phone-width "split screen",
+//   three false-positive paths that were removed - phone-width "split screen",
 //   a blocking alert, and a localStorage wipe that declared DISQUALIFIED while
 //   the database row was untouched.
 //
@@ -112,7 +112,7 @@ export default function ExamClient({
   // `adoptedKey` is state, not a ref, on purpose. A ref read or write during
   // render is a compiler no-no: refs are mutable state that render is not supposed
   // to depend on, and the value it holds is not part of the render's inputs. This
-  // comparison genuinely is an input — "have I already merged this draft?" — so it
+  // comparison genuinely is an input - "have I already merged this draft?" - so it
   // belongs in state, and adjusting state during render is the documented pattern
   // for reacting to a changed input without an effect.
   const [adoptedKey, setAdoptedKey] = useState<string | null>(null);
@@ -160,7 +160,7 @@ export default function ExamClient({
       try {
         window.localStorage.removeItem(DRAFT_KEY(barcodeId));
       } catch {
-        // Nothing to do — the server has the score either way.
+        // Nothing to do - the server has the score either way.
       }
       router.replace("/assessment/result");
       return;
@@ -261,7 +261,7 @@ export default function ExamClient({
                     className="sr-only"
                   />
                   {/* The letter is the affordance. Amber when chosen, hairline
-                      otherwise — a filled circle per option would be 4 more
+                      otherwise - a filled circle per option would be 4 more
                       shapes competing with the text. */}
                   <span
                     aria-hidden
@@ -369,7 +369,7 @@ export default function ExamClient({
 
       {/* ─── CONFIRM ──────────────────────────────────────────────────────────
           This was a hand-rolled `role="dialog"` div with no focus trap, no
-          Esc-to-close and no focus restoration — a keyboard user could tab
+          Esc-to-close and no focus restoration - a keyboard user could tab
           straight out of the overlay into the page behind it, and the browser
           back gesture would leave it open. It now uses the Radix primitive,
           which does all three. */}

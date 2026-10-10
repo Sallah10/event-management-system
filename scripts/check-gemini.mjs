@@ -19,7 +19,14 @@ const responseSchema = {
     reason: { type: "STRING" },
     confidence: { type: "STRING", enum: ["high", "medium", "low"] },
   },
-  required: ["authenticity", "passion", "clarity", "aiSuspected", "reason", "confidence"],
+  required: [
+    "authenticity",
+    "passion",
+    "clarity",
+    "aiSuspected",
+    "reason",
+    "confidence",
+  ],
 };
 
 console.log(`model: ${model}`);
@@ -35,7 +42,9 @@ async function post() {
       headers: { "Content-Type": "application/json", "x-goog-api-key": key },
       body: JSON.stringify({
         systemInstruction: {
-          parts: [{ text: "You are an admissions assessor. Respond with JSON only." }],
+          parts: [
+            { text: "You are an admissions assessor. Respond with JSON only." },
+          ],
         },
         contents: [
           {
@@ -55,7 +64,7 @@ async function post() {
           thinkingConfig: { thinkingBudget: 0 },
         },
       }),
-    }
+    },
   );
 }
 
@@ -68,7 +77,9 @@ while (!result.ok && TRANSIENT.has(result.status) && attempts < 3) {
   attempts += 1;
 }
 
-console.log(`HTTP ${result.status} after ${attempts} attempt${attempts > 1 ? "s" : ""}`);
+console.log(
+  `HTTP ${result.status} after ${attempts} attempt${attempts > 1 ? "s" : ""}`,
+);
 
 if (!result.ok) {
   console.log((await result.text()).slice(0, 500));
@@ -80,18 +91,35 @@ const text = payload?.candidates?.[0]?.content?.parts?.[0]?.text;
 console.log(`response: ${text ?? "(none)"}`);
 
 if (!text) {
-  console.log(`blocked or empty: ${payload?.promptFeedback?.blockReason ?? "unknown"}`);
+  console.log(
+    `blocked or empty: ${payload?.promptFeedback?.blockReason ?? "unknown"}`,
+  );
   process.exit(1);
 }
 
 const parsed = extractJson(text);
-const required = ["authenticity", "passion", "clarity", "aiSuspected", "reason", "confidence"];
+const required = [
+  "authenticity",
+  "passion",
+  "clarity",
+  "aiSuspected",
+  "reason",
+  "confidence",
+];
 const missing = required.filter((field) => !(field in parsed));
 const wasFenced = text.trim().startsWith("{") === false;
 
-console.log(`keys: ${Object.keys(parsed).length}, missing: ${missing.length ? missing.join(", ") : "none"}`);
-console.log(`raw response was plain JSON: ${wasFenced === false ? "yes" : "no — wrapped in prose"}`);
-console.log(missing.length ? "Structured output is not being honoured." : "Recovered, and all required fields are present.");
+console.log(
+  `keys: ${Object.keys(parsed).length}, missing: ${missing.length ? missing.join(", ") : "none"}`,
+);
+console.log(
+  `raw response was plain JSON: ${wasFenced === false ? "yes" : "no - wrapped in prose"}`,
+);
+console.log(
+  missing.length
+    ? "Structured output is not being honoured."
+    : "Recovered, and all required fields are present.",
+);
 
 function extractJson(content) {
   const fenced = content.match(/```(?:json)?\s*([\s\S]*?)```/i);
@@ -101,7 +129,8 @@ function extractJson(content) {
   } catch {
     const start = body.indexOf("{");
     const end = body.lastIndexOf("}");
-    if (start === -1 || end <= start) throw new Error("no JSON object in response");
+    if (start === -1 || end <= start)
+      throw new Error("no JSON object in response");
     return JSON.parse(body.slice(start, end + 1));
   }
 }

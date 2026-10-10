@@ -23,7 +23,7 @@ const buttonVariants = cva(
     variants: {
       variant: {
         // Ink on paper. The default, and the one that should win most of the
-        // time — a screen with one obvious action beats a screen with three
+        // time - a screen with one obvious action beats a screen with three
         // equally loud ones.
         default: "bg-ink text-paper hover:bg-ink-soft",
         // The one reserved action on a screen: submit a paper, confirm an

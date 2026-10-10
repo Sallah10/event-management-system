@@ -7,7 +7,7 @@ import pg from "pg";
 //
 // Fixes vs the original:
 //   • `logging: console.log` was printing EVERY SQL statement on every request.
-//     At 3,500 attendees on check-in day that is hundreds of MB of logs — and
+//     At 3,500 attendees on check-in day that is hundreds of MB of logs - and
 //     the query text discloses the exact PII columns being selected. Now off
 //     outside development, and bind values are never logged.
 //   • The eager `authenticate()` at module scope fired on every cold start and
@@ -20,7 +20,7 @@ const DATABASE_URL = process.env.DATABASE_URL;
 
 if (!DATABASE_URL) {
   throw new Error(
-    "DATABASE_URL is not set. Copy .env.example to .env.local and fill it in — " +
+    "DATABASE_URL is not set. Copy .env.example to .env.local and fill it in - " +
       "see docs/ENV_SETUP.md.",
   );
 }
@@ -34,7 +34,11 @@ const sequelize = new Sequelize(DATABASE_URL, {
     ssl: isProd ? { require: true, rejectUnauthorized: true } : undefined,
   },
   // FIX: was `console.log` unconditionally
-  logging: isProd ? false : process.env.SQL_LOG === "true" ? console.log : false,
+  logging: isProd
+    ? false
+    : process.env.SQL_LOG === "true"
+      ? console.log
+      : false,
   // FIX: `max: 5` with 3,500 sequential scans at the door was the bottleneck.
   // Serverless functions are numerous but each holds few connections, so the
   // ceiling has to be per-instance and the acquire timeout has to be short

@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
 // Polled by the exam and theory pages to show the warning ladder.
 //
 // The old version decoded the JWT inline with `jsonwebtoken` and a HARDCODED
-// fallback secret, `"your-secret-key-change-this"` — a different literal from the
+// fallback secret, `"your-secret-key-change-this"` - a different literal from the
 // `"jwt_secret_key"` used by /flag and /start-exam, and different again from
 // lib/auth.ts, which had no fallback at all. Six files, four behaviours. If
 // JWT_SECRET was ever absent from the deployed env, this route would have
@@ -33,7 +33,11 @@ export async function GET(request: Request) {
 
     if (!student) {
       return NextResponse.json(
-        { success: false, error: "INVALID_SESSION", message: "Invalid session." },
+        {
+          success: false,
+          error: "INVALID_SESSION",
+          message: "Invalid session.",
+        },
         { status: 403 },
       );
     }

@@ -15,7 +15,7 @@ import { Page, PageHeader } from "@/components/ui/shell";
 // Two roles, two PINs, two doors. The page used to have no role control at all:
 // it POSTed to /api/admin/auth, which defaulted to the `staff` tier, so an
 // admissions officer with the right PIN signed in and landed on the check-in
-// dashboard — and then found every admissions route refusing them for having the
+// dashboard - and then found every admissions route refusing them for having the
 // wrong role. The role is now chosen here, sent explicitly, and the server sends
 // the officer back to the right place.
 //
@@ -28,7 +28,7 @@ import { Page, PageHeader } from "@/components/ui/shell";
 // ink field, with a rounded-2xl lock tile, two rounded-2xl role cards, a
 // rounded-full submit and a `rounded-xl` red error box. It is now the shared page
 // frame: a hairline, one h1, and the form set on the paper. The role control
-// keeps its `aria-pressed` semantics — two buttons, not a segmented pill, because
+// keeps its `aria-pressed` semantics - two buttons, not a segmented pill, because
 // a pill made it look like a tab row and it is not one.
 
 type Role = "staff" | "admissions";

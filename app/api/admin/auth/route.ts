@@ -1,7 +1,13 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { redis, rateLimitKey } from "@/lib/redis";
-import { signStaffSession, staffCookieOptions, STAFF_COOKIE, safeEqual, type StaffRole } from "@/lib/session";
+import {
+  signStaffSession,
+  staffCookieOptions,
+  STAFF_COOKIE,
+  safeEqual,
+  type StaffRole,
+} from "@/lib/session";
 import { requireEnv } from "@/lib/env";
 import { readDeviceKey } from "@/lib/auth";
 import { log } from "@/lib/logger";
@@ -18,7 +24,7 @@ export const dynamic = "force-dynamic";
 //    A missing env var turned into a valid credential.
 //
 // 2. THE COMPARISON LEAKED TIMING. `===` short-circuits on the first differing
-//    character. Against a 6-digit PIN — a 10^6 search space — that's a real
+//    character. Against a 6-digit PIN - a 10^6 search space - that's a real
 //    oracle, and the only rate limit was 5 attempts per IP per 10 minutes, keyed
 //    on an `x-forwarded-for` header the client controls outside Vercel. Now a
 //    constant-time compare, and the limit is keyed on IP *and* device.
@@ -47,8 +53,9 @@ export async function POST(request: Request) {
 
   try {
     // `request` is a plain Request here, not a NextRequest, so there is no
-    // `nextUrl` shortcut — read the query off the URL directly.
-    const role = (new URL(request.url).searchParams.get("role") ?? "staff") as StaffRole;
+    // `nextUrl` shortcut - read the query off the URL directly.
+    const role = (new URL(request.url).searchParams.get("role") ??
+      "staff") as StaffRole;
     const credential = CREDENTIALS[role];
     if (!credential) {
       return NextResponse.json(
@@ -57,7 +64,7 @@ export async function POST(request: Request) {
       );
     }
 
-    // requireEnv THROWS if the PIN is unset — which is the whole point. An
+    // requireEnv THROWS if the PIN is unset - which is the whole point. An
     // unconfigured staff portal must not be enterable.
     const expectedPin = requireEnv(credential.pinEnv);
 

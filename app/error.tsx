@@ -43,7 +43,7 @@ export default function GlobalError({
 
         <p className="measure text-lead text-pretty text-ink-soft">
           It is a fault on our side, not yours. If you were part-way through an
-          assessment, your answers were saved as you typed — retrying will bring
+          assessment, your answers were saved as you typed - retrying will bring
           you back to where you were.
         </p>
 

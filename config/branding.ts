@@ -4,7 +4,7 @@
  * WHY THIS FILE EXISTS
  *
  * The event's name, the venue, the sender identity, the scholarship figure and
- * the CMS form's field names were all hardcoded — in the layout, in the landing
+ * the CMS form's field names were all hardcoded - in the layout, in the landing
  * page, in the email template, in a "copy" file nobody imported, and in an
  * `EVENT_CONFIG` object that nothing read. That is five places to change per
  * event and no way to see them all at once, and it is why real venue addresses
@@ -46,14 +46,26 @@ export const BRAND = {
    * Empty by default, and the page renders no icons when every entry is empty.
    * They used to be four hardcoded links to one organisation's Instagram,
    * Facebook, LinkedIn and X accounts, sitting in a repository whose stated goal
-   * is to be reusable for the next cohort — so a deployment that was not that
+   * is to be reusable for the next cohort - so a deployment that was not that
    * organisation sent candidates to a stranger's feed. Config, with nothing to
    * inherit by accident.
    */
   socials: [
-    { platform: "instagram", label: "Instagram", url: process.env.SOCIAL_INSTAGRAM ?? "" },
-    { platform: "facebook", label: "Facebook", url: process.env.SOCIAL_FACEBOOK ?? "" },
-    { platform: "linkedin", label: "LinkedIn", url: process.env.SOCIAL_LINKEDIN ?? "" },
+    {
+      platform: "instagram",
+      label: "Instagram",
+      url: process.env.SOCIAL_INSTAGRAM ?? "",
+    },
+    {
+      platform: "facebook",
+      label: "Facebook",
+      url: process.env.SOCIAL_FACEBOOK ?? "",
+    },
+    {
+      platform: "linkedin",
+      label: "LinkedIn",
+      url: process.env.SOCIAL_LINKEDIN ?? "",
+    },
     { platform: "x", label: "X", url: process.env.SOCIAL_X ?? "" },
   ],
 } as const;

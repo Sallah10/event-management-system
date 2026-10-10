@@ -8,7 +8,7 @@ import { TOTAL_QUESTIONS as KEY_LENGTH, scoreAnswers } from "@/lib/answer-key";
 
 // ─── OBJECTIVE SCORING ────────────────────────────────────────────────────────
 // The answer key used to carry a `correct` field per question inside
-// config/questions.json, which the exam page — then a client component —
+// config/questions.json, which the exam page - then a client component -
 // imported directly. Every correct answer for the section that decides who
 // reaches the theory paper was readable in DevTools, so a candidate could score
 // 100% without reading a single question.
@@ -30,7 +30,8 @@ function sheet(correct: number, total = ids.length): Record<string, string> {
     // Alternate through right and wrong answers, so `correct` is exact and the
     // wrong ones are genuinely wrong rather than merely unanswered.
     const right = index < correct;
-    const wrong = ["A", "B", "C", "D"].find((option) => option !== key[id]) ?? "A";
+    const wrong =
+      ["A", "B", "C", "D"].find((option) => option !== key[id]) ?? "A";
     answers[id] = right ? key[id] : wrong;
   });
   assert.equal(Object.keys(answers).length, total);
@@ -51,12 +52,20 @@ describe("the answer key", () => {
 
   it("records one real option per question, and never inside the public file", () => {
     for (const [id, answer] of Object.entries(key)) {
-      assert.match(answer, /^[A-D]$/, `${id} has an answer that is not an option`);
+      assert.match(
+        answer,
+        /^[A-D]$/,
+        `${id} has an answer that is not an option`,
+      );
     }
     // The public file is shipped to the browser. If a `correct` key reappears in
     // it, the paper is open again no matter what the server does with the key.
     for (const question of questions as Record<string, unknown>[]) {
-      assert.equal("correct" in question, false, `${question.id} exposes its answer`);
+      assert.equal(
+        "correct" in question,
+        false,
+        `${question.id} exposes its answer`,
+      );
     }
   });
 });

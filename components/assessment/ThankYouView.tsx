@@ -48,7 +48,7 @@ interface Props {
  */
 export default function ThankYouView({ submittedLate, track }: Props) {
   // Only links a deployment actually configured. With nothing set, the row is not
-  // rendered at all — an icon that goes nowhere is worse than no icon.
+  // rendered at all - an icon that goes nowhere is worse than no icon.
   const socials = BRAND.socials.filter(
     (entry) => entry.url !== "" && ICONS[entry.platform] !== undefined,
   );
@@ -80,7 +80,7 @@ export default function ThankYouView({ submittedLate, track }: Props) {
             // time is on the record, and hiding that would be the dishonest option.
             <Alert tone="caution" icon={Clock} title="Submitted after the deadline">
               Your answers were received after the time limit closed. They have been
-              submitted and will be read — the recorded finishing time is later than
+              submitted and will be read - the recorded finishing time is later than
               the deadline, and that is all that has changed.
             </Alert>
           ) : null}

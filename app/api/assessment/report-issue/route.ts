@@ -12,7 +12,7 @@ export const dynamic = "force-dynamic";
 // This endpoint was an open relay with an HTML injection in it.
 //
 // 1. NO AUTHENTICATION, BY DESIGN. The comment said "Optional: Verify user is
-//    logged in", then read a cookie named `auth_token` — which is not a cookie
+//    logged in", then read a cookie named `auth_token` - which is not a cookie
 //    this application has ever set. Candidates get `CANDIDATE_COOKIE`, signed
 //    and httpOnly. So that branch could never fire, and `email` was accepted from
 //    the request body. The result: anyone on the internet could make this server
@@ -21,7 +21,7 @@ export const dynamic = "force-dynamic";
 //
 // 2. HTML INJECTION. `description`, `email`, `url` and `issue` were interpolated
 //    into the email's HTML with no escaping. An attacker fully controlled the
-//    body of a message sent from our domain — which is to say, they could send
+//    body of a message sent from our domain - which is to say, they could send
 //    our support team a convincing phishing page, and our mail reputation is what
 //    made it convincing. Everything interpolated below goes through escapeHtml().
 //
@@ -38,7 +38,7 @@ export const dynamic = "force-dynamic";
 // A note on durability: a report lives in the support inbox and in the logs. It
 // is not in a table, so it is not queryable from the admin tools and it does not
 // survive a mail provider problem. If the admissions team needs to see open
-// reports during a live event, that needs a table and a queue — this is not one.
+// reports during a live event, that needs a table and a queue - this is not one.
 
 const ISSUE_LABELS: Record<string, string> = {
   back_button: "Pressed the browser back button",
@@ -117,14 +117,15 @@ export async function POST(request: Request) {
   const mailerClient = mailer();
   if (!mailerClient) {
     // No mail provider configured. The report is still logged, so this is a
-    // degraded success rather than a lie to the candidate — but say so.
+    // degraded success rather than a lie to the candidate - but say so.
     log.warn("assessment.report_issue.no_mailer", {
       barcodeId: session.barcodeId,
     });
     return NextResponse.json({
       success: true,
       error: null,
-      message: "Recorded. There is no mail provider configured, so this went to the logs only.",
+      message:
+        "Recorded. There is no mail provider configured, so this went to the logs only.",
       data: { emailed: false },
     });
   }
@@ -134,7 +135,7 @@ export async function POST(request: Request) {
       from: process.env.SUPPORT_FROM_EMAIL ?? BRAND.organisation,
       to: [process.env.SUPPORT_TO_EMAIL ?? BRAND.contactEmail],
       replyTo: session.email,
-      subject: `[${BRAND.shortName}] Technical issue — ${label} — ${session.barcodeId}`,
+      subject: `[${BRAND.shortName}] Technical issue - ${label} - ${session.barcodeId}`,
       html: `
         <h2 style="color:#141210;margin:0 0 4px;font-size:18px;">Technical issue reported</h2>
         <p style="color:#78716C;margin:0 0 20px;font-size:13px;">
@@ -168,7 +169,7 @@ export async function POST(request: Request) {
         </table>
         <p style="color:#78716C;font-size:12px;margin-top:20px;">
           Reply goes straight to the candidate. Reporting an issue does not flag
-          the account — an admissions reviewer decides that.
+          the account - an admissions reviewer decides that.
         </p>
       `,
     });
@@ -184,7 +185,8 @@ export async function POST(request: Request) {
   return NextResponse.json({
     success: true,
     error: null,
-    message: "Reported. Someone will look at it — reply to the email if you need to add anything.",
+    message:
+      "Reported. Someone will look at it - reply to the email if you need to add anything.",
     data: { emailed: true },
   });
 }

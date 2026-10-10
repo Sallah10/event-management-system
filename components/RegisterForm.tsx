@@ -225,7 +225,7 @@ function RegisterForm({ courses, siteKey }: { courses: Course[]; siteKey: string
           </strong>{" "}
           {done.duplicate
             ? "This email already had a ticket, so here it is again. Nothing was duplicated."
-            : "Keep this ticket ID safe — you need it, together with your email, to sign in on the day."}
+            : "Keep this ticket ID safe - you need it, together with your email, to sign in on the day."}
         </Alert>
 
         <div className="flex flex-col gap-3 rounded-md border border-line-strong bg-paper-sunk p-5 sm:p-6">
@@ -252,7 +252,7 @@ function RegisterForm({ courses, siteKey }: { courses: Course[]; siteKey: string
                   Our email provider is unavailable, so this ticket was not emailed.
                 </strong>{" "}
                 Screenshot it or copy it now, and bring it on the day. We&apos;ll also send it separately
-                — if you lose it, email{" "}
+                - if you lose it, email{" "}
                 <a className="underline underline-offset-2 hover:text-ink" href={`mailto:${BRAND.contactEmail}`}>
                   {BRAND.contactEmail}
                 </a>{" "}
@@ -347,7 +347,7 @@ function RegisterForm({ courses, siteKey }: { courses: Course[]; siteKey: string
         )}
       </Field>
 
-      <Field label="Current situation" hint="Optional.">
+      <Field label="Current status" hint="Optional.">
         {({ id, describedBy }) => (
           <Select id={id} aria-describedby={describedBy} name="career" defaultValue="">
             <option value="">Prefer not to say</option>

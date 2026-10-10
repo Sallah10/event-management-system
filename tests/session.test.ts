@@ -17,7 +17,7 @@ import {
 // ─── SESSIONS ─────────────────────────────────────────────────────────────────
 // The original code had four different hardcoded fallback JWT secrets across six
 // files. If the env var was missing, some routes broke and others silently
-// accepted tokens signed with a string published in this repository — fail-open
+// accepted tokens signed with a string published in this repository - fail-open
 // on a security boundary. `lib/env.ts` now throws instead.
 //
 // The tests below are about the boundary that replaced it: that a token is only
@@ -35,13 +35,16 @@ const candidate = {
 
 /** An unsigned JWT, as in `alg: none`. */
 function unsignedToken(payload: Record<string, unknown>): string {
-  const encode = (value: unknown) => Buffer.from(JSON.stringify(value)).toString("base64url");
+  const encode = (value: unknown) =>
+    Buffer.from(JSON.stringify(value)).toString("base64url");
   return `${encode({ alg: "none", typ: "JWT" })}.${encode(payload)}.`;
 }
 
 describe("candidate sessions", () => {
   it("round-trips the fields the exam routes depend on", async () => {
-    const session = await verifyCandidateSession(await signCandidateSession(candidate));
+    const session = await verifyCandidateSession(
+      await signCandidateSession(candidate),
+    );
 
     assert.ok(session);
     assert.equal(session.typ, "candidate");
@@ -86,7 +89,11 @@ describe("candidate sessions", () => {
     // never reaches signature checking as a valid token.
     assert.equal(
       await verifyCandidateSession(
-        unsignedToken({ typ: "candidate", email: "victim@example.com", barcodeId: "TS26-00000000" }),
+        unsignedToken({
+          typ: "candidate",
+          email: "victim@example.com",
+          barcodeId: "TS26-00000000",
+        }),
       ),
       null,
     );
@@ -108,10 +115,17 @@ describe("candidate sessions", () => {
     const token = await signCandidateSession(candidate);
     const [header, , signature] = token.split(".");
     const forged = Buffer.from(
-      JSON.stringify({ ...candidate, typ: "candidate", email: "attacker@example.com" }),
+      JSON.stringify({
+        ...candidate,
+        typ: "candidate",
+        email: "attacker@example.com",
+      }),
     ).toString("base64url");
 
-    assert.equal(await verifyCandidateSession(`${header}.${forged}.${signature}`), null);
+    assert.equal(
+      await verifyCandidateSession(`${header}.${forged}.${signature}`),
+      null,
+    );
   });
 
   it("rejects a candidate token where a staff token is expected", async () => {
@@ -140,7 +154,14 @@ describe("candidate sessions", () => {
   });
 
   it("returns null for absent, empty and malformed tokens", async () => {
-    for (const value of [undefined, null, "", "not-a-token", "a.b", "a.b.c.d"]) {
+    for (const value of [
+      undefined,
+      null,
+      "",
+      "not-a-token",
+      "a.b",
+      "a.b.c.d",
+    ]) {
       assert.equal(await verifyCandidateSession(value), null);
     }
   });
@@ -149,7 +170,9 @@ describe("candidate sessions", () => {
 describe("staff sessions", () => {
   it("round-trips a role and a name", async () => {
     for (const role of ["staff", "admissions"] as const) {
-      const session = await verifyStaffSession(await signStaffSession(role, "Ada"));
+      const session = await verifyStaffSession(
+        await signStaffSession(role, "Ada"),
+      );
       assert.ok(session);
       assert.equal(session.role, role);
       assert.equal(session.name, "Ada");
@@ -158,8 +181,12 @@ describe("staff sessions", () => {
 
   it("rejects a role that is not one of ours", async () => {
     // `role: "admin"` must not pass as staff, and must not pass as admissions
-    // either — the two roles see different PII.
-    const forged = await new SignJWT({ typ: "staff", role: "admin", name: "Ada" })
+    // either - the two roles see different PII.
+    const forged = await new SignJWT({
+      typ: "staff",
+      role: "admin",
+      name: "Ada",
+    })
       .setProtectedHeader({ alg: "HS256" })
       .setIssuedAt()
       .setExpirationTime("1h")
@@ -213,7 +240,10 @@ describe("hashDeviceKey", () => {
   });
 
   it("separates different keys", async () => {
-    assert.notEqual(await hashDeviceKey("e".repeat(32)), await hashDeviceKey("f".repeat(32)));
+    assert.notEqual(
+      await hashDeviceKey("e".repeat(32)),
+      await hashDeviceKey("f".repeat(32)),
+    );
   });
 });
 

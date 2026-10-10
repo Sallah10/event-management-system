@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 // Fired when the candidate navigates backwards inside the exam. Counted per
 // candidate so the page can escalate the messaging, TTL-bounded to the sitting.
 //
-// Recorded as an observation, not a verdict — same reasoning as /api/assessment/flag.
+// Recorded as an observation, not a verdict - same reasoning as /api/assessment/flag.
 // A human in the integrity queue decides what a pattern of these means.
 const MAX_WARNINGS = 2;
 

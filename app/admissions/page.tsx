@@ -43,13 +43,13 @@ import CandidatePanel, { type QueueRow } from "@/components/admissions/Candidate
 // scholarship" button was a student pressing Submit.
 //
 // Three tabs, in the order a reviewer works them:
-//   • Grading     — essays in, scores out. Ordered by objective rank, so the pool
+//   • Grading     - essays in, scores out. Ordered by objective rank, so the pool
 //                   is worked from the strongest candidate downwards.
-//   • Integrity   — every candidate a human has flagged or the AI has marked.
+//   • Integrity   - every candidate a human has flagged or the AI has marked.
 //                   Note that the AI's opinion is a SEPARATE field from the human
 //                   flag, and this list shows both, labelled. Conflating them is
 //                   how a model gets to disqualify somebody by itself.
-//   • Awards      — who holds a seat, and the one button that creates one.
+//   • Awards      - who holds a seat, and the one button that creates one.
 //
 // Every status change goes to /api/admissions/decision, which is a transaction
 // plus an audit row, and the seat cap is enforced inside it. The buttons here
@@ -59,7 +59,7 @@ import CandidatePanel, { type QueueRow } from "@/components/admissions/Candidate
 // three queues were `rounded-2xl` buttons with `font-bold` labels and a second
 // line of 11px text, the table was hand-rolled with `tracking-widest` headers,
 // and the empty queue rendered a bare "Nothing in this queue" row. It is now the
-// shared frame — one h1 from `PageHeader`, `Tabs` for the three queues,
+// shared frame - one h1 from `PageHeader`, `Tabs` for the three queues,
 // `Field` for the search (it had a placeholder and an aria-label but no visible
 // label), `Table` for the queue and `Badge` for the three integrity markers.
 
@@ -121,7 +121,7 @@ function AdmissionsQueue() {
 
   // The queue the reviewer is looking at, for the one line of context under the
   // tabs. `Tabs` takes a plain string, so the change is routed back through the
-  // list rather than cast — the same two state updates the old inline handler
+  // list rather than cast - the same two state updates the old inline handler
   // made, and no others.
   const activeTab = TABS.find((item) => item.id === tab)!;
 
@@ -132,7 +132,7 @@ function AdmissionsQueue() {
   }, [query]);
 
   // Build the query for the current tab, then fetch it. Fetching and applying are
-  // separate so the effect below can set state inside a promise callback — which
+  // separate so the effect below can set state inside a promise callback - which
   // is cancellable, and means a response that lands after the reviewer has
   // switched tabs or signed out does not overwrite what they are now looking at.
   const fetchQueue = useCallback(() => {
@@ -215,7 +215,7 @@ function AdmissionsQueue() {
                 <Download aria-hidden />
                 Winners export
                 <span className="sr-only">
-                  {" "}— built on the server and downloaded as a file
+                  {" "}- built on the server and downloaded as a file
                 </span>
               </a>
             </Button>
@@ -258,7 +258,7 @@ function AdmissionsQueue() {
           carrying their own hint line: the underline indicator is quieter, and
           the hint is now one line of context under the row rather than three
           stacked two-line buttons. `aria-selected` in a tablist replaces the
-          `aria-current="page"` these buttons used — they are not links to pages,
+          `aria-current="page"` these buttons used - they are not links to pages,
           they are a filter over the queue on this page, and claiming otherwise
           told a screen reader they navigated somewhere. */}
       <Stack gap="sm">
@@ -322,7 +322,7 @@ function AdmissionsQueue() {
                 heard "Candidate, Objective, Theory" with no idea which queue or
                 what activating a row does. */}
             <caption className="sr-only">
-              {activeTab.label} queue — {activeTab.hint}. Activate a candidate&apos;s
+              {activeTab.label} queue - {activeTab.hint}. Activate a candidate&apos;s
               name to open the review panel.
             </caption>
             <THead>
@@ -375,7 +375,7 @@ function AdmissionsQueue() {
                     </TD>
                     <TD data-numeric className="text-right tabular-nums">
                       <p className="font-medium text-ink">
-                        {row.objectiveScore ?? "—"}
+                        {row.objectiveScore ?? "-"}
                         <span className="text-small font-normal text-ink-faint">%</span>
                       </p>
                       <p className="text-micro text-ink-faint">
@@ -402,7 +402,7 @@ function AdmissionsQueue() {
                       )}
                     </TD>
                     <TD className="text-small text-ink-soft">
-                      {row.course ?? "—"}
+                      {row.course ?? "-"}
                     </TD>
                     <TD>
                       {/* Three separate badges, never merged. A human flag, a

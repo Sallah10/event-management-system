@@ -11,17 +11,19 @@
 // Nothing here reaches a network. `DATABASE_URL` points at a port nothing is
 // listening on: importing a Sequelize model builds the instance but connects
 // lazily, and no test in this suite issues a query. If one ever does, it fails
-// against a closed port, which is the correct outcome — these are unit tests for
+// against a closed port, which is the correct outcome - these are unit tests for
 // pure logic, and a test that quietly needed a real database should be an
 // integration test with its own setup.
 
-process.env.DATABASE_URL ??= "postgres://unused:unused@127.0.0.1:1/unit_tests_never_connect";
+process.env.DATABASE_URL ??=
+  "postgres://unused:unused@127.0.0.1:1/unit_tests_never_connect";
 
 /**
  * Throwaway values for the two secrets `lib/session.ts` requires. Both are
  * obviously fake and both exist only inside this process.
  */
-process.env.JWT_SECRET ??= "test-only-jwt-secret-not-used-anywhere-else-0123456789";
+process.env.JWT_SECRET ??=
+  "test-only-jwt-secret-not-used-anywhere-else-0123456789";
 process.env.DEVICE_PEPPER ??= "test-only-device-pepper";
 
 process.env.WP_TO_APP_SECRET ??= "test-only-wp-secret";

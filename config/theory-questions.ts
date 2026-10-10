@@ -4,7 +4,7 @@
 // WHY THIS IS A SEPARATE FILE
 // The prompts used to live inside components/exam/TheoryClient.tsx as a local
 // const. That is fine until somebody else needs to know what a candidate was
-// actually asked — which is precisely the situation the admissions review panel
+// actually asked - which is precisely the situation the admissions review panel
 // is in. A reviewer looking at "Question 2" needs the text of question 2, and the
 // only copy was inside a `"use client"` component, so the only ways to get it were
 // to paste it a second time into the review UI or to duplicate the component.
@@ -49,21 +49,21 @@ export const THEORY_QUESTIONS: readonly TheoryQuestion[] = [
 ];
 
 /**
-  * Word count, server-side, for the review panel.
-   *
-   * The submission route already enforces a minimum word count, so anything below it
-   * never reaches a grader. This exists so the reviewer can see at a glance which
-   * answers were written to the minimum and which were not — a two-word essay that
-   * passed because it was over the line and a 600-word one do not deserve the same
-   * read, and a panel grading at speed will not spot the difference from a wall of
-   * text alone.
-   *
-   * It delegates to `countWords` rather than counting here, because it used to be a
-   * second implementation: `split(/\s+/).length`, against the route's
-   * `filter(Boolean).length`. The two disagreed on leading whitespace, so a marker
-   * could be shown a count one higher than the gate that produced it. One
-   * definition of a word, imported from the one place that defines it.
-   */
+ * Word count, server-side, for the review panel.
+ *
+ * The submission route already enforces a minimum word count, so anything below it
+ * never reaches a grader. This exists so the reviewer can see at a glance which
+ * answers were written to the minimum and which were not - a two-word essay that
+ * passed because it was over the line and a 600-word one do not deserve the same
+ * read, and a panel grading at speed will not spot the difference from a wall of
+ * text alone.
+ *
+ * It delegates to `countWords` rather than counting here, because it used to be a
+ * second implementation: `split(/\s+/).length`, against the route's
+ * `filter(Boolean).length`. The two disagreed on leading whitespace, so a marker
+ * could be shown a count one higher than the gate that produced it. One
+ * definition of a word, imported from the one place that defines it.
+ */
 export function essayWordCount(text: string | null | undefined): number {
   return countWords(text ?? "");
 }

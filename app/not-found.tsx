@@ -32,7 +32,7 @@ export default function NotFound() {
           </p>
           <p className="measure text-small leading-relaxed text-ink-soft">
             If you were part-way through an assessment, your answers were saved as
-            you typed. Nothing is lost — go back to the front page and pick up
+            you typed. Nothing is lost - go back to the front page and pick up
             from the portal.
           </p>
         </div>

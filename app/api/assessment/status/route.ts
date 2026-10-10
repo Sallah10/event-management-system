@@ -9,7 +9,7 @@ import { QUALIFIED_POOL_SIZE, OBJECTIVE_TTL_MINUTES } from "@/config/rules";
 //
 // The file lived at app/assessment/status/route.ts, which Next serves at
 // /assessment/status. Both the exam and theory pages called
-// fetch("/api/assessment/status") — a 404. The client checked `status === 401`,
+// fetch("/api/assessment/status") - a 404. The client checked `status === 401`,
 // a 404 isn't 401, res.json() then threw on the HTML error body, and the catch
 // block logged "Session check failed" and moved on. Net effect: the entire
 // server-side session gate was dead code and the only thing standing between a

@@ -15,7 +15,7 @@ type Level = "info" | "warn" | "error";
 const LEVEL_ORDER: Record<Level, number> = { info: 0, warn: 1, error: 2 };
 
 // Validated rather than cast. `LOG_LEVEL=verbose` used to produce a level that
-// compares false against every entry, which silences the logger completely — the
+// compares false against every entry, which silences the logger completely - the
 // worst possible failure mode for the thing you'd switch on during an incident.
 const LOG_LEVELS: Level[] = ["info", "warn", "error"];
 const MIN_LEVEL: Level = LOG_LEVELS.includes(process.env.LOG_LEVEL as Level)
@@ -65,16 +65,18 @@ const SECRET_KEYS = [
  * Deep-redact an arbitrary payload. Walks up to 3 levels so a nested object
  * can't smuggle a secret past us.
  *
- * Key matching is by SUBSTRING on a stripped key, not exact match — "apikey",
+ * Key matching is by SUBSTRING on a stripped key, not exact match - "apikey",
  * "x-api-key" and "api_key" all have to hit, and a new field name nobody
  * enumerated is the most likely way a secret escapes.
  */
 export function redact(value: unknown, depth = 0): unknown {
   if (depth > 3) return "[deep]";
   if (value === null || value === undefined) return value;
-  if (typeof value === "string") return value.length > 512 ? `${value.slice(0, 512)}…` : value;
+  if (typeof value === "string")
+    return value.length > 512 ? `${value.slice(0, 512)}…` : value;
   if (typeof value !== "object") return value;
-  if (Array.isArray(value)) return value.slice(0, 20).map((v) => redact(v, depth + 1));
+  if (Array.isArray(value))
+    return value.slice(0, 20).map((v) => redact(v, depth + 1));
 
   const out: Record<string, unknown> = {};
   for (const [key, val] of Object.entries(value as Record<string, unknown>)) {
@@ -107,7 +109,7 @@ function emit(level: Level, event: string, data?: Record<string, unknown>) {
     ...(data ? (redact(data) as Record<string, unknown>) : {}),
   };
 
-  // Single line, JSON — survives log aggregators that mangle multi-line output
+  // Single line, JSON - survives log aggregators that mangle multi-line output
   const line = JSON.stringify(entry);
 
   if (level === "error") console.error(line);
@@ -116,22 +118,28 @@ function emit(level: Level, event: string, data?: Record<string, unknown>) {
 }
 
 export const log = {
-  info: (event: string, data?: Record<string, unknown>) => emit("info", event, data),
-  warn: (event: string, data?: Record<string, unknown>) => emit("warn", event, data),
-  error: (event: string, data?: Record<string, unknown>) => emit("error", event, data),
+  info: (event: string, data?: Record<string, unknown>) =>
+    emit("info", event, data),
+  warn: (event: string, data?: Record<string, unknown>) =>
+    emit("warn", event, data),
+  error: (event: string, data?: Record<string, unknown>) =>
+    emit("error", event, data),
 };
 
-/** Domain helpers — these are the ones that replaced the old raw console.logs. */
+/** Domain helpers - these are the ones that replaced the old raw console.logs. */
 export const logMetrics = {
   /** Check-in attempt. Never logs the raw scan, only the matched row. */
-  checkin: (barcodeId: string, outcome: string, extra?: Record<string, unknown>) =>
-    log.info("checkin", { barcodeId, outcome, ...extra }),
+  checkin: (
+    barcodeId: string,
+    outcome: string,
+    extra?: Record<string, unknown>,
+  ) => log.info("checkin", { barcodeId, outcome, ...extra }),
 
   /** Integrity violation. `reason` is client-supplied so redact() JSON-encodes it. */
   flag: (barcodeId: string, reason: string, count: number) =>
     log.warn("integrity.flag", { barcodeId, reason, count }),
 
-  /** Venue capacity pressure — the thing that actually pages someone on event day. */
+  /** Venue capacity pressure - the thing that actually pages someone on event day. */
   capacity: (current: number, limit: number) =>
     current >= limit - 50
       ? log.warn("checkin.capacity", { current, limit })

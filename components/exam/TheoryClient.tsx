@@ -32,14 +32,14 @@ import type { CourseAvailability } from "@/lib/course-availability";
 // more bespoke ones (a back-button counter that logged the candidate out on the
 // second press, and four timed toasts about "ACTIVE MONITORING" at 10s, 20s and
 // 2m). Duplicated security code is duplicated security theatre, and the theory
-// paper is where a candidate is asked to write 150 words of considered prose —
+// paper is where a candidate is asked to write 150 words of considered prose -
 // the worst possible moment to be interrupted by five competing modals.
 //
 // What this version does instead:
 //   • One visibilitychange listener, in components/exam/IntegrityObserver.tsx.
 //   • A server-issued deadline (lib/exam-sitting.ts).
 //   • The course picker arrives as a prop, rendered on the server with live seat
-//     counts — no spinner, no empty list on a bad connection.
+//     counts - no spinner, no empty list on a bad connection.
 //   • A draft in localStorage, same as the objective paper, for the same reason.
 //   • Word counts shown as you type, because the server rejects under-length
 //     answers and a candidate should never discover that at submit time.
@@ -102,7 +102,7 @@ export default function TheoryClient({
   // Read with useSyncExternalStore rather than an effect. See lib/client/storage
   // for why: a lazy useState initialiser runs on the server and mismatches the
   // hydrated markup, and an effect renders the candidate's own answers one frame
-  // late — on a paper with a running clock, that reads as "my work has vanished".
+  // late - on a paper with a running clock, that reads as "my work has vanished".
   const storedDraft = useStoredJson<TheoryAnswers>(DRAFT_KEY);
 
   // Adopt the stored draft during render, once per candidate.
@@ -110,7 +110,7 @@ export default function TheoryClient({
   // During SSR and the hydration render, getServerSnapshot answers null, so this
   // does nothing and the markup matches what the server sent. React re-renders
   // with the real value immediately after hydration and the setState below is
-  // applied before the first effect runs — so the save effect never sees an empty
+  // applied before the first effect runs - so the save effect never sees an empty
   // paper. That is the whole reason it is here rather than in an effect.
   const adoptedKey = useRef<string | null>(null);
   if (adoptedKey.current !== DRAFT_KEY) {
@@ -124,13 +124,13 @@ export default function TheoryClient({
 
   useEffect(() => {
     // Nothing typed yet. Writing an all-empty paper here would destroy the stored
-    // draft during the hydration commit, before the restore above is applied —
+    // draft during the hydration commit, before the restore above is applied -
     // which is exactly what the previous version of this file did.
     if (!answers.q1 && !answers.q2 && !answers.q3) return;
     try {
       window.localStorage.setItem(DRAFT_KEY, JSON.stringify(answers));
     } catch {
-      // Storage unavailable — answers still submit from React state.
+      // Storage unavailable - answers still submit from React state.
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [answers, barcodeId]);
@@ -167,7 +167,7 @@ export default function TheoryClient({
 
     if (result.code === "COURSE_FULL") {
       setError(
-        "That track filled up while you were writing. Pick another track and submit again — your answers are still here.",
+        "That track filled up while you were writing. Pick another track and submit again - your answers are still here.",
       );
       setSubmitting(false);
       return;
@@ -368,7 +368,7 @@ export default function TheoryClient({
         </Button>
       </main>
 
-      {/* Radix rather than a hand-rolled overlay — see the note in ExamClient
+      {/* Radix rather than a hand-rolled overlay - see the note in ExamClient
           about the missing focus trap. */}
       <Dialog open={confirming} onOpenChange={setConfirming}>
         <DialogContent showCloseButton={false}>

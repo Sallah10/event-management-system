@@ -11,7 +11,7 @@ import { QUALIFIED_POOL_SIZE } from "@/config/rules";
 // …which is a per-candidate threshold, not a pool. Three thousand candidates
 // scoring 85% would all have been let through. The route also returned
 // `submissionNumber = await Registrant.count(...)` and labelled it
-// `submissionRank` — a COUNT is not a rank, and the admin dashboard showed a
+// `submissionRank` - a COUNT is not a rank, and the admin dashboard showed a
 // "QUALIFIED (910)" tile for a rule that didn't exist.
 //
 // This module is that rule, properly:

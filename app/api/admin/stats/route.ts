@@ -22,7 +22,7 @@ export const dynamic = "force-dynamic";
 //     "x-api-key": process.env.NEXT_PUBLIC_INTERNAL_API_KEY
 // and the route compared that header against process.env.INTERNAL_API_KEY.
 // Any variable prefixed NEXT_PUBLIC_ is inlined into the client bundle at build
-// time — that is what the prefix MEANS. So the shared secret protecting a
+// time - that is what the prefix MEANS. So the shared secret protecting a
 // response containing 100 rows of name + email + barcodeId was published in the
 // JavaScript, and .env carried two copies of it (INTERNAL_API_KEY and
 // NEXT_PUBLIC_INTERNAL_API_KEY) free to drift apart. It also returned
@@ -42,24 +42,31 @@ export async function GET() {
 
     const slugs = COURSES.map((course) => course.slug);
 
-    const [total, checkedIn, finishedObjective, flagged, awaitingGrading, courseRows, pool] =
-      await Promise.all([
-        Registrant.count(),
-        Registrant.count({ where: { checkedIn: true } }),
-        Registrant.count({ where: { objectiveFinishedAt: { [Op.ne]: null } } }),
-        Registrant.count({ where: { isFlagged: true } }),
-        Registrant.count({ where: { status: "completed", theoryScore: 0 } }),
-        Registrant.findAll({
-          attributes: ["selectedCourseSlug", [fn("COUNT", col("id")), "taken"]],
-          where: {
-            selectedCourseSlug: { [Op.in]: slugs },
-            status: { [Op.in]: ["awarded", "shortlisted", "completed"] },
-          },
-          group: ["selectedCourseSlug"],
-          raw: true,
-        }),
-        getPoolPressure(),
-      ]);
+    const [
+      total,
+      checkedIn,
+      finishedObjective,
+      flagged,
+      awaitingGrading,
+      courseRows,
+      pool,
+    ] = await Promise.all([
+      Registrant.count(),
+      Registrant.count({ where: { checkedIn: true } }),
+      Registrant.count({ where: { objectiveFinishedAt: { [Op.ne]: null } } }),
+      Registrant.count({ where: { isFlagged: true } }),
+      Registrant.count({ where: { status: "completed", theoryScore: 0 } }),
+      Registrant.findAll({
+        attributes: ["selectedCourseSlug", [fn("COUNT", col("id")), "taken"]],
+        where: {
+          selectedCourseSlug: { [Op.in]: slugs },
+          status: { [Op.in]: ["awarded", "shortlisted", "completed"] },
+        },
+        group: ["selectedCourseSlug"],
+        raw: true,
+      }),
+      getPoolPressure(),
+    ]);
 
     // One aggregate query for the whole pipeline instead of a count per status
     const pipelineRows = (await Registrant.findAll({
@@ -67,21 +74,30 @@ export async function GET() {
       group: ["status"],
       raw: true,
     })) as unknown as { status: string; count: number }[];
-    const byStatus = new Map(pipelineRows.map((r) => [String(r.status), Number(r.count)]));
+    const byStatus = new Map(
+      pipelineRows.map((r) => [String(r.status), Number(r.count)]),
+    );
 
     const recent = await Registrant.findAll({
       where: { checkedIn: true },
       order: [["updatedAt", "DESC"]],
       limit: 25,
-      attributes: ["id", "name", "email", "selectedCourseSlug", "status", "updatedAt", "barcodeId"],
+      attributes: [
+        "id",
+        "name",
+        "email",
+        "selectedCourseSlug",
+        "status",
+        "updatedAt",
+        "barcodeId",
+      ],
       raw: true,
     });
 
     const takenBySlug = new Map(
-      (courseRows as unknown as { selectedCourseSlug: string; taken: number }[]).map((r) => [
-        String(r.selectedCourseSlug),
-        Number(r.taken ?? 0),
-      ]),
+      (
+        courseRows as unknown as { selectedCourseSlug: string; taken: number }[]
+      ).map((r) => [String(r.selectedCourseSlug), Number(r.taken ?? 0)]),
     );
 
     return NextResponse.json({
@@ -91,7 +107,8 @@ export async function GET() {
         summary: {
           total,
           checkedIn,
-          attendanceRate: total === 0 ? 0 : Math.round((checkedIn / total) * 100),
+          attendanceRate:
+            total === 0 ? 0 : Math.round((checkedIn / total) * 100),
           venueCapacity: VENUE_CAPACITY,
           venueRemaining: Math.max(0, VENUE_CAPACITY - checkedIn),
         },

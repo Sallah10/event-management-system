@@ -38,13 +38,13 @@ import { Page, PageHeader, Stack } from "@/components/ui/shell";
 //        headers: { "x-api-key": process.env.NEXT_PUBLIC_INTERNAL_API_KEY }
 //        headers: { "x-api-key": process.env.NEXT_PUBLIC_ADMIN_SECRET! }
 //    `NEXT_PUBLIC_*` is inlined into the client bundle at build time. Both values
-//    were therefore published to anyone who loaded the page and read the JS —
+//    were therefore published to anyone who loaded the page and read the JS -
 //    and the routes behind them also accepted them, so this was not a cosmetic
 //    header. Authentication here is the staff session cookie, which is httpOnly
 //    and signed. Nothing secret goes in a browser bundle any more.
 //
 // 2. THE AI AUDIT BUTTON WAS ON THE WRONG SCREEN, UNDER THE WRONG ROLE.
-//    It POSTed to /api/admin/ai-audit, which requires `admissions` — so for the
+//    It POSTed to /api/admin/ai-audit, which requires `admissions` - so for the
 //    `staff` role that signed in here it could only ever return 403. It also
 //    wrote the OpenAI batch id to localStorage, which on a shared event laptop
 //    means the next person at that desk inherits a half-finished batch job and
@@ -60,7 +60,7 @@ import { Page, PageHeader, Stack } from "@/components/ui/shell";
 // sticky white header with four rounded-full controls, five rounded-3xl panels,
 // a hand-rolled `Metric` card with a `font-black` 30px number, uppercase
 // `tracking-[0.2em]` section kickers, a hand-rolled table, and
-// `aria-label="Loading"` on a bare `<svg>` — which is not a labellable role, so
+// `aria-label="Loading"` on a bare `<svg>` - which is not a labellable role, so
 // the Suspense fallback announced nothing at all. It is now `Page` +
 // `PageHeader` for the frame, `Stat` for the figures, `Table` for the queue,
 // `Alert` for the two banners and `Spinner` for every loading state, and the
@@ -105,7 +105,7 @@ interface Stats {
 export default function StaffDashboard() {
   // The `denied` param is only ever a redirect reason in the query string, and
   // useSearchParams during prerender is a build error without a Suspense boundary
-  // — so the real component is split out below and this wrapper provides one.
+  // - so the real component is split out below and this wrapper provides one.
   // The previous version read window.location in an effect and held the result in
   // state, which was a render pass whose only job was to copy a value that was
   // already in the URL.
@@ -274,7 +274,7 @@ function StaffDashboardInner() {
         {/* ─── HEADLINE ──────────────────────────────────────────────────────
             Four figures on a hairline rather than four shadowed cards. The
             totals update every 30 seconds, so `Stat` sets them in the display
-            serif with tabular figures — at 30px, proportional digits make the
+            serif with tabular figures - at 30px, proportional digits make the
             whole row twitch every time a single person walks in. */}
         <div className="grid grid-cols-2 gap-x-6 gap-y-7 border-y border-line py-7 lg:grid-cols-4">
           <Stat label="Registered" value={stats?.summary.total ?? 0} />
@@ -284,7 +284,7 @@ function StaffDashboardInner() {
             value={
               stats
                 ? `${stats.summary.checkedIn.toLocaleString()} / ${stats.summary.venueCapacity.toLocaleString()}`
-                : "—"
+                : "-"
             }
             hint={
               stats ? `${stats.summary.attendanceRate}% of registrations` : undefined

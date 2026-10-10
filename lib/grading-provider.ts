@@ -20,7 +20,7 @@ const GEMINI_ENDPOINT = "https://generativelanguage.googleapis.com/v1beta";
  * OpenAI's Batch API is what this replaced: upload a JSONL file, poll a job for
  * up to 24 hours, download an output file. Gemini has no equivalent shape, so the
  * batch machinery is gone and grading is a bounded, concurrent, in-request loop.
- * The trade is deliberate — a batch job is cheaper per token but needs somewhere
+ * The trade is deliberate - a batch job is cheaper per token but needs somewhere
  * to live between requests, and a serverless function has nowhere to keep one.
  * Instead a request grades a capped number of candidates concurrently and is
  * resumable: whatever it does not reach is still pending on the next run.
@@ -49,7 +49,14 @@ const RESPONSE_SCHEMA = {
     reason: { type: "STRING" },
     confidence: { type: "STRING", enum: ["high", "medium", "low"] },
   },
-  required: ["authenticity", "passion", "clarity", "aiSuspected", "reason", "confidence"],
+  required: [
+    "authenticity",
+    "passion",
+    "clarity",
+    "aiSuspected",
+    "reason",
+    "confidence",
+  ],
 } as const;
 
 const TRANSIENT = new Set([408, 429, 500, 502, 503, 504]);
@@ -59,7 +66,7 @@ const BACKOFF_MS = [600, 1800];
 async function callGemini(
   key: string,
   systemInstruction: string,
-  job: GradingJob
+  job: GradingJob,
 ): Promise<Response> {
   const request = () =>
     fetch(
@@ -83,7 +90,7 @@ async function callGemini(
             thinkingConfig: { thinkingBudget: 0 },
           },
         }),
-      }
+      },
     );
 
   let response = await request();
@@ -92,8 +99,14 @@ async function callGemini(
   // into a brief wait rather than a lost candidate, and whatever is still failing
   // after the last attempt is recorded against that candidate and picked up by
   // the next run.
-  for (let attempt = 0; attempt < ATTEMPTS - 1 && TRANSIENT.has(response.status); attempt++) {
-    await new Promise((resolve) => setTimeout(resolve, BACKOFF_MS[attempt] ?? 2400));
+  for (
+    let attempt = 0;
+    attempt < ATTEMPTS - 1 && TRANSIENT.has(response.status);
+    attempt++
+  ) {
+    await new Promise((resolve) =>
+      setTimeout(resolve, BACKOFF_MS[attempt] ?? 2400),
+    );
     const retried = await request();
     if (!TRANSIENT.has(retried.status) || retried.ok) return retried;
     response = retried;
@@ -103,10 +116,11 @@ async function callGemini(
 
 export async function gradeWithGemini(
   systemInstruction: string,
-  job: GradingJob
+  job: GradingJob,
 ): Promise<GradingOutcome> {
   const key = process.env.GEMINI_API_KEY;
-  if (!key) return { id: job.id, ok: false, content: "", failure: "not_configured" };
+  if (!key)
+    return { id: job.id, ok: false, content: "", failure: "not_configured" };
 
   try {
     const response = await callGemini(key, systemInstruction, job);
@@ -138,7 +152,12 @@ export async function gradeWithGemini(
 
     return { id: job.id, ok: true, content: text };
   } catch (error) {
-    return { id: job.id, ok: false, content: "", failure: (error as Error)?.message ?? "unknown" };
+    return {
+      id: job.id,
+      ok: false,
+      content: "",
+      failure: (error as Error)?.message ?? "unknown",
+    };
   }
 }
 
@@ -150,7 +169,7 @@ export async function gradeWithGemini(
 export async function gradeAll(
   systemInstruction: string,
   jobs: GradingJob[],
-  concurrency = Number(process.env.GRADING_CONCURRENCY ?? 6)
+  concurrency = Number(process.env.GRADING_CONCURRENCY ?? 6),
 ): Promise<GradingOutcome[]> {
   const limit = Math.max(1, Math.min(concurrency, 12));
   const results: GradingOutcome[] = [];
@@ -166,6 +185,8 @@ export async function gradeAll(
     }
   }
 
-  await Promise.all(Array.from({ length: Math.min(limit, jobs.length) }, () => worker()));
+  await Promise.all(
+    Array.from({ length: Math.min(limit, jobs.length) }, () => worker()),
+  );
   return results;
 }

@@ -31,7 +31,12 @@ const ACTIONS: DecisionAction[] = [
 ];
 
 /** Statuses a correction may put somebody into. Mirrors lib/admissions.ts. */
-const RELEASABLE = ["waitlisted", "eliminated", "attended", "completed"] as const;
+const RELEASABLE = [
+  "waitlisted",
+  "eliminated",
+  "attended",
+  "completed",
+] as const;
 
 export async function POST(request: Request) {
   const { session, error } = await requireStaff("admissions");
@@ -59,21 +64,29 @@ export async function POST(request: Request) {
 
   if (!registrantId || !ACTIONS.includes(action)) {
     return NextResponse.json(
-      { success: false, error: "BAD_REQUEST", message: "Unknown candidate or action." },
+      {
+        success: false,
+        error: "BAD_REQUEST",
+        message: "Unknown candidate or action.",
+      },
       { status: 400 },
     );
   }
 
-  // A decision with no note is allowed — most of them are obvious — but a flag or
+  // A decision with no note is allowed - most of them are obvious - but a flag or
   // a release without one is not. Those are the two an appeal would be about, and
   // "we don't know why" is not an answer anybody can act on.
   const note = cleanText(body.note, 2000);
-  if ((action === "flag" || action === "unflag" || action === "release") && note.length < 5) {
+  if (
+    (action === "flag" || action === "unflag" || action === "release") &&
+    note.length < 5
+  ) {
     return NextResponse.json(
       {
         success: false,
         error: "NOTE_REQUIRED",
-        message: "Say why, in a few words. This is the record an appeal will be judged against.",
+        message:
+          "Say why, in a few words. This is the record an appeal will be judged against.",
       },
       { status: 400 },
     );
@@ -85,7 +98,11 @@ export async function POST(request: Request) {
       : undefined;
   if (status && !(RELEASABLE as readonly string[]).includes(status)) {
     return NextResponse.json(
-      { success: false, error: "BAD_REQUEST", message: "Unknown target status." },
+      {
+        success: false,
+        error: "BAD_REQUEST",
+        message: "Unknown target status.",
+      },
       { status: 400 },
     );
   }

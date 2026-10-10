@@ -3,13 +3,18 @@ import QRCode from "qrcode";
 import { BRAND, PALETTE } from "@/config/branding";
 import { escapeHtml } from "@/lib/validate";
 import { log } from "@/lib/logger";
-import { TOTAL_SLOTS, QUALIFIED_POOL_SIZE, VENUE_CAPACITY, LIMIT_PER_COURSE } from "@/config/rules";
+import {
+  TOTAL_SLOTS,
+  QUALIFIED_POOL_SIZE,
+  VENUE_CAPACITY,
+  LIMIT_PER_COURSE,
+} from "@/config/rules";
 import { COURSES } from "@/config/course-matrix";
 
 export interface TicketRecipient {
   name: string;
   email: string;
-  /** Must be the canonical ticket. There is no fallback — see FIX 2. */
+  /** Must be the canonical ticket. There is no fallback - see FIX 2. */
   barcodeId: string;
 }
 
@@ -44,7 +49,9 @@ async function sendViaBrevo(m: RenderedMail) {
   const key = process.env.BREVO_API_KEY;
   if (!key) throw new Error("BREVO_API_KEY is not set");
   const fromEmail =
-    process.env.BREVO_FROM_EMAIL ?? process.env.EVENT_CONTACT_EMAIL ?? BRAND.contactEmail;
+    process.env.BREVO_FROM_EMAIL ??
+    process.env.EVENT_CONTACT_EMAIL ??
+    BRAND.contactEmail;
   const fromName = process.env.BREVO_FROM_NAME ?? BRAND.name;
   const qrBase64 = m.qr.toString("base64");
 
@@ -70,7 +77,9 @@ async function sendViaBrevo(m: RenderedMail) {
 
   if (!response.ok) {
     const detail = await response.text().catch(() => "");
-    throw new Error(`Brevo rejected the message (${response.status}): ${detail.slice(0, 300)}`);
+    throw new Error(
+      `Brevo rejected the message (${response.status}): ${detail.slice(0, 300)}`,
+    );
   }
   return { id: response.headers.get("x-message-id") ?? undefined };
 }
@@ -121,7 +130,7 @@ async function sendViaResend(m: RenderedMail) {
 //    100,000 values from a PRNG that is not designed to be unguessable, on a
 //    code that gates a physical venue. `randomBytes(4)` gives 2^32 and is
 //    designed for this. The real code is minted in the register route, which
-//    already does it correctly — so this fallback no longer needs to exist at
+//    already does it correctly - so this fallback no longer needs to exist at
 //    all, and a function that invents its own identifiers is a bug waiting.
 //
 // Also: `registrant: any` (the values are interpolated straight into an HTML
@@ -149,7 +158,7 @@ export async function sendEntranceTicket(registrant: TicketRecipient) {
     errorCorrectionLevel: "M",
   });
 
-  const subject = `You're in — your ${BRAND.shortName} ticket`;
+  const subject = `You're in - your ${BRAND.shortName} ticket`;
 
   const rendered: RenderedMail = {
     subject,
@@ -168,9 +177,17 @@ export async function sendEntranceTicket(registrant: TicketRecipient) {
   };
 
   const provider = resolveProvider();
-  const result = provider === "brevo" ? await sendViaBrevo(rendered) : await sendViaResend(rendered);
+  const result =
+    provider === "brevo"
+      ? await sendViaBrevo(rendered)
+      : await sendViaResend(rendered);
 
-  log.info("email.ticket_sent", { provider, subject, to: registrant.email, id: result?.id });
+  log.info("email.ticket_sent", {
+    provider,
+    subject,
+    to: registrant.email,
+    id: result?.id,
+  });
   return result;
 }
 
@@ -190,7 +207,9 @@ interface TicketTemplate {
 }
 
 function renderTicketHtml(t: TicketTemplate): string {
-  const when = BRAND.date ? `<strong>${escapeHtml(BRAND.date)}</strong>` : "the event day";
+  const when = BRAND.date
+    ? `<strong>${escapeHtml(BRAND.date)}</strong>`
+    : "the event day";
   const where = BRAND.venue
     ? `${escapeHtml(BRAND.venue)}${BRAND.address ? `, ${escapeHtml(BRAND.address)}` : ""}`
     : "the venue";

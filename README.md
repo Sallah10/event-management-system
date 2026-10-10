@@ -2,7 +2,7 @@
 
 An assessment portal for a high-traffic scholarship round: registration,
 venue check-in, a timed objective paper, a ranked cut into a theory paper, human
-essay grading, and seat allocation — plus the staff and admissions tools to run
+essay grading, and seat allocation - plus the staff and admissions tools to run
 it.
 
 Built for an event of a few thousand applicants on serverless infrastructure.
@@ -43,14 +43,14 @@ Every event-specific value is configuration, so running a different round is a
 This is a codebase where the interesting decisions are the ones that were got
 wrong first. Each of these is commented at the site of the fix.
 
-| Area | What it does |
-| --- | --- |
-| `lib/tickets.ts` | Ticket matching. The check-in endpoint used to interpolate scanned text into `ILIKE` patterns, so a scan of `TS26-%%%` checked in the first registrant in the table. It is a regex and an exact match now. |
-| `lib/exam-sitting.ts` | The clocks. Both papers opened with a hardcoded `useState(1800)`, so a refresh, a crash or a second device handed back a full sitting — and the server accepted a paper at any hour of any day. Deadlines come from database columns now. |
-| `lib/answer-key.ts` | Scoring. The answer key shipped in the browser bundle inside `questions.json`, so the correct answer to all 60 questions was readable in DevTools. The key is behind `import "server-only"` now. |
-| `lib/session.ts` | Sessions. Four different hardcoded fallback JWT secrets meant a missing env var left some routes signing tokens with a published string. It fails closed now, and pins the algorithm and the token type. |
-| `lib/admissions.ts` | Every status change, transactional with its audit row. The only place a seat is created. |
-| `proxy.ts` | Route gating for candidate, staff and admissions sessions. |
+| Area                  | What it does                                                                                                                                                                                                                              |
+| --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `lib/tickets.ts`      | Ticket matching. The check-in endpoint used to interpolate scanned text into `ILIKE` patterns, so a scan of `TS26-%%%` checked in the first registrant in the table. It is a regex and an exact match now.                                |
+| `lib/exam-sitting.ts` | The clocks. Both papers opened with a hardcoded `useState(1800)`, so a refresh, a crash or a second device handed back a full sitting - and the server accepted a paper at any hour of any day. Deadlines come from database columns now. |
+| `lib/answer-key.ts`   | Scoring. The answer key shipped in the browser bundle inside `questions.json`, so the correct answer to all 60 questions was readable in DevTools. The key is behind `import "server-only"` now.                                          |
+| `lib/session.ts`      | Sessions. Four different hardcoded fallback JWT secrets meant a missing env var left some routes signing tokens with a published string. It fails closed now, and pins the algorithm and the token type.                                  |
+| `lib/admissions.ts`   | Every status change, transactional with its audit row. The only place a seat is created.                                                                                                                                                  |
+| `proxy.ts`            | Route gating for candidate, staff and admissions sessions.                                                                                                                                                                                |
 
 ---
 
@@ -73,7 +73,7 @@ Stated here rather than discovered in production:
 - **The CSP allows `'unsafe-inline'` for scripts.** Next.js inlines its
   bootstrap; a nonce-based policy requires per-request headers. See
   `docs/ENV_SETUP.md`.
-- **No end-to-end tests.** The unit suite covers pure logic — ticket matching,
+- **No end-to-end tests.** The unit suite covers pure logic - ticket matching,
   validation, scoring, clocks, sessions, the rules of the round. Nothing has run
   against a real database in this repository, because there are no credentials
   for one. The migrations have not been executed.
@@ -105,18 +105,18 @@ npm run db:seed            # optional: synthetic candidates covering every state
 npm run dev
 ```
 
-| Command | What it does |
-| --- | --- |
-| `npm run dev` | Development server |
-| `npm run build` | Production build |
-| `npm run typecheck` | `tsc --noEmit` |
-| `npm run lint` | ESLint |
-| `npm test` | Unit tests. No database, no network |
-| `npm run db:migrate` | Apply migrations. Safe to re-run |
-| `npm run db:seed` | Insert synthetic candidates spanning the whole pipeline. Destructive; `--force` to overwrite |
-| `npm run tickets:backfill` | Issue tickets for registrants who predate the system. Dry run unless `--execute` |
-| `npm run fix:mojibake` | Report text encoding damage without changing anything |
-| `node scripts/fix-mojibake.mjs` | Repair it |
+| Command                         | What it does                                                                                 |
+| ------------------------------- | -------------------------------------------------------------------------------------------- |
+| `npm run dev`                   | Development server                                                                           |
+| `npm run build`                 | Production build                                                                             |
+| `npm run typecheck`             | `tsc --noEmit`                                                                               |
+| `npm run lint`                  | ESLint                                                                                       |
+| `npm test`                      | Unit tests. No database, no network                                                          |
+| `npm run db:migrate`            | Apply migrations. Safe to re-run                                                             |
+| `npm run db:seed`               | Insert synthetic candidates spanning the whole pipeline. Destructive; `--force` to overwrite |
+| `npm run tickets:backfill`      | Issue tickets for registrants who predate the system. Dry run unless `--execute`             |
+| `npm run fix:mojibake`          | Report text encoding damage without changing anything                                        |
+| `node scripts/fix-mojibake.mjs` | Repair it                                                                                    |
 
 ---
 
@@ -124,16 +124,16 @@ npm run dev
 
 Three kinds, and the difference matters when you are setting up a new round.
 
-**Environment** — the numbers and the identity. Seats, pool size, venue capacity,
+**Environment** - the numbers and the identity. Seats, pool size, venue capacity,
 section lengths, pass mark, event name, contact address, palette. See
 `.env.example`.
 
-**Content** — the questions, the answers, the essays, the courses. Deliberately
+**Content** - the questions, the answers, the essays, the courses. Deliberately
 per-event, like the course list, and not genericised on purpose: a question that
 said "this event" instead of naming it would be a worse question. See
 [config/README.md](config/README.md) for how the three coupled files move together.
 
-**Code** — the pipeline. Statuses, transitions, and who may make them.
+**Code** - the pipeline. Statuses, transitions, and who may make them.
 
 Two variables need setting in two places. The candidate's rules page has to state
 the pass mark the server enforces, and a client bundle cannot read a server
@@ -155,13 +155,13 @@ A status is a promise about what happens next, and `lib/admissions.ts` is the
 only place one is made. Promotions have to come from a legal state; corrections
 (`release`, `allocate`) may land anywhere a person can defend in the audit log.
 
-| Rule | Where |
-| --- | --- |
-| Only checked-in candidates may sit the paper | `/assessment/login` |
-| Venue capacity is a hard stop | check-in |
-| The pool is ranked, not a per-person threshold | `submit` |
-| Seats are capped per course | `lib/admissions.ts` |
-| Only a person can flag or unflag | decision endpoint |
+| Rule                                                | Where                 |
+| --------------------------------------------------- | --------------------- |
+| Only checked-in candidates may sit the paper        | `/assessment/login`   |
+| Venue capacity is a hard stop                       | check-in              |
+| The pool is ranked, not a per-person threshold      | `submit`              |
+| Seats are capped per course                         | `lib/admissions.ts`   |
+| Only a person can flag or unflag                    | decision endpoint     |
 | Every decision is written with its actor and reason | `admission_decisions` |
 
 ---

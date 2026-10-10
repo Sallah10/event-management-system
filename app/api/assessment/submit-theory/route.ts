@@ -7,7 +7,12 @@ import { courseLockKey } from "@/lib/admissions";
 import { isLate } from "@/lib/exam-sitting";
 import { log } from "@/lib/logger";
 import { countWords } from "@/lib/validate";
-import { isValidCourseSlug, LIMIT_PER_COURSE, SEAT_HOLDING_STATUSES, THEORY_MIN_WORDS } from "@/config/rules";
+import {
+  isValidCourseSlug,
+  LIMIT_PER_COURSE,
+  SEAT_HOLDING_STATUSES,
+  THEORY_MIN_WORDS,
+} from "@/config/rules";
 import { COURSES } from "@/config/course-matrix";
 
 export const dynamic = "force-dynamic";
@@ -16,18 +21,18 @@ export const dynamic = "force-dynamic";
 // This route had three separate ways to hand out a scholarship that the rules
 // said shouldn't exist. All three are fixed here.
 //
-// BUG 1 — THE COURSE CAP COULD BE SKIPPED ENTIRELY.
+// BUG 1 - THE COURSE CAP COULD BE SKIPPED ENTIRELY.
 //   `selectedSlug` came straight from the request body and was never checked
 //   against COURSES. The capacity check was
 //   `count(where: { selectedCourseSlug: selectedSlug })`. Send
 //   `selectedSlug: "x-" + crypto.randomUUID()` and the count is always 0, so the
 //   42-per-course limit never applies, you get `status: "awarded"`, and you've
 //   also written an unbounded stream of junk values into
-//   registrants.selected_course_slug — which is the exact column the
+//   registrants.selected_course_slug - which is the exact column the
 //   course-slots endpoint GROUP BYs. One unauthenticated-shaped request,
 //   unlimited seats.
 //
-// BUG 2 — THE CAP COULD BE OVERSOLD BY CONCURRENCY.
+// BUG 2 - THE CAP COULD BE OVERSOLD BY CONCURRENCY.
 //   Even with a valid slug, the check was a plain `COUNT(*)` at READ COMMITTED
 //   (lib/db.ts set no isolation level). Fifty simultaneous submissions all read
 //   "41 taken", all passed, all committed. The `lock: true` on line 39 didn't
@@ -37,23 +42,23 @@ export const dynamic = "force-dynamic";
 //   Fix is a per-course PostgreSQL advisory lock, taken as the first statement in
 //   the transaction. Every submission for the same course serialises on the same
 //   lock key; different courses stay fully parallel. `pg_advisory_xact_lock` is
-//   scoped to the transaction, so Postgres releases it on commit OR rollback —
+//   scoped to the transaction, so Postgres releases it on commit OR rollback -
 //   no leak, no cleanup job, and it can't outlive a crashed connection the way a
 //   session lock could.
 //
-// BUG 3 — EMPTY ANSWERS WERE ACCEPTED AND MARKED "awarded".
+// BUG 3 - EMPTY ANSWERS WERE ACCEPTED AND MARKED "awarded".
 //   `const { q1, q2, q3 } = answers` with no validation. Submitting
 //   `{}` wrote three `undefined` answers and flipped the candidate to
-//   `awarded` — which is the status the winners export treats as a scholarship
+//   `awarded` - which is the status the winners export treats as a scholarship
 //   winner. Meanwhile the AI grader had its own 50-character minimum and would
 //   skip them, so they'd be exported as a winner with no grade.
 //
-// BUG 4 — A TRANSACTION WAS OPENED BEFORE AUTHENTICATION.
+// BUG 4 - A TRANSACTION WAS OPENED BEFORE AUTHENTICATION.
 //   `sequelize.transaction()` was line 8, ahead of the token check. Five
 //   concurrent unauthenticated POSTs would occupy all five pool connections and
 //   every legitimate candidate would then queue behind them.
 //
-// BUG 5 — "awarded" WAS SET ON SUBMISSION, NOT ON AWARDING.
+// BUG 5 - "awarded" WAS SET ON SUBMISSION, NOT ON AWARDING.
 //   A candidate who merely turned in the essay was recorded as a winner. Status
 //   now moves to "completed" (theory submitted, awaiting grading) and only the
 //   admissions portal can promote someone to shortlisted/awarded. This also
@@ -80,7 +85,9 @@ export async function POST(request: Request) {
   // ─── VALIDATE THE COURSE ───────────────────────────────────────────────────
   // BUG 1. Validated against the canonical list, never trusted from the client.
   if (!isValidCourseSlug(body.selectedSlug)) {
-    log.warn("assessment.theory.invalid_slug", { barcodeId: session.barcodeId });
+    log.warn("assessment.theory.invalid_slug", {
+      barcodeId: session.barcodeId,
+    });
     return NextResponse.json(
       {
         success: false,
@@ -93,7 +100,7 @@ export async function POST(request: Request) {
   const selectedSlug = body.selectedSlug;
 
   // ─── VALIDATE THE ANSWERS ─────────────────────────────────────────────────
-  // BUG 3. The grader's own minimum, applied at the door — and applied to ALL
+  // BUG 3. The grader's own minimum, applied at the door - and applied to ALL
   // three answers, not "at least one".
   //
   // The first version of this fix read
@@ -125,7 +132,7 @@ export async function POST(request: Request) {
         {
           success: false,
           error: "TOO_SHORT",
-          message: `Question ${i} needs at least ${THEORY_MIN_WORDS} words — you have ${words}. A one-line answer can't be assessed fairly.`,
+          message: `Question ${i} needs at least ${THEORY_MIN_WORDS} words - you have ${words}. A one-line answer can't be assessed fairly.`,
         },
         { status: 400 },
       );
@@ -140,7 +147,7 @@ export async function POST(request: Request) {
   const outcome = await sequelize.transaction(async (t) => {
     // BUG 2. Serialise everyone targeting this course, before we count.
     // The lock is taken on the transaction's own connection, via sequelize.query
-    // with `transaction: t` — a Transaction object has no .query() method, which
+    // with `transaction: t` - a Transaction object has no .query() method, which
     // is why the first version of this fix threw a TypeError on every single
     // submission and 500'd.
     await sequelize.query("SELECT pg_advisory_xact_lock(:key)", {
@@ -156,7 +163,11 @@ export async function POST(request: Request) {
     });
 
     if (!student) {
-      return { status: 404 as const, error: "INVALID_SESSION", message: "Invalid session." };
+      return {
+        status: 404 as const,
+        error: "INVALID_SESSION",
+        message: "Invalid session.",
+      };
     }
 
     if (student.status === "completed") {
@@ -236,7 +247,12 @@ export async function POST(request: Request) {
       });
     }
 
-    return { status: 200 as const, error: null, message: "Theory submitted.", late };
+    return {
+      status: 200 as const,
+      error: null,
+      message: "Theory submitted.",
+      late,
+    };
   });
 
   if (outcome.error) {

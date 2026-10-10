@@ -19,7 +19,7 @@
 
    Everything below is a scale, not a one-off. If a value is needed that is
    not here, that is the signal to add a token rather than to type a hex
-   literal into a component — the previous version had 118 lines of raw
+   literal into a component - the previous version had 118 lines of raw
    Tailwind palette classes bypassing these tokens entirely, which is how the
    product ended up with four blues and no system.
    ══════════════════════════════════════════════════════════════════════════════ */
@@ -85,32 +85,32 @@
      overflow a 360px viewport. Tracking goes NEGATIVE as size increases,
      which is the thing hand-rolled CSS almost always gets backwards: large
      text needs to be set tighter, not looser. */
-  --text-micro: 0.6875rem;      /* 11px — the floor. Below this, stop. */
+  --text-micro: 0.6875rem; /* 11px - the floor. Below this, stop. */
   --text-micro--line-height: 1rem;
   --text-micro--letter-spacing: 0.06em;
 
-  --text-eyebrow: 0.75rem;      /* 12px — the label/section-kicker size */
+  --text-eyebrow: 0.75rem; /* 12px - the label/section-kicker size */
   --text-eyebrow--line-height: 1.1rem;
   --text-eyebrow--letter-spacing: 0.08em;
 
-  --text-small: 0.875rem;       /* 14px — secondary body, table cells */
+  --text-small: 0.875rem; /* 14px - secondary body, table cells */
   --text-small--line-height: 1.5rem;
 
-  --text-body: 1rem;            /* 16px — default body */
+  --text-body: 1rem; /* 16px - default body */
   --text-body--line-height: 1.65;
 
-  --text-lead: 1.1875rem;       /* 19px — intro paragraphs */
+  --text-lead: 1.1875rem; /* 19px - intro paragraphs */
   --text-lead--line-height: 1.7;
 
-  --text-h4: 1.5rem;            /* 24px */
+  --text-h4: 1.5rem; /* 24px */
   --text-h4--line-height: 1.75rem;
   --text-h4--letter-spacing: -0.011em;
 
-  --text-h3: 1.875rem;          /* 30px */
+  --text-h3: 1.875rem; /* 30px */
   --text-h3--line-height: 2.125rem;
   --text-h3--letter-spacing: -0.016em;
 
-  --text-h2: 2.375rem;          /* 38px */
+  --text-h2: 2.375rem; /* 38px */
   --text-h2--line-height: 2.5rem;
   --text-h2--letter-spacing: -0.021em;
 
@@ -126,7 +126,7 @@
      Was 0.625rem, which combined with rounded-2xl/3xl/[2.5rem] overrides
      produced the pill-and-blob look. Corners are now restrained: 2px for
      controls that sit inside a card, 6px for cards, and a full pill reserved
-     for things that genuinely are pills — a status chip, a count. */
+     for things that genuinely are pills - a status chip, a count. */
   --radius-xs: 2px;
   --radius-sm: 4px;
   --radius-md: 6px;
@@ -137,14 +137,17 @@
   /* ─── ELEVATION ────────────────────────────────────────────────────────────
      Replaces a 50px amber glow and an 80px stacked shadow. Editorial layout
      gets its depth from hairlines and background steps; shadow is reserved
-     for things that genuinely float — dialogs, menus, the sticky exam bar. */
+     for things that genuinely float - dialogs, menus, the sticky exam bar. */
   --shadow-hairline: 0 0 0 1px var(--line);
   --shadow-rest: 0 1px 2px oklch(0.19 0.021 258 / 0.05);
-  --shadow-raised: 0 1px 2px oklch(0.19 0.021 258 / 0.05),
+  --shadow-raised:
+    0 1px 2px oklch(0.19 0.021 258 / 0.05),
     0 4px 12px -2px oklch(0.19 0.021 258 / 0.06);
-  --shadow-float: 0 2px 4px oklch(0.19 0.021 258 / 0.05),
+  --shadow-float:
+    0 2px 4px oklch(0.19 0.021 258 / 0.05),
     0 12px 28px -6px oklch(0.19 0.021 258 / 0.12);
-  --shadow-modal: 0 4px 8px oklch(0.19 0.021 258 / 0.06),
+  --shadow-modal:
+    0 4px 8px oklch(0.19 0.021 258 / 0.06),
     0 24px 56px -12px oklch(0.19 0.021 258 / 0.18);
 
   /* ─── MOTION ───────────────────────────────────────────────────────────────
@@ -253,7 +256,15 @@
      colour on focus, which fires on mouse-press and is invisible to keyboard
      users on a 1px border. This is a 2px amber ring with a paper offset so it
      survives on a white card, a tinted wash and a dark panel alike. */
-  :where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  :where(
+    a,
+    button,
+    input,
+    select,
+    textarea,
+    summary,
+    [tabindex]
+  ):focus-visible {
     outline: 2px solid var(--ring);
     outline-offset: 2px;
     border-radius: var(--radius-xs);

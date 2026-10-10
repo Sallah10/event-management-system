@@ -18,7 +18,7 @@ import TheoryClient from "@/components/exam/TheoryClient";
 //   hour.
 // • Course availability is queried here and handed down as a prop, so the picker
 //   renders with live seat counts on first paint. The old page rendered six grey
-//   skeletons and then fetched — and on a failed fetch left the candidate staring
+//   skeletons and then fetched - and on a failed fetch left the candidate staring
 //   at a spinner forever, because `setLoading(false)` was only called on success.
 //
 // The gate is strict: only `qualified` candidates reach the theory paper. In

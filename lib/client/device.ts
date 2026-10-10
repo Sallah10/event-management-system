@@ -39,7 +39,7 @@ function randomKey(): string {
  * localStorage rather than a cookie: a cookie would be sent on every request to
  * every origin by default unless scoped, and the value has no business leaving
  * this one. It is also readable by any script on the page, which is the same
- * trust level as the exam itself — see the note above.
+ * trust level as the exam itself - see the note above.
  */
 export function getDeviceKey(): string {
   if (typeof window === "undefined") return "";

@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils"
 /* ─── TABS ────────────────────────────────────────────────────────────────────
    A plain controlled component rather than a Radix Tabs root. Two reasons: the
    queues it appears in have no arrow-key behaviour worth the extra DOM, and
-   the underline indicator is the only visual that survived the redesign — a
+   the underline indicator is the only visual that survived the redesign - a
    pill background made the tab row look like a segmented control, which it is
    not. It still obeys the tab pattern: roving `aria-selected`, `role="tablist"`,
    and arrow-key navigation. */
@@ -127,7 +127,7 @@ function TD({ className, ...props }: React.ComponentProps<"td">) {
 }
 
 /* ─── ALERT ──────────────────────────────────────────────────────────────────
-   Seven hand-rolled banners, one of which used `text-orange-500` on white —
+   Seven hand-rolled banners, one of which used `text-orange-500` on white -
    about 2.9:1, which fails AA for body text. Every banner now leads with an
    icon as well as a colour, so the meaning survives a monochrome printout and
    a screen reader. */
@@ -182,7 +182,7 @@ function Alert({
 /* ─── STAT ───────────────────────────────────────────────────────────────────
    A number with a label. The counters update live during check-in, so the
    digits are tabular and the label sits under the figure rather than beside it
-   — beside it, the value jumps as it grows. */
+   - beside it, the value jumps as it grows. */
 function Stat({
   className,
   label,
@@ -219,7 +219,7 @@ function Stat({
 
 /* ─── SPINNER ────────────────────────────────────────────────────────────────
    The three loading states in the product were a bare `animate-spin` SVG with
-   `aria-label="Loading"` on the `<svg>` element — which is not a labellable
+   `aria-label="Loading"` on the `<svg>` element - which is not a labellable
    role, so screen readers announced nothing. This announces properly and holds
    its box so the layout does not jump when it resolves. */
 function Spinner({
