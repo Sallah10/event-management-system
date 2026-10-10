@@ -1,5 +1,6 @@
 import { ArrowRight } from "lucide-react";
 import Link from "next/link";
+import type { Metadata } from "next";
 import { BRAND, CURRENT_COHORT } from "@/config/branding";
 
 /* ─── ENTRY POINT ────────────────────────────────────────────────────────────
@@ -14,6 +15,12 @@ import { BRAND, CURRENT_COHORT } from "@/config/branding";
    a server component - framer-motion was imported to animate a hover that
    should not have been animated, which cost a client bundle for nothing.
    ─────────────────────────────────────────────────────────────────────────── */
+
+// The canonical root. The title and description are inherited from the layout,
+// which already names the programme and states what it is.
+export const metadata: Metadata = {
+  alternates: { canonical: "/" },
+};
 
 const DOORS = [
   {

@@ -7,8 +7,11 @@ import { courseOptions } from "@/config/course-matrix";
 import { turnstileSiteKey } from "@/lib/turnstile";
 
 export const metadata = {
-  title: `Register · ${BRAND.name}`,
+  // `absolute` opts out of the root title template, which would otherwise append
+  // the short name and repeat the programme twice in one tab title.
+  title: { absolute: `Register · ${BRAND.name}` },
   description: `Apply for ${BRAND.name}. No account needed - you get a ticket ID straight away.`,
+  alternates: { canonical: "/register" },
 };
 
 // The course list is configuration, read from the same source the seat counters

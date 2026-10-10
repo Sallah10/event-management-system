@@ -1,4 +1,5 @@
 import { cookies } from "next/headers";
+import type { Metadata } from "next";
 import { CANDIDATE_COOKIE, verifyCandidateSession } from "@/lib/session";
 import { Registrant } from "@/lib/models/Registrant";
 import { ensureDatabase } from "@/lib/db";
@@ -6,6 +7,12 @@ import { isLate } from "@/lib/exam-sitting";
 import ThankYouView from "@/components/assessment/ThankYouView";
 
 export const dynamic = "force-dynamic";
+
+// Private to the candidate's session; never indexed.
+export const metadata: Metadata = {
+  title: "Submission received",
+  robots: { index: false, follow: false },
+};
 
 // ─── CONFIRMATION ─────────────────────────────────────────────────────────────
 // A server component now, where it used to be a client component that knew

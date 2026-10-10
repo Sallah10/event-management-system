@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import type { Metadata } from "next";
 import { CANDIDATE_COOKIE, verifyCandidateSession } from "@/lib/session";
 import { Registrant } from "@/lib/models/Registrant";
 import { ensureDatabase } from "@/lib/db";
@@ -27,6 +28,12 @@ import TheoryClient from "@/components/exam/TheoryClient";
 // on a middleware check for, and the middleware check can be misconfigured.
 
 export const dynamic = "force-dynamic";
+
+// Private to the candidate's session; never indexed.
+export const metadata: Metadata = {
+  title: "Theory paper",
+  robots: { index: false, follow: false },
+};
 
 const THEORY_MAX_LENGTH = 1000;
 

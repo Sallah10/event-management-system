@@ -146,6 +146,30 @@ candidate is told in advance.
 
 ---
 
+## Search and social metadata
+
+The metadata surface is generated, not committed as binaries, so a new cohort is
+a configuration change and there is nothing stale to forget.
+
+- `NEXT_PUBLIC_APP_URL` is the origin for `metadataBase`, so the canonical tags,
+  the Open Graph image URL and `sitemap.xml` are all absolute and point at the
+  real deployment. **Set it in production** - left at its `localhost` default,
+  the og:image and canonical URLs are wrong and most scrapers silently drop the
+  preview.
+- Generated routes: `robots.txt`, `sitemap.xml`, `manifest.webmanifest`. The
+  tab icon is `app/favicon.ico`; the app/PWA icons are `app/icon.png` and
+  `app/apple-icon.png`.
+- The social card is a designed asset at `public/og-image.jpg`, referenced from
+  `openGraph.images` / `twitter.images` in `app/layout.tsx` (with its real pixel
+  size). Swap the file and update the two dimensions if it changes size.
+- Only `/`, `/register` and `/assessment/login` are in the sitemap. The staff and
+  candidate areas (`/admin`, `/admissions`, `/checkin`, and the exam, result,
+  theory and thank-you pages) are both disallowed in `robots.txt` and set
+  `noindex`, so a crawler that arrives by a shared link still will not index a
+  sitting.
+
+---
+
 ## The pipeline
 
 ```

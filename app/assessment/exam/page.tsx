@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import type { Metadata } from "next";
 import questions from "@/config/questions.json";
 import { PASS_MARK_PERCENT } from "@/config/rules";
 import { CANDIDATE_COOKIE, verifyCandidateSession } from "@/lib/session";
@@ -10,6 +11,14 @@ import ExamClient from "@/components/exam/ExamClient";
 import type { ExamQuestion } from "@/components/exam/ExamClient";
 
 export const dynamic = "force-dynamic";
+
+// A sitting is private to the candidate holding the cookie. Keep every exam screen
+// out of the index; robots.ts also disallows the path, and this covers a crawler
+// that arrives by a shared link.
+export const metadata: Metadata = {
+  title: "Objective paper",
+  robots: { index: false, follow: false },
+};
 
 // ─── OBJECTIVE PAPER (SERVER) ─────────────────────────────────────────────────
 // This used to be a client component that took the candidate's identity from

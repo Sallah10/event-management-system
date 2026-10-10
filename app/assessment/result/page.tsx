@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import type { Metadata } from "next";
 import { ArrowRight, Mail } from "lucide-react";
 import { CANDIDATE_COOKIE, verifyCandidateSession } from "@/lib/session";
 import { Registrant } from "@/lib/models/Registrant";
@@ -35,6 +36,12 @@ import { Button } from "@/components/ui/button";
 // rather than by a dark banner and a trophy icon.
 
 export const dynamic = "force-dynamic";
+
+// Private to the candidate's session; never indexed.
+export const metadata: Metadata = {
+  title: "Objective result",
+  robots: { index: false, follow: false },
+};
 
 export default async function ResultPage() {
   const store = await cookies();

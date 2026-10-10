@@ -12,6 +12,9 @@ import { TICKET_PREFIX } from "@/lib/tickets";
 // screen reader heard nothing while the form loaded. `Spinner` announces it.
 export const metadata: Metadata = {
   title: "Candidate sign-in",
+  description:
+    "Sign in with your ticket ID and email address to start or continue your assessment.",
+  alternates: { canonical: "/assessment/login" },
 };
 
 export default function LoginPage() {

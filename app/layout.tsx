@@ -47,7 +47,16 @@ const instrumentSerif = localFont({
 // side, where a reviewer opening five tabs had no way to tell which was which.
 // They are configuration now, and default to something honest about what the
 // thing is.
+//
+// The rest of this object is the social and crawler contract.
+// `metadataBase` turns every relative URL below (and the generated
+// `opengraph-image` / `icon` files) into an absolute one, which is what a link
+// preview needs - an OG image at a relative path is silently dropped by most
+// scrapers. It reads `NEXT_PUBLIC_APP_URL`, the same value the QR payloads and
+// the email links use, so a deployment sets its public URL once.
 export const metadata: Metadata = {
+  metadataBase: new URL(BRAND.portalUrl),
+  applicationName: BRAND.name,
   title: {
     default: BRAND.name,
     // The staff tools are a different application to a person holding five tabs,
@@ -55,6 +64,60 @@ export const metadata: Metadata = {
     template: `%s · ${BRAND.shortName}`,
   },
   description: BRAND.tagline,
+  keywords: [
+    "scholarship",
+    "tech scholarship",
+    "coding scholarship",
+    "scholarship programme",
+    "career development",
+    "assessment day",
+    BRAND.name,
+  ],
+  authors: [{ name: BRAND.organisation }],
+  creator: BRAND.organisation,
+  publisher: BRAND.organisation,
+  category: "education",
+  // A page on this site should not be auto-linked into a phone number or a
+  // postal address; the ticket IDs and the phone numbers candidates type are the
+  // only strings here that look like either, and neither should become a tappable
+  // guess.
+  formatDetection: { email: false, address: false, telephone: false },
+  openGraph: {
+    type: "website",
+    siteName: BRAND.name,
+    title: BRAND.name,
+    description: BRAND.tagline,
+    url: BRAND.portalUrl,
+    locale: "en_GB",
+    // The banner is a designed asset in `public/`, referenced here rather than
+    // generated, so the card is art-directed. Dimensions are the real pixel size
+    // of the file; scrapers use them to lay out the preview before it loads.
+    images: [
+      {
+        url: "/og-image.jpg",
+        width: 1424,
+        height: 752,
+        alt: `${BRAND.name} - ${BRAND.tagline}`,
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: BRAND.name,
+    description: BRAND.tagline,
+    images: ["/og-image.jpg"],
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+      "max-video-preview": -1,
+    },
+  },
 };
 
 export const viewport: Viewport = {
