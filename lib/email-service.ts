@@ -45,6 +45,40 @@ interface RenderedMail {
   to: string;
 }
 
+// Brevo's API v3 does not offer inline (CID) images for transactional mail -
+// embedding them is explicitly unsupported ("mostly due to deliverability
+// issues"). The old code sent `inlineAttachments` and referenced
+// `<img src="cid:ticket-qr">`: Resend substitutes that fine, Brevo does not,
+// so after switching to Brevo the ticket email arrived with the PNGs as file
+// attachments and an empty inline slot. Hosting the QR publicly is Brevo's
+// documented workaround, but there is no public host here and Gmail/Outlook
+// strip remote images without user consent anyway. So the QR in the body is
+// drawn as an HTML table: a real, scannable QR, zero hosting, renders in
+// every client. The PNGs still ride along as attachments for phone-savable
+// copies, and the human-readable code is printed beneath it.
+function emailQrTable(ticket: string): string {
+  const qr = QRCode.create(ticket, { errorCorrectionLevel: "M" });
+  const size = qr.modules.size;
+  const data = qr.modules.data;
+  const cell = (dark: boolean, px = 5) =>
+    `<td style="width:${px}px;height:${px}px;font-size:0;line-height:0;background:${dark ? PALETTE.ink : PALETTE.paper};"></td>`;
+  const quiet = 4;
+  const paddingRow = `<tr>${Array(size + quiet * 2)
+    .fill(cell(false))
+    .join("")}</tr>`;
+  const rows: string[] = [];
+  rows.push(paddingRow);
+  for (let r = 0; r < size; r++) {
+    let row = cell(false);
+    for (let c = 0; c < size; c++) {
+      row += cell(Boolean(data[r * size + c]));
+    }
+    rows.push(`<tr>${row + cell(false)}</tr>`);
+  }
+  rows.push(paddingRow);
+  return `<table role="img" aria-label="QR code for ticket ${escapeHtml(ticket)}" cellpadding="0" cellspacing="0" style="border:6px solid ${PALETTE.paper};border-radius:8px;margin:0 auto 16px;background:${PALETTE.paper};">${rows.join("")}</table>`;
+}
+
 async function sendViaBrevo(m: RenderedMail) {
   const key = process.env.BREVO_API_KEY;
   if (!key) throw new Error("BREVO_API_KEY is not set");
@@ -67,7 +101,9 @@ async function sendViaBrevo(m: RenderedMail) {
       to: [{ email: m.to }],
       subject: m.subject,
       htmlContent: m.html,
-      inlineAttachments: [{ name: "ticket-qr", content: qrBase64 }],
+      // No `inlineAttachments`: Brevo's v3 API has no CID/embedded-image
+      // support for transactional email, so the image in the body is a table
+      // QR and these PNGs are phone-savable copies.
       attachment: [
         { name: "ticket-qr.png", content: qrBase64 },
         { name: `entrance-pass-${m.ticket}.png`, content: qrBase64 },
@@ -92,7 +128,7 @@ async function sendViaResend(m: RenderedMail) {
     subject: m.subject,
     html: m.html,
     attachments: [
-      { filename: "ticket-qr.png", content: m.qr, contentId: "ticket-qr" },
+      { filename: "ticket-qr.png", content: m.qr },
       { filename: `entrance-pass-${m.ticket}.png`, content: m.qr },
     ],
   });
@@ -168,6 +204,7 @@ export async function sendEntranceTicket(registrant: TicketRecipient) {
     html: renderTicketHtml({
       name: firstName(registrant.name),
       ticket,
+      qrHtml: emailQrTable(ticket),
       totalSeats: TOTAL_SLOTS,
       poolSize: QUALIFIED_POOL_SIZE,
       venueCapacity: VENUE_CAPACITY,
@@ -199,6 +236,7 @@ export async function sendEntranceTicket(registrant: TicketRecipient) {
 interface TicketTemplate {
   name: string;
   ticket: string;
+  qrHtml: string;
   totalSeats: number;
   poolSize: number;
   venueCapacity: number;
@@ -233,9 +271,10 @@ function renderTicketHtml(t: TicketTemplate): string {
 
       <div style="background:${PALETTE.accentSoft};border:1px dashed ${PALETTE.accent};border-radius:12px;padding:28px 20px;text-align:center;margin:0 0 24px;">
         <p style="margin:0 0 16px;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:${PALETTE.muted};">Your entrance code</p>
-        <img src="cid:ticket-qr" width="180" height="180" alt="Your entrance QR code" style="display:block;margin:0 auto 16px;border:0;" />
+        ${t.qrHtml}
         <p style="margin:0;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:20px;font-weight:700;letter-spacing:.04em;color:${PALETTE.ink};">${escapeHtml(t.ticket)}</p>
         <p style="margin:14px 0 0;font-size:12px;color:${PALETTE.muted};">Show this code at the door. One scan per person.</p>
+        <p style="margin:4px 0 0;font-size:12px;color:${PALETTE.muted};">Barcode not rendering for you? Show the code above at the desk instead, or use the attached <strong>ticket-qr.png</strong> — either one gets you in.</p>
       </div>
 
       <h3 style="margin:0 0 8px;font-size:15px;">What happens next</h3>

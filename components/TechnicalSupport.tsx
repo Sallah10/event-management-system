@@ -5,7 +5,8 @@ import { LifeBuoy, Loader2, ShieldCheck } from "lucide-react";
 import { apiFetch } from "@/lib/client/api";
 import { BRAND } from "@/config/branding";
 import { Button } from "@/components/ui/button";
-import { Field, Select, Textarea } from "@/components/ui/field";
+import { Field, Textarea } from "@/components/ui/field";
+import { Select } from "@/components/ui/select";
 import { Alert } from "@/components/ui/display";
 import {
   Dialog,
@@ -133,15 +134,13 @@ export default function TechnicalSupport() {
                 <Select
                   id={id}
                   value={issue}
-                  onChange={(event) => setIssue(event.target.value)}
-                >
-                  <option value="">Choose one…</option>
-                  {ISSUES.map((item) => (
-                    <option key={item.value} value={item.value}>
-                      {item.label}
-                    </option>
-                  ))}
-                </Select>
+                  onChange={(value) => setIssue(value)}
+                  placeholder="Choose one…"
+                  options={ISSUES.map((item) => ({
+                    value: item.value,
+                    label: item.label,
+                  }))}
+                />
               )}
             </Field>
 

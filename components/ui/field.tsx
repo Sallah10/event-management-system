@@ -46,25 +46,6 @@ function Textarea({ className, ...props }: React.ComponentProps<"textarea">) {
   )
 }
 
-function Select({ className, children, ...props }: React.ComponentProps<"select">) {
-  return (
-    <select
-      data-slot="select"
-      className={cn(
-        fieldBase,
-        "h-11 cursor-pointer appearance-none bg-[length:1rem] bg-[right_0.75rem_center] bg-no-repeat pr-10",
-        // Inline chevron rather than a wrapper element, so the control keeps a
-        // single border and a single focus ring.
-        "bg-[image:url('data:image/svg+xml;charset=utf-8,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%236b6b73%22 stroke-width=%222%22 stroke-linecap=%22round%22%3E%3Cpath d=%22m6 9 6 6 6-6%22/%3E%3C/svg%3E')]",
-        className
-      )}
-      {...props}
-    >
-      {children}
-    </select>
-  )
-}
-
 function Label({ className, ...props }: React.ComponentProps<"label">) {
   return (
     <label
@@ -115,4 +96,4 @@ function Field({ label, children, hint, error, className }: FieldProps) {
   )
 }
 
-export { Field, Input, Label, Select, Textarea, fieldBase }
+export { Field, Input, Label, Textarea, fieldBase }

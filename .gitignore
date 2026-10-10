@@ -44,6 +44,10 @@ PROJECT_EXPLAINER.md
 # documents itself in README.md and docs/ENV_SETUP.md instead.
 SYSTEM_DESIGN.md
 
+# Local manual QA walkthrough. Names the seeded test accounts and the local PINs,
+# so it stays on this machine. Automated coverage lives in scripts/smoke-e2e.mjs.
+MANUAL-UX-TESTING.md
+
 # vercel
 .vercel
 

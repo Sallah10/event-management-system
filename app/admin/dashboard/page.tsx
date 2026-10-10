@@ -18,6 +18,14 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
   Alert,
   EmptyState,
   Spinner,
@@ -129,6 +137,7 @@ function StaffDashboardInner() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [lastSync, setLastSync] = useState<Date | null>(null);
+  const [confirmSignOut, setConfirmSignOut] = useState(false);
   const denied = useSearchParams().get("denied");
   const router = useRouter();
 
@@ -241,7 +250,11 @@ function StaffDashboardInner() {
               />
             </Button>
 
-            <Button type="button" variant="ghost" onClick={signOut}>
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => setConfirmSignOut(true)}
+            >
               <LogOut aria-hidden />
               Sign out
             </Button>
@@ -480,6 +493,32 @@ function StaffDashboardInner() {
           · refreshes every 30s
         </p>
       )}
+
+      <Dialog
+        open={confirmSignOut}
+        onOpenChange={(open) => setConfirmSignOut(open)}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Sign out of the desk?</DialogTitle>
+            <DialogDescription>
+              You&apos;ll need the {BRAND.shortName} PIN to come back in.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setConfirmSignOut(false)}
+            >
+              Cancel
+            </Button>
+            <Button type="button" variant="critical" onClick={signOut}>
+              Sign out
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Page>
   );
 }

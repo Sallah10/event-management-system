@@ -19,6 +19,14 @@ import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Field, Input } from "@/components/ui/field";
 import {
   Alert,
@@ -117,6 +125,7 @@ function AdmissionsQueue() {
   const denied = useSearchParams().get("denied") === "staff";
   const [selected, setSelected] = useState<QueueRow | null>(null);
   const [banner, setBanner] = useState<string | null>(null);
+  const [confirmSignOut, setConfirmSignOut] = useState(false);
   const router = useRouter();
 
   // The queue the reviewer is looking at, for the one line of context under the
@@ -220,7 +229,11 @@ function AdmissionsQueue() {
               </a>
             </Button>
 
-            <Button type="button" variant="ghost" onClick={signOut}>
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => setConfirmSignOut(true)}
+            >
               <LogOut aria-hidden />
               Sign out
             </Button>
@@ -450,6 +463,32 @@ function AdmissionsQueue() {
         call, it requires a written reason, and both actions are recorded with
         your name against the time.
       </p>
+
+      <Dialog
+        open={confirmSignOut}
+        onOpenChange={(open) => setConfirmSignOut(open)}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Sign out of decisions?</DialogTitle>
+            <DialogDescription>
+              You&apos;ll need the {BRAND.shortName} PIN to come back in.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setConfirmSignOut(false)}
+            >
+              Cancel
+            </Button>
+            <Button type="button" variant="critical" onClick={signOut}>
+              Sign out
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Page>
   );
 }

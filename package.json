@@ -10,6 +10,7 @@
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "test": "node --import ./tests/setup.ts --import ./scripts/ts-alias.mjs --test tests/*.test.ts",
+    "test:e2e": "node --import dotenv/config scripts/smoke-e2e.mjs",
     "db:migrate": "node scripts/migrate.mjs",
     "db:seed": "node scripts/seed.mjs",
     "check:gemini": "node scripts/check-gemini.mjs",

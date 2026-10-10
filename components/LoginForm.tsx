@@ -61,7 +61,11 @@ const RULES = [
   </>,
 ];
 
-export default function LoginForm() {
+export default function LoginForm({
+  ticketPrefix = "TS26",
+}: {
+  ticketPrefix?: string;
+}) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const reason = searchParams.get("reason");
@@ -214,7 +218,7 @@ export default function LoginForm() {
                   required
                   autoComplete="off"
                   spellCheck={false}
-                  placeholder="TS26-XXXXXXXX"
+                  placeholder={`${ticketPrefix}-XXXXXXXX`}
                   className="pl-10 font-mono uppercase tracking-wider"
                 />
               </div>

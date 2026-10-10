@@ -19,7 +19,8 @@ import { PIPELINE, RELEASABLE_STATUSES } from "@/config/rules";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Field, Input, Select, Textarea } from "@/components/ui/field";
+import { Field, Input, Textarea } from "@/components/ui/field";
+import { Select } from "@/components/ui/select";
 import { Alert, EmptyState, Spinner, Stat } from "@/components/ui/display";
 
 // ─── CANDIDATE PANEL ──────────────────────────────────────────────────────────
@@ -452,15 +453,13 @@ export default function CandidatePanel({ candidate, onClose, onDecided }: Props)
               <Select
                 id={id}
                 value={course}
-                onChange={(event) => setCourse(event.target.value)}
-              >
-                <option value="">No track selected</option>
-                {COURSES.map((item) => (
-                  <option key={item.slug} value={item.slug}>
-                    {item.displayName}
-                  </option>
-                ))}
-              </Select>
+                onChange={(value) => setCourse(value)}
+                placeholder="No track selected"
+                options={COURSES.map((item) => ({
+                  value: item.slug,
+                  label: item.displayName,
+                }))}
+              />
             )}
           </Field>
         </div>
@@ -571,23 +570,18 @@ export default function CandidatePanel({ candidate, onClose, onDecided }: Props)
               <Select
                 id={id}
                 value={releaseStatus}
-                onChange={(event) => setReleaseStatus(event.target.value)}
-              >
-                {/* Options come from RELEASABLE_STATUSES, the same list the decision
-                    route validates against, labelled from PIPELINE. This used to be
-                    three hand-written <option>s that had already fallen out of step
-                    with the server's four - an option the API rejects is worse than
-                    one that is not there, because the reviewer only finds out after
-                    the click. */}
-                {RELEASABLE_STATUSES.map((status) => {
+                onChange={(value) => setReleaseStatus(value)}
+                placeholder="Stand down to…"
+                options={RELEASABLE_STATUSES.map((status) => {
                   const stage = PIPELINE.find((entry) => entry.key === status);
-                  return (
-                    <option key={status} value={status}>
-                      {stage ? `${stage.label} - ${stage.blurb.toLowerCase()}` : status}
-                    </option>
-                  );
+                  return {
+                    value: status,
+                    label: stage
+                      ? `${stage.label} - ${stage.blurb.toLowerCase()}`
+                      : status,
+                  };
                 })}
-              </Select>
+              />
             )}
           </Field>
         )}

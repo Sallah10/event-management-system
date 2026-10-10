@@ -4,7 +4,8 @@ import * as React from "react";
 import { Check, Copy } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Field, Input, Select } from "@/components/ui/field";
+import { Field, Input } from "@/components/ui/field";
+import { Select } from "@/components/ui/select";
 import { Alert, Spinner } from "@/components/ui/display";
 import { BRAND } from "@/config/branding";
 
@@ -336,27 +337,33 @@ function RegisterForm({ courses, siteKey }: { courses: Course[]; siteKey: string
         hint="You can change this later. It decides which assessment you sit."
       >
         {({ id, describedBy }) => (
-          <Select id={id} aria-describedby={describedBy} name="course" defaultValue="">
-            <option value="">Not sure yet</option>
-            {courses.map((course) => (
-              <option key={course.slug} value={course.slug}>
-                {course.label}
-              </option>
-            ))}
-          </Select>
+          <Select
+            id={id}
+            aria-describedby={describedBy}
+            name="course"
+            defaultValue=""
+            placeholder="Not sure yet"
+            options={courses.map((course) => ({
+              value: course.slug,
+              label: course.label,
+            }))}
+          />
         )}
       </Field>
 
       <Field label="Current status" hint="Optional.">
         {({ id, describedBy }) => (
-          <Select id={id} aria-describedby={describedBy} name="career" defaultValue="">
-            <option value="">Prefer not to say</option>
-            {CAREER_OPTIONS.map((option) => (
-              <option key={option} value={option}>
-                {option}
-              </option>
-            ))}
-          </Select>
+          <Select
+            id={id}
+            aria-describedby={describedBy}
+            name="career"
+            defaultValue=""
+            placeholder="Prefer not to say"
+            options={CAREER_OPTIONS.map((option) => ({
+              value: option,
+              label: option,
+            }))}
+          />
         )}
       </Field>
 

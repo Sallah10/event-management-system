@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import type { Metadata } from "next";
 import LoginForm from "@/components/LoginForm";
 import { Spinner } from "@/components/ui/display";
+import { TICKET_PREFIX } from "@/lib/tickets";
 
 // The wrapper painted the whole page `#E6E6FF` and the spinner `#0000FF` - a
 // blue that exists nowhere else in the product, so the login screen was the one
@@ -24,7 +25,7 @@ export default function LoginPage() {
           </div>
         }
       >
-        <LoginForm />
+        <LoginForm ticketPrefix={TICKET_PREFIX} />
       </Suspense>
     </div>
   );

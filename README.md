@@ -73,10 +73,12 @@ Stated here rather than discovered in production:
 - **The CSP allows `'unsafe-inline'` for scripts.** Next.js inlines its
   bootstrap; a nonce-based policy requires per-request headers. See
   `docs/ENV_SETUP.md`.
-- **No end-to-end tests.** The unit suite covers pure logic - ticket matching,
-  validation, scoring, clocks, sessions, the rules of the round. Nothing has run
-  against a real database in this repository, because there are no credentials
-  for one. The migrations have not been executed.
+- **The end-to-end script needs the app running.** `npm run test:e2e` drives a
+  live instance against the seeded database - public pages, both staff sign-ins,
+  manual search, check-in including its duplicate and malformed paths, a
+  candidate login at every stage gate, and the winners export. It checks one
+  real candidate in and resets her afterwards. Without `npm run dev` running in
+  another terminal it exits immediately.
 
 ---
 
@@ -112,6 +114,7 @@ npm run dev
 | `npm run typecheck`             | `tsc --noEmit`                                                                               |
 | `npm run lint`                  | ESLint                                                                                       |
 | `npm test`                      | Unit tests. No database, no network                                                          |
+| `npm run test:e2e`              | Explicit smoke test against a running dev server and the seeded database (see Honest limitations) |
 | `npm run db:migrate`            | Apply migrations. Safe to re-run                                                             |
 | `npm run db:seed`               | Insert synthetic candidates spanning the whole pipeline. Destructive; `--force` to overwrite |
 | `npm run tickets:backfill`      | Issue tickets for registrants who predate the system. Dry run unless `--execute`             |
